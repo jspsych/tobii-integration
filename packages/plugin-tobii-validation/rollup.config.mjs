@@ -1,6 +1,3 @@
-import { createConfig } from '../../rollup.config.base.mjs';
+import { makeRollupConfig } from "@jspsych/config/rollup";
 
-export default createConfig({
-  packageName: 'plugin-tobii-validation',
-  includeCSS: true,
-});
+export default makeRollupConfig("jsPsychPluginPluginTobiiValidation");

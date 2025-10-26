@@ -1,6 +1,6 @@
 {
   "name": "jspsych-tobii-monorepo",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Tobii eye tracker integration for jsPsych",
   "workspaces": [
@@ -15,9 +15,13 @@
     "format": "prettier --write \"packages/*/src/**/*.{ts,js,json,md}\"",
     "format:check": "prettier --check \"packages/*/src/**/*.{ts,js,json,md}\"",
     "clean": "npm run clean --workspaces --if-present",
-    "typecheck": "tsc --build tsconfig.base.json"
+    "typecheck": "tsc --build tsconfig.base.json",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "npm run build && changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.27.1",
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",

@@ -1,194 +1,60 @@
-/**
- * Tobii Validation Plugin for jsPsych
- */
+import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from "jspsych";
 
-import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from 'jspsych';
-import { ValidationDisplay } from './validation-display';
-import type { ValidationParameters, ValidationPoint } from './types';
-import './styles.css';
+import { version } from "../package.json";
 
 const info = <const>{
-  name: 'tobii-validation',
-  version: '1.0.0',
+  name: "plugin-plugin-tobii-validation",
+  version: version,
   parameters: {
-    /** Number of validation points (5 or 9) */
-    validation_points: {
-      type: ParameterType.INT,
-      default: 9,
+    /** Provide a clear description of the parameter_name that could be used as documentation. We will eventually use these comments to automatically build documentation and produce metadata. */
+    parameter_name: {
+      type: ParameterType.INT, // BOOL, STRING, INT, FLOAT, FUNCTION, KEY, KEYS, SELECT, HTML_STRING, IMAGE, AUDIO, VIDEO, OBJECT, COMPLEX
+      default: undefined,
     },
-    /** Size of validation points in pixels */
-    point_size: {
-      type: ParameterType.INT,
-      default: 20,
-    },
-    /** Color of validation points */
-    point_color: {
-      type: ParameterType.STRING,
-      default: '#00ff00',
-    },
-    /** Duration to collect data at each point (ms) */
-    collection_duration: {
-      type: ParameterType.INT,
-      default: 1000,
-    },
-    /** Show progress indicator */
-    show_progress: {
-      type: ParameterType.BOOL,
-      default: true,
-    },
-    /** Custom validation points */
-    custom_points: {
-      type: ParameterType.COMPLEX,
-      default: null,
-    },
-    /** Show visual feedback */
-    show_feedback: {
-      type: ParameterType.BOOL,
-      default: true,
-    },
-    /** Instructions text */
-    instructions: {
-      type: ParameterType.STRING,
-      default: 'Look at each point as it appears on the screen to validate calibration accuracy.',
+    /** Provide a clear description of the parameter_name2 that could be used as documentation. We will eventually use these comments to automatically build documentation and produce metadata. */
+    parameter_name2: {
+      type: ParameterType.IMAGE,
+      default: undefined,
     },
   },
   data: {
-    /** Validation success status */
-    validation_success: {
-      type: ParameterType.BOOL,
-    },
-    /** Average accuracy */
-    average_accuracy: {
-      type: ParameterType.FLOAT,
-    },
-    /** Average precision */
-    average_precision: {
-      type: ParameterType.FLOAT,
-    },
-    /** Number of validation points used */
-    num_points: {
+    /** Provide a clear description of the data1 that could be used as documentation. We will eventually use these comments to automatically build documentation and produce metadata. */
+    data1: {
       type: ParameterType.INT,
     },
-    /** Full validation result data */
-    validation_data: {
-      type: ParameterType.COMPLEX,
+    /** Provide a clear description of the data2 that could be used as documentation. We will eventually use these comments to automatically build documentation and produce metadata. */
+    data2: {
+      type: ParameterType.STRING,
     },
   },
+  // When you run build on your plugin, citations will be generated here based on the information in the CITATION.cff file.
+  citations: '__CITATIONS__',
 };
 
 type Info = typeof info;
 
-class TobiiValidationPlugin implements JsPsychPlugin<Info> {
+/**
+ * **plugin-plugin-tobii-validation**
+ *
+ * jsPsych plugin for Tobii eye tracker validation
+ *
+ * @author jsPsych Team
+ * @see {@link http://local_proxy@127.0.0.1:24927/git/jspsych/tobii-integration/tree/main/packages/plugin-plugin-tobii-validation/README.md}}
+ */
+class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
   static info = info;
 
   constructor(private jsPsych: JsPsych) {}
 
-  async trial(
-    display_element: HTMLElement,
-    trial: TrialType<Info>,
-    on_load: () => void
-  ): Promise<void> {
-    // Get extension instance
-    const tobiiExt = this.jsPsych.extensions.tobii as any;
-
-    if (!tobiiExt) {
-      throw new Error('Tobii extension not initialized');
-    }
-
-    // Check connection
-    if (!tobiiExt.isConnected()) {
-      throw new Error('Not connected to Tobii server');
-    }
-
-    // Create validation display
-    const validationDisplay = new ValidationDisplay(display_element, trial);
-
-    // Show instructions
-    await validationDisplay.showInstructions();
-
-    // Get validation points
-    const points = trial.custom_points || this.getValidationPoints(trial.validation_points);
-
-    // Start validation on server
-    await tobiiExt.startValidation();
-
-    // Show each point and collect validation data
-    for (let i = 0; i < points.length; i++) {
-      const point = points[i];
-
-      // Show point
-      await validationDisplay.showPoint(point, i, points.length);
-
-      // Wait for data collection
-      await this.delay(trial.collection_duration);
-
-      // Collect validation data for this point
-      await tobiiExt.collectValidationPoint(point.x, point.y);
-
-      // Hide point
-      await validationDisplay.hidePoint();
-    }
-
-    // Compute validation on server
-    const validationResult = await tobiiExt.computeValidation();
-
-    // Show result
-    await validationDisplay.showResult(
-      validationResult.success,
-      validationResult.averageAccuracy,
-      validationResult.averagePrecision,
-      validationResult.pointData
-    );
-
-    // Clear display
-    validationDisplay.clear();
-    display_element.innerHTML = '';
-
-    // Finish trial
-    const trial_data = {
-      validation_success: validationResult.success,
-      average_accuracy: validationResult.averageAccuracy || null,
-      average_precision: validationResult.averagePrecision || null,
-      num_points: points.length,
-      validation_data: validationResult,
+  trial(display_element: HTMLElement, trial: TrialType<Info>) {
+    // data saving
+    var trial_data = {
+      data1: 99, // Make sure this type and name matches the information for data1 in the data object contained within the info const.
+      data2: "hello world!", // Make sure this type and name matches the information for data2 in the data object contained within the info const.
     };
-
+    // end trial
     this.jsPsych.finishTrial(trial_data);
-  }
-
-  /**
-   * Get standard validation points (5 or 9 point grid)
-   */
-  private getValidationPoints(count: 5 | 9): ValidationPoint[] {
-    if (count === 9) {
-      return [
-        { x: 0.1, y: 0.1 },
-        { x: 0.5, y: 0.1 },
-        { x: 0.9, y: 0.1 },
-        { x: 0.1, y: 0.5 },
-        { x: 0.5, y: 0.5 },
-        { x: 0.9, y: 0.5 },
-        { x: 0.1, y: 0.9 },
-        { x: 0.5, y: 0.9 },
-        { x: 0.9, y: 0.9 },
-      ];
-    } else {
-      return [
-        { x: 0.1, y: 0.1 },
-        { x: 0.9, y: 0.1 },
-        { x: 0.5, y: 0.5 },
-        { x: 0.1, y: 0.9 },
-        { x: 0.9, y: 0.9 },
-      ];
-    }
-  }
-
-  /**
-   * Delay helper
-   */
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 
-export default TobiiValidationPlugin;
+export default PluginTobiiValidationPlugin;

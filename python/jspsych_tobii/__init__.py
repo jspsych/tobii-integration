@@ -5,7 +5,7 @@ This package provides a WebSocket server for integrating Tobii Pro eye trackers
 with jsPsych experiments running in web browsers.
 """
 
-__version__ = "1.0.0"
+__version__ = "0.1.0"
 __author__ = "jsPsych Team"
 __license__ = "MIT"
 
