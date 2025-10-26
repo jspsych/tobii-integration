@@ -1,21 +1,27 @@
 """
-Calibration and validation management
+Calibration and validation management using Tobii tracker adapters
 """
 
 from typing import List, Dict, Any, Optional
-import numpy as np
+import logging
 
 
 class CalibrationManager:
-    """Manages calibration and validation procedures"""
+    """
+    Manages calibration and validation procedures using TobiiManager adapter.
+
+    This class provides a high-level interface for calibration and validation
+    that works with any Tobii tracker through the adapter pattern.
+    """
 
     def __init__(self, tobii_manager: Any) -> None:
         """
         Initialize calibration manager
 
         Args:
-            tobii_manager: TobiiManager instance
+            tobii_manager: TobiiManager instance with adapter
         """
+        self.logger = logging.getLogger(__name__)
         self.tobii_manager = tobii_manager
         self.calibration_points: List[Dict[str, float]] = []
         self.validation_points: List[Dict[str, float]] = []
@@ -24,32 +30,45 @@ class CalibrationManager:
 
     def start_calibration(self) -> Dict[str, Any]:
         """
-        Start calibration procedure
+        Start calibration procedure using the tracker adapter
 
         Returns:
             Response indicating calibration started
         """
-        self.calibration_active = True
-        self.calibration_points = []
+        try:
+            # Use adapter to start calibration
+            success = self.tobii_manager.adapter.start_calibration()
 
-        # In real implementation, would call Tobii SDK calibration start
-        # tobii_research.ScreenBasedCalibration(self.tobii_manager.tracker)
+            if success:
+                self.calibration_active = True
+                self.calibration_points = []
+                self.logger.info("Calibration started")
+            else:
+                self.logger.error("Failed to start calibration")
 
-        return {
-            "type": "calibration_start",
-            "success": True,
-        }
+            return {
+                "type": "calibration_start",
+                "success": success,
+            }
+
+        except Exception as e:
+            self.logger.error(f"Error starting calibration: {e}")
+            return {
+                "type": "calibration_start",
+                "success": False,
+                "error": str(e),
+            }
 
     def collect_calibration_point(
         self, x: float, y: float, timestamp: float
     ) -> Dict[str, Any]:
         """
-        Collect calibration data for a point
+        Collect calibration data for a point using the tracker adapter
 
         Args:
             x: Normalized x coordinate (0-1)
             y: Normalized y coordinate (0-1)
-            timestamp: Timestamp
+            timestamp: Timestamp (for tracking purposes)
 
         Returns:
             Response indicating point collected
@@ -61,20 +80,37 @@ class CalibrationManager:
                 "error": "Calibration not active",
             }
 
-        self.calibration_points.append({"x": x, "y": y, "timestamp": timestamp})
+        try:
+            # Import CalibrationPoint from adapter
+            from .adapters import CalibrationPoint
 
-        # In real implementation, would call Tobii SDK
-        # calibration.collect_data(x, y)
+            # Use adapter to collect calibration data
+            point = CalibrationPoint(x=x, y=y)
+            success = self.tobii_manager.adapter.collect_calibration_data(point)
 
-        return {
-            "type": "calibration_point",
-            "success": True,
-            "point": {"x": x, "y": y},
-        }
+            if success:
+                self.calibration_points.append({"x": x, "y": y, "timestamp": timestamp})
+                self.logger.info(f"Collected calibration point ({x:.3f}, {y:.3f})")
+            else:
+                self.logger.error(f"Failed to collect calibration point ({x:.3f}, {y:.3f})")
+
+            return {
+                "type": "calibration_point",
+                "success": success,
+                "point": {"x": x, "y": y},
+            }
+
+        except Exception as e:
+            self.logger.error(f"Error collecting calibration point: {e}")
+            return {
+                "type": "calibration_point",
+                "success": False,
+                "error": str(e),
+            }
 
     def compute_calibration(self) -> Dict[str, Any]:
         """
-        Compute calibration from collected points
+        Compute calibration from collected points using the tracker adapter
 
         Returns:
             Calibration result with quality metrics
@@ -86,54 +122,99 @@ class CalibrationManager:
                 "error": "Calibration not active",
             }
 
-        # In real implementation, would call Tobii SDK
-        # calibration.compute_and_apply()
-        # result = calibration.compute_and_apply()
+        try:
+            # Use adapter to compute and apply calibration
+            result = self.tobii_manager.adapter.compute_calibration()
 
-        # Simulate calibration result
-        success = len(self.calibration_points) >= 5
-        average_error = np.random.uniform(0.5, 1.5) if success else 999.0
+            self.calibration_active = False
 
-        self.calibration_active = False
+            if result.success:
+                self.logger.info(
+                    f"Calibration computed successfully (avg error: {result.average_error:.3f}°)"
+                    if result.average_error
+                    else "Calibration computed successfully"
+                )
 
-        return {
-            "type": "calibration_compute",
-            "success": success,
-            "averageError": average_error,
-            "pointQuality": [
-                {
-                    "point": point,
-                    "error": np.random.uniform(0.3, 2.0),
-                }
-                for point in self.calibration_points
-            ],
-        }
+                # Build point quality data if available
+                point_quality = []
+                if result.point_errors and len(result.point_errors) == len(self.calibration_points):
+                    point_quality = [
+                        {
+                            "point": self.calibration_points[i],
+                            "error": result.point_errors[i],
+                        }
+                        for i in range(len(self.calibration_points))
+                    ]
+            else:
+                self.logger.error("Calibration computation failed")
+                point_quality = []
+
+            return {
+                "type": "calibration_compute",
+                "success": result.success,
+                "averageError": result.average_error if result.average_error else None,
+                "pointQuality": point_quality,
+            }
+
+        except Exception as e:
+            self.calibration_active = False
+            self.logger.error(f"Error computing calibration: {e}")
+            return {
+                "type": "calibration_compute",
+                "success": False,
+                "error": str(e),
+            }
 
     def start_validation(self) -> Dict[str, Any]:
         """
-        Start validation procedure
+        Start validation procedure.
+
+        Validation collects gaze data at known points to assess calibration quality.
+        Note: Validation is an analysis procedure, not a tracker feature.
 
         Returns:
             Response indicating validation started
         """
-        self.validation_active = True
-        self.validation_points = []
+        try:
+            # Check if tracker is connected and tracking
+            if not self.tobii_manager.adapter.is_connected():
+                return {
+                    "type": "validation_start",
+                    "success": False,
+                    "error": "Tracker not connected",
+                }
 
-        return {
-            "type": "validation_start",
-            "success": True,
-        }
+            self.validation_active = True
+            self.validation_points = []
+            self.logger.info("Validation started")
+
+            return {
+                "type": "validation_start",
+                "success": True,
+            }
+
+        except Exception as e:
+            self.logger.error(f"Error starting validation: {e}")
+            return {
+                "type": "validation_start",
+                "success": False,
+                "error": str(e),
+            }
 
     def collect_validation_point(
-        self, x: float, y: float, timestamp: float
+        self, x: float, y: float, timestamp: float, gaze_samples: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
         """
-        Collect validation data for a point
+        Collect validation data for a point.
+
+        Validation works by showing a point at a known location and collecting
+        gaze data to compare against the expected position.
 
         Args:
-            x: Normalized x coordinate (0-1)
-            y: Normalized y coordinate (0-1)
-            timestamp: Timestamp
+            x: Normalized x coordinate (0-1) of validation point
+            y: Normalized y coordinate (0-1) of validation point
+            timestamp: Timestamp when point was shown
+            gaze_samples: Optional gaze samples collected at this point
 
         Returns:
             Response indicating point collected
@@ -145,17 +226,37 @@ class CalibrationManager:
                 "error": "Validation not active",
             }
 
-        self.validation_points.append({"x": x, "y": y, "timestamp": timestamp})
+        try:
+            # Store validation point with its expected position and collected gaze data
+            self.validation_points.append({
+                "x": x,
+                "y": y,
+                "timestamp": timestamp,
+                "gaze_samples": gaze_samples or []
+            })
 
-        return {
-            "type": "validation_point",
-            "success": True,
-            "point": {"x": x, "y": y},
-        }
+            self.logger.info(f"Collected validation point ({x:.3f}, {y:.3f})")
+
+            return {
+                "type": "validation_point",
+                "success": True,
+                "point": {"x": x, "y": y},
+            }
+
+        except Exception as e:
+            self.logger.error(f"Error collecting validation point: {e}")
+            return {
+                "type": "validation_point",
+                "success": False,
+                "error": str(e),
+            }
 
     def compute_validation(self) -> Dict[str, Any]:
         """
-        Compute validation metrics from collected points
+        Compute validation metrics from collected points.
+
+        Calculates accuracy (offset from target) and precision (consistency)
+        for each validation point based on collected gaze samples.
 
         Returns:
             Validation result with accuracy/precision metrics
@@ -167,24 +268,99 @@ class CalibrationManager:
                 "error": "Validation not active",
             }
 
-        # Simulate validation results
-        success = len(self.validation_points) >= 5
-        average_accuracy = np.random.uniform(0.5, 1.8) if success else 999.0
-        average_precision = np.random.uniform(0.3, 1.2) if success else 999.0
-
-        self.validation_active = False
-
-        return {
-            "type": "validation_compute",
-            "success": success,
-            "averageAccuracy": average_accuracy,
-            "averagePrecision": average_precision,
-            "pointData": [
-                {
-                    "point": point,
-                    "accuracy": np.random.uniform(0.3, 2.5),
-                    "precision": np.random.uniform(0.2, 1.5),
+        try:
+            if len(self.validation_points) < 3:
+                return {
+                    "type": "validation_compute",
+                    "success": False,
+                    "error": f"Need at least 3 validation points, got {len(self.validation_points)}",
                 }
-                for point in self.validation_points
-            ],
-        }
+
+            # Compute metrics for each point
+            point_data = []
+            all_accuracies = []
+            all_precisions = []
+
+            for vp in self.validation_points:
+                expected_x = vp["x"]
+                expected_y = vp["y"]
+                gaze_samples = vp.get("gaze_samples", [])
+
+                if not gaze_samples:
+                    # No gaze data collected for this point
+                    continue
+
+                # Calculate accuracy (mean distance from expected point)
+                import math
+                distances = []
+                for sample in gaze_samples:
+                    if sample.get("leftValid") or sample.get("rightValid"):
+                        dx = sample["x"] - expected_x
+                        dy = sample["y"] - expected_y
+                        distance = math.sqrt(dx**2 + dy**2)
+                        distances.append(distance)
+
+                if not distances:
+                    continue
+
+                # Accuracy: mean distance from target (in normalized coordinates)
+                accuracy_norm = sum(distances) / len(distances)
+                # Convert to approximate degrees (assume ~50cm viewing distance, ~50cm screen width)
+                # This is a rough approximation: degrees ≈ normalized_distance * screen_width_cm * (180/π) / viewing_distance_cm
+                accuracy_degrees = accuracy_norm * 50 * 57.3 / 50  # ≈ normalized * 57.3
+
+                # Precision: standard deviation of gaze samples (consistency)
+                if len(gaze_samples) > 1:
+                    mean_x = sum(s["x"] for s in gaze_samples if s.get("leftValid") or s.get("rightValid")) / len(distances)
+                    mean_y = sum(s["y"] for s in gaze_samples if s.get("leftValid") or s.get("rightValid")) / len(distances)
+                    variances = [
+                        ((s["x"] - mean_x)**2 + (s["y"] - mean_y)**2)
+                        for s in gaze_samples
+                        if s.get("leftValid") or s.get("rightValid")
+                    ]
+                    precision_norm = math.sqrt(sum(variances) / len(variances))
+                    precision_degrees = precision_norm * 50 * 57.3 / 50
+                else:
+                    precision_degrees = 0.0
+
+                point_data.append({
+                    "point": {"x": expected_x, "y": expected_y},
+                    "accuracy": accuracy_degrees,
+                    "precision": precision_degrees,
+                })
+
+                all_accuracies.append(accuracy_degrees)
+                all_precisions.append(precision_degrees)
+
+            # Calculate overall metrics
+            if not point_data:
+                return {
+                    "type": "validation_compute",
+                    "success": False,
+                    "error": "No valid gaze samples collected",
+                }
+
+            average_accuracy = sum(all_accuracies) / len(all_accuracies)
+            average_precision = sum(all_precisions) / len(all_precisions)
+
+            self.validation_active = False
+            self.logger.info(
+                f"Validation computed: accuracy={average_accuracy:.2f}°, precision={average_precision:.2f}°"
+            )
+
+            return {
+                "type": "validation_compute",
+                "success": True,
+                "averageAccuracy": average_accuracy,
+                "averagePrecision": average_precision,
+                "pointData": point_data,
+            }
+
+        except Exception as e:
+            self.validation_active = False
+            self.logger.error(f"Error computing validation: {e}")
+            return {
+                "type": "validation_compute",
+                "success": False,
+                "error": str(e),
+            }
