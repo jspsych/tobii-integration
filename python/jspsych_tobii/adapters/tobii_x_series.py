@@ -1,12 +1,14 @@
 """
-Adapter for Tobii X-series trackers using legacy Tobii Analytics SDK
+Adapter for Tobii X-series trackers using legacy Tobii Analytics SDK 3.0
 
-Note: The legacy Tobii Analytics SDK uses a different API structure.
-This adapter provides compatibility for older trackers like:
+Based on Tobii Pro Analytics SDK 3.0 API. This adapter provides compatibility
+for older trackers like:
 - Tobii X3-120
 - Tobii X2-60
 - Tobii X2-30
 - Tobii X1 Light
+
+API Reference: https://www.developer.tobiipro.com/python/python-oldmigrationsdk.html
 """
 
 import logging
@@ -20,28 +22,24 @@ from .base import (
     CalibrationResult,
 )
 
-# Try to import legacy Tobii SDK
+# Try to import legacy Tobii Analytics SDK 3.0
 try:
-    # The legacy SDK might be imported differently depending on version
-    # Common patterns: tobii.sdk, tobii_controller, tobiigazesdk
-    import tobii.sdk.mainloop as mainloop
-    import tobii.sdk.browsing as browsing
-    import tobii.sdk.eyetracker as eyetracker
+    # Correct namespace for Tobii Analytics SDK 3.0
+    from tobii.eye_tracking_io.mainloop import MainloopThread
+    from tobii.eye_tracking_io.browsing import EyetrackerBrowser
+    from tobii.eye_tracking_io.basic import EyetrackerException
 
     TOBII_LEGACY_AVAILABLE = True
 except ImportError:
-    try:
-        # Alternative import path for some versions
-        from tobiigazesdk import *
-
-        TOBII_LEGACY_AVAILABLE = True
-    except ImportError:
-        TOBII_LEGACY_AVAILABLE = False
+    TOBII_LEGACY_AVAILABLE = False
+    MainloopThread = None
+    EyetrackerBrowser = None
+    EyetrackerException = None
 
 
 class TobiiXSeriesAdapter(TobiiTrackerAdapter):
     """
-    Adapter for Tobii X-series eye trackers using the legacy Analytics SDK.
+    Adapter for Tobii X-series eye trackers using the legacy Analytics SDK 3.0.
 
     Supports older Tobii trackers including:
     - Tobii X3-120
@@ -49,56 +47,69 @@ class TobiiXSeriesAdapter(TobiiTrackerAdapter):
     - Tobii X2-30
     - Tobii X1 Light
 
-    Note: This requires the legacy Tobii Analytics SDK to be installed.
-    Installation varies by platform and SDK version.
+    Note: This requires the legacy Tobii Analytics SDK 3.0 to be installed.
+    Contact Tobii support for SDK downloads and installation instructions.
     """
 
     def __init__(self) -> None:
         if not TOBII_LEGACY_AVAILABLE:
             raise ImportError(
-                "Legacy Tobii SDK not available. "
+                "Legacy Tobii Analytics SDK 3.0 not available. "
                 "Install the Tobii Analytics SDK for X-series tracker support. "
                 "Contact Tobii support for SDK downloads."
             )
 
         self.logger = logging.getLogger(__name__)
         self._tracker: Optional[Any] = None
-        self._mainloop: Optional[Any] = None
+        self._mainloop: Optional[MainloopThread] = None
+        self._browser: Optional[EyetrackerBrowser] = None
         self._gaze_callback: Optional[Callable[[GazeDataPoint], None]] = None
         self._is_tracking = False
         self._in_calibration_mode = False
-        self._calibration_points: List[CalibrationPoint] = []
+        self._found_trackers: List[Any] = []
 
     @property
     def sdk_name(self) -> str:
-        return "tobii-analytics-sdk"
+        return "tobii-analytics-sdk-3"
 
     @property
     def sdk_version(self) -> str:
-        # Legacy SDK version detection varies
+        # Legacy SDK 3.0 version detection
         try:
-            return getattr(eyetracker, "__version__", "unknown")
+            import tobii.eye_tracking_io
+            return getattr(tobii.eye_tracking_io, "__version__", "3.0")
         except:
-            return "unknown"
+            return "3.0"
 
     def find_trackers(self) -> List[Any]:
-        """Find all available Tobii X-series trackers"""
+        """Find all available Tobii X-series trackers using EyetrackerBrowser"""
         try:
-            # Create mainloop for browsing
+            # Create mainloop thread for browsing
             if not self._mainloop:
-                self._mainloop = mainloop.MainloopThread()
+                self._mainloop = MainloopThread()
 
-            browser = browsing.EyetrackerBrowser(self._mainloop)
-            trackers = []
+            # Clear previous results
+            self._found_trackers = []
 
-            def on_tracker_found(tracker_info: Any) -> None:
-                trackers.append(tracker_info)
+            # Callback for when trackers are found
+            def on_eyetracker_found(event_type: str, event_name: str, eyetracker_info: Any) -> None:
+                if event_type == "add":
+                    self._found_trackers.append(eyetracker_info)
+                    self.logger.info(f"Found tracker: {eyetracker_info.product_id}")
 
-            browser.start(on_tracker_found)
-            browser.wait_until_found(timeout=5000)  # 5 second timeout
-            browser.stop()
+            # Create and start browser
+            self._browser = EyetrackerBrowser(on_eyetracker_found, self._mainloop)
+            self._browser.start()
 
-            return trackers
+            # Wait a bit for trackers to be discovered (typically 2-3 seconds)
+            import time
+            time.sleep(3)
+
+            # Stop browser
+            self._browser.stop()
+            self._browser = None
+
+            return self._found_trackers
 
         except Exception as e:
             self.logger.error(f"Error finding trackers: {e}")
@@ -107,25 +118,41 @@ class TobiiXSeriesAdapter(TobiiTrackerAdapter):
     def connect(self, tracker_address: Optional[str] = None) -> bool:
         """Connect to Tobii X-series tracker"""
         try:
+            # Ensure mainloop is running
             if not self._mainloop:
-                self._mainloop = mainloop.MainloopThread()
+                self._mainloop = MainloopThread()
+                self._mainloop.start()
 
-            if tracker_address:
-                # Connect to specific tracker
-                self._tracker = eyetracker.Eyetracker(tracker_address)
-            else:
-                # Auto-detect first available
+            # Find trackers if not already found
+            if not self._found_trackers:
                 trackers = self.find_trackers()
-                if not trackers:
-                    self.logger.error("No Tobii X-series trackers found")
+            else:
+                trackers = self._found_trackers
+
+            if not trackers:
+                self.logger.error("No Tobii X-series trackers found")
+                return False
+
+            # Select tracker
+            if tracker_address:
+                # Find specific tracker by product_id (address in legacy SDK)
+                tracker_info = None
+                for t in trackers:
+                    if t.product_id == tracker_address:
+                        tracker_info = t
+                        break
+                if not tracker_info:
+                    self.logger.error(f"Tracker not found with product_id: {tracker_address}")
                     return False
-
+            else:
+                # Use first available tracker
                 tracker_info = trackers[0]
-                self._tracker = eyetracker.Eyetracker(tracker_info.product_id)
 
-            # Initialize connection
-            self._tracker.RunEventLoop()
-            self.logger.info(f"Connected to X-series tracker")
+            # Get the EyeTracker object from the info
+            # In Analytics SDK 3.0, the tracker info has factory and the factory creates the eyetracker
+            self._tracker = tracker_info.factory.create_eyetracker()
+
+            self.logger.info(f"Connected to X-series tracker: {tracker_info.model}")
             return True
 
         except Exception as e:
@@ -141,7 +168,9 @@ class TobiiXSeriesAdapter(TobiiTrackerAdapter):
                 self.leave_calibration_mode()
 
             if self._tracker:
-                self._tracker.StopTracking()
+                # StopTracking only if tracking
+                if self._is_tracking:
+                    self._tracker.StopTracking()
                 self._tracker = None
 
             if self._mainloop:
@@ -161,32 +190,52 @@ class TobiiXSeriesAdapter(TobiiTrackerAdapter):
             return None
 
         try:
-            info = self._tracker.GetDeviceInfo()
+            # Legacy SDK stores info from EyetrackerInfo
+            # Need to get it via GetUnitInfo or access stored eyetracker_info
+            # For simplicity, we'll get what we can from the tracker
+            unit_info = self._tracker.GetUnitInfo()
+
+            # Try to get framerate
+            try:
+                framerate = self._tracker.GetFramerate()
+            except:
+                framerate = None
+
             return TrackerInfo(
-                model=info.model,
-                serial_number=info.serialNumber,
-                address=info.productId,
-                device_name=info.productId,
-                firmware_version=getattr(info, "firmwareVersion", None),
-                sampling_frequency=getattr(info, "framerate", None),
+                model=unit_info.model if hasattr(unit_info, 'model') else "X-Series",
+                serial_number=unit_info.serial_number if hasattr(unit_info, 'serial_number') else "Unknown",
+                address=str(self._tracker),  # product_id not directly accessible after connection
+                device_name=self._tracker.GetUnitName() if hasattr(self._tracker, 'GetUnitName') else "X-Series Tracker",
+                firmware_version=unit_info.firmware_version if hasattr(unit_info, 'firmware_version') else None,
+                sampling_frequency=framerate,
             )
 
         except Exception as e:
             self.logger.error(f"Error getting tracker info: {e}")
-            return None
+            # Return minimal info if we can't get details
+            return TrackerInfo(
+                model="Tobii X-Series",
+                serial_number="Unknown",
+                address="Unknown",
+                device_name="X-Series Tracker",
+            )
 
     def subscribe_to_gaze_data(self, callback: Callable[[GazeDataPoint], None]) -> bool:
-        """Subscribe to gaze data stream"""
+        """Subscribe to gaze data stream using OnGazeDataReceived event"""
         if not self._tracker:
             self.logger.error("No tracker connected")
             return False
 
         try:
             self._gaze_callback = callback
+
+            # Subscribe to gaze data event (Analytics SDK 3.0 API)
             self._tracker.events.OnGazeDataReceived += self._internal_gaze_callback
+
+            # Start tracking
             self._tracker.StartTracking()
             self._is_tracking = True
-            self.logger.info("Subscribed to gaze data")
+            self.logger.info("Subscribed to gaze data (legacy SDK)")
             return True
 
         except Exception as e:
@@ -199,8 +248,12 @@ class TobiiXSeriesAdapter(TobiiTrackerAdapter):
             return False
 
         try:
+            # Stop tracking first
             self._tracker.StopTracking()
+
+            # Unsubscribe from event
             self._tracker.events.OnGazeDataReceived -= self._internal_gaze_callback
+
             self._is_tracking = False
             self._gaze_callback = None
             self.logger.info("Unsubscribed from gaze data")
@@ -211,32 +264,56 @@ class TobiiXSeriesAdapter(TobiiTrackerAdapter):
             return False
 
     def _internal_gaze_callback(self, error: Any, gaze_data: Any) -> None:
-        """Internal callback that converts SDK data to standardized format"""
+        """
+        Internal callback that converts Analytics SDK 3.0 GazeDataItem to standardized format.
+
+        GazeDataItem structure (Analytics SDK 3.0):
+        - Timestamp: Device timestamp (microseconds)
+        - LeftGazePoint2D: (x, y) in normalized coordinates
+        - RightGazePoint2D: (x, y) in normalized coordinates
+        - LeftValidity: 0-4 (0 = valid, 4 = invalid)
+        - RightValidity: 0-4 (0 = valid, 4 = invalid)
+        - LeftPupil: Pupil diameter in mm
+        - RightPupil: Pupil diameter in mm
+        """
         if error or not self._gaze_callback:
+            if error:
+                self.logger.warning(f"Gaze data error: {error}")
             return
 
         try:
-            # Convert legacy SDK gaze data to standardized format
-            # Note: Field names may vary by SDK version
+            # Determine which eye has valid data
+            left_valid = gaze_data.LeftValidity == 0
+            right_valid = gaze_data.RightValidity == 0
+
+            # Use valid eye data, prefer left if both valid
+            if left_valid:
+                gaze_x = gaze_data.LeftGazePoint2D.x
+                gaze_y = gaze_data.LeftGazePoint2D.y
+            elif right_valid:
+                gaze_x = gaze_data.RightGazePoint2D.x
+                gaze_y = gaze_data.RightGazePoint2D.y
+            else:
+                # No valid data, use left anyway as fallback
+                gaze_x = gaze_data.LeftGazePoint2D.x if hasattr(gaze_data.LeftGazePoint2D, 'x') else 0.5
+                gaze_y = gaze_data.LeftGazePoint2D.y if hasattr(gaze_data.LeftGazePoint2D, 'y') else 0.5
+
+            # Convert to standardized format
             standardized = GazeDataPoint(
-                x=gaze_data.LeftGazePoint2D.x
-                if gaze_data.LeftValidity == 0
-                else gaze_data.RightGazePoint2D.x,
-                y=gaze_data.LeftGazePoint2D.y
-                if gaze_data.LeftValidity == 0
-                else gaze_data.RightGazePoint2D.y,
-                timestamp=gaze_data.Timestamp / 1000.0,  # Convert microseconds to ms
-                left_valid=gaze_data.LeftValidity == 0,  # 0 = valid in legacy SDK
-                right_valid=gaze_data.RightValidity == 0,
-                left_pupil_diameter=gaze_data.LeftPupil,
-                right_pupil_diameter=gaze_data.RightPupil,
-                # Legacy SDK may not have 3D origin data
-                left_gaze_origin_x=None,
-                left_gaze_origin_y=None,
-                left_gaze_origin_z=None,
-                right_gaze_origin_x=None,
-                right_gaze_origin_y=None,
-                right_gaze_origin_z=None,
+                x=gaze_x,
+                y=gaze_y,
+                timestamp=gaze_data.Timestamp / 1000.0,  # Convert microseconds to milliseconds
+                left_valid=left_valid,
+                right_valid=right_valid,
+                left_pupil_diameter=gaze_data.LeftPupil if hasattr(gaze_data, 'LeftPupil') else 0.0,
+                right_pupil_diameter=gaze_data.RightPupil if hasattr(gaze_data, 'RightPupil') else 0.0,
+                # Analytics SDK 3.0 has 3D data in LeftEyePosition3D, RightEyePosition3D
+                left_gaze_origin_x=gaze_data.LeftEyePosition3D.x if hasattr(gaze_data, 'LeftEyePosition3D') else None,
+                left_gaze_origin_y=gaze_data.LeftEyePosition3D.y if hasattr(gaze_data, 'LeftEyePosition3D') else None,
+                left_gaze_origin_z=gaze_data.LeftEyePosition3D.z if hasattr(gaze_data, 'LeftEyePosition3D') else None,
+                right_gaze_origin_x=gaze_data.RightEyePosition3D.x if hasattr(gaze_data, 'RightEyePosition3D') else None,
+                right_gaze_origin_y=gaze_data.RightEyePosition3D.y if hasattr(gaze_data, 'RightEyePosition3D') else None,
+                right_gaze_origin_z=gaze_data.RightEyePosition3D.z if hasattr(gaze_data, 'RightEyePosition3D') else None,
             )
 
             self._gaze_callback(standardized)
@@ -245,16 +322,20 @@ class TobiiXSeriesAdapter(TobiiTrackerAdapter):
             self.logger.error(f"Error processing gaze data: {e}")
 
     def start_calibration(self) -> bool:
-        """Start calibration mode"""
+        """
+        Start calibration mode using Analytics SDK 3.0 API.
+
+        In legacy SDK: StartCalibration() (equivalent to enter + clear in new SDK)
+        """
         if not self._tracker:
             self.logger.error("No tracker connected")
             return False
 
         try:
+            # StartCalibration in legacy SDK clears previous calibration and enters mode
             self._tracker.StartCalibration()
             self._in_calibration_mode = True
-            self._calibration_points = []
-            self.logger.info("Entered calibration mode")
+            self.logger.info("Entered calibration mode (legacy SDK)")
             return True
 
         except Exception as e:
@@ -262,15 +343,19 @@ class TobiiXSeriesAdapter(TobiiTrackerAdapter):
             return False
 
     def collect_calibration_data(self, point: CalibrationPoint) -> bool:
-        """Collect calibration data for a point"""
+        """
+        Collect calibration data for a point.
+
+        In legacy SDK: AddCalibrationPoint(x, y)
+        """
         if not self._in_calibration_mode:
             self.logger.error("Not in calibration mode")
             return False
 
         try:
-            # Add calibration point
+            # AddCalibrationPoint in legacy SDK (normalized coordinates 0-1)
             self._tracker.AddCalibrationPoint(point.x, point.y)
-            self._calibration_points.append(point)
+            self.logger.info(f"Collected calibration point ({point.x:.3f}, {point.y:.3f})")
             return True
 
         except Exception as e:
@@ -278,40 +363,67 @@ class TobiiXSeriesAdapter(TobiiTrackerAdapter):
             return False
 
     def compute_calibration(self) -> CalibrationResult:
-        """Compute calibration from collected data"""
+        """
+        Compute calibration from collected data.
+
+        In legacy SDK: ComputeCalibration() returns calibration state object
+        """
         if not self._in_calibration_mode:
             return CalibrationResult(success=False)
 
         try:
-            # Compute calibration
-            result = self._tracker.ComputeCalibration()
+            # Compute calibration (legacy SDK)
+            calib_state = self._tracker.ComputeCalibration()
 
-            # The result format varies by SDK version
-            # This is a simplified version
-            if hasattr(result, "Status") and result.Status == "Success":
-                return CalibrationResult(
-                    success=True,
-                    average_error=getattr(result, "AverageError", None),
-                )
-            else:
-                return CalibrationResult(success=False)
+            # Check calibration state
+            # In Analytics SDK 3.0, we get a State object back
+            # We need to check state_flag and get_error_approximation
+            try:
+                # Try to get error approximation
+                error = calib_state.get_error_approximation()
+                # Convert from degrees to a simple average
+                avg_error = error if error is not None else None
+            except:
+                avg_error = None
+
+            # Apply calibration by calling SetCalibration with the computed state
+            try:
+                self._tracker.SetCalibration(calib_state)
+                success = True
+                self.logger.info(f"Calibration computed and applied (error: {avg_error})")
+            except Exception as e:
+                self.logger.warning(f"Calibration computed but not applied: {e}")
+                success = False
+
+            return CalibrationResult(
+                success=success,
+                average_error=avg_error,
+            )
 
         except Exception as e:
             self.logger.error(f"Error computing calibration: {e}")
             return CalibrationResult(success=False)
 
     def discard_calibration_data(self, point: Optional[CalibrationPoint] = None) -> bool:
-        """Discard calibration data"""
+        """
+        Discard calibration data.
+
+        In legacy SDK: RemoveCalibrationPoint(x, y) or ClearCalibration()
+        """
         if not self._in_calibration_mode:
             return False
 
         try:
             if point:
+                # Remove specific point
                 self._tracker.RemoveCalibrationPoint(point.x, point.y)
-                self._calibration_points.remove(point)
+                self.logger.info(f"Removed calibration point ({point.x:.3f}, {point.y:.3f})")
             else:
-                self._tracker.ClearCalibration()
-                self._calibration_points = []
+                # Clear all points - need to restart calibration
+                self._tracker.StopCalibration()
+                self._tracker.StartCalibration()
+                self.logger.info("Cleared all calibration points")
+
             return True
 
         except Exception as e:
@@ -319,15 +431,18 @@ class TobiiXSeriesAdapter(TobiiTrackerAdapter):
             return False
 
     def leave_calibration_mode(self) -> bool:
-        """Exit calibration mode"""
+        """
+        Exit calibration mode.
+
+        In legacy SDK: StopCalibration()
+        """
         if not self._in_calibration_mode:
             return False
 
         try:
             self._tracker.StopCalibration()
             self._in_calibration_mode = False
-            self._calibration_points = []
-            self.logger.info("Left calibration mode")
+            self.logger.info("Left calibration mode (legacy SDK)")
             return True
 
         except Exception as e:
