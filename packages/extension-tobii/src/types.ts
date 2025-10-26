@@ -180,8 +180,8 @@ export interface ConnectionStatus {
  * Marker data
  */
 export interface MarkerData {
-  /** Marker type */
-  type: string;
+  /** Marker label/identifier */
+  label: string;
   /** Timestamp in milliseconds */
   timestamp?: number;
   /** Additional marker data */

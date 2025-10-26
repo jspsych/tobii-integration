@@ -103,13 +103,13 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
     }
 
     // Create validation display
-    const validationDisplay = new ValidationDisplay(display_element, trial);
+    const validationDisplay = new ValidationDisplay(display_element, trial as any as ValidationParameters);
 
     // Show instructions
     await validationDisplay.showInstructions();
 
     // Get validation points
-    const points = trial.custom_points || this.getValidationPoints(trial.validation_points);
+    const points = trial.custom_points || this.getValidationPoints(trial.validation_points as 5 | 9);
 
     // Start validation on server
     await tobiiExt.startValidation();

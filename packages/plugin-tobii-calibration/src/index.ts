@@ -119,13 +119,13 @@ class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
     }
 
     // Create calibration display
-    const calibrationDisplay = new CalibrationDisplay(display_element, trial);
+    const calibrationDisplay = new CalibrationDisplay(display_element, trial as any as CalibrationParameters);
 
     // Show instructions
     await calibrationDisplay.showInstructions();
 
     // Get calibration points
-    const points = trial.custom_points || this.getCalibrationPoints(trial.calibration_points);
+    const points = trial.custom_points || this.getCalibrationPoints(trial.calibration_points as 5 | 9);
 
     // Start calibration on server
     await tobiiExt.startCalibration();

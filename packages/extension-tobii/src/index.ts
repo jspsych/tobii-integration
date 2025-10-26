@@ -89,7 +89,7 @@ class ExtensionTobiiExtension implements JsPsychExtension {
 
     // Send trial start marker
     await this.sendMarker({
-      type: "trial_start",
+      label: "trial_start",
       timestamp: performance.now(),
       ...params.metadata,
     });
@@ -110,7 +110,7 @@ class ExtensionTobiiExtension implements JsPsychExtension {
 
     // Send trial end marker
     await this.sendMarker({
-      type: "trial_end",
+      label: "trial_end",
       timestamp: performance.now(),
     });
 

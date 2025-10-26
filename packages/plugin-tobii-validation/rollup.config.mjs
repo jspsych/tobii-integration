@@ -1,3 +1,15 @@
 import { makeRollupConfig } from "@jspsych/config/rollup";
+import postcss from "rollup-plugin-postcss";
 
-export default makeRollupConfig("jsPsychPluginPluginTobiiValidation");
+const config = makeRollupConfig("jsPsychPluginPluginTobiiValidation");
+
+// Add postcss plugin to all configurations
+config.forEach((cfg) => {
+  if (!cfg.plugins) cfg.plugins = [];
+  cfg.plugins.unshift(postcss({
+    inject: true,
+    minimize: true,
+  }));
+});
+
+export default config;
