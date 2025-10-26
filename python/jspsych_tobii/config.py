@@ -18,6 +18,8 @@ class ServerConfig:
     # Tobii tracker settings
     tracker_address: Optional[str] = None  # Auto-detect if None
     sampling_rate: int = 60  # Hz
+    sdk_type: Optional[str] = None  # SDK type: "tobii-pro", "tobii-x-series", or None for auto-detect
+    use_mock: bool = False  # Use mock tracker for testing
 
     # Data buffer settings
     buffer_size: int = 10000  # Maximum number of samples to buffer

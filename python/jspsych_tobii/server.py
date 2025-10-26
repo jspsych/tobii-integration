@@ -36,7 +36,21 @@ class TobiiServer:
         )
 
         # Initialize components
-        self.tobii_manager = TobiiManager(config.tracker_address)
+        # Convert sdk_type string to SDKType enum if specified
+        sdk_type_enum = None
+        if config.sdk_type:
+            from .adapters import SDKType
+            sdk_map = {
+                "tobii-pro": SDKType.TOBII_PRO,
+                "tobii-x-series": SDKType.TOBII_X_SERIES,
+            }
+            sdk_type_enum = sdk_map.get(config.sdk_type)
+
+        self.tobii_manager = TobiiManager(
+            tracker_address=config.tracker_address,
+            sdk_type=sdk_type_enum,
+            use_mock=config.use_mock,
+        )
         self.data_buffer = DataBuffer(config.buffer_size, config.buffer_duration)
         self.time_sync = TimeSync()
         self.calibration_manager = CalibrationManager(self.tobii_manager)

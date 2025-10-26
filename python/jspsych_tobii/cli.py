@@ -16,20 +16,26 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Start server on default port (8080)
+  # Start server with auto-detected tracker
   jspsych-tobii
 
-  # Start server on specific port
-  jspsych-tobii --port 9000
+  # Start server with mock tracker (no hardware needed)
+  jspsych-tobii --mock
+
+  # Force X-series SDK for X3-120 tracker
+  jspsych-tobii --sdk tobii-x-series
+
+  # Force Pro SDK for Tobii Pro series
+  jspsych-tobii --sdk tobii-pro
 
   # Start server with debug logging
-  jspsych-tobii --log-level DEBUG
+  jspsych-tobii --log-level DEBUG --log-file tobii-server.log
 
-  # Start server and log to file
-  jspsych-tobii --log-file tobii-server.log
-
-  # Connect to specific tracker
+  # Connect to specific tracker address
   jspsych-tobii --tracker tet-tcp://192.168.1.100
+
+  # Full example with all options
+  jspsych-tobii --port 9000 --sdk tobii-pro --log-level DEBUG
         """,
     )
 
@@ -49,6 +55,18 @@ Examples:
     parser.add_argument(
         "--tracker",
         help="Specific tracker address (auto-detect if not specified)",
+    )
+
+    parser.add_argument(
+        "--sdk",
+        choices=["tobii-pro", "tobii-x-series"],
+        help="Force specific SDK: 'tobii-pro' for Pro series, 'tobii-x-series' for X3-120/X-series (auto-detect if not specified)",
+    )
+
+    parser.add_argument(
+        "--mock",
+        action="store_true",
+        help="Use mock tracker for testing without hardware",
     )
 
     parser.add_argument(
@@ -90,6 +108,8 @@ Examples:
         host=args.host,
         port=args.port,
         tracker_address=args.tracker,
+        sdk_type=args.sdk,
+        use_mock=args.mock,
         sampling_rate=args.sampling_rate,
         buffer_size=args.buffer_size,
         log_level=args.log_level,

@@ -96,7 +96,7 @@
             on_load: function() {
                 // Send marker when stimulus appears
                 jsPsych.extensions.tobii.sendMarker({
-                    type: 'stimulus_onset',
+                    label: 'stimulus_onset',
                     word: word,
                     trial: index,
                 });
