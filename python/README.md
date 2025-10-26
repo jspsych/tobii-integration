@@ -1,18 +1,41 @@
 # jspsych-tobii (Python Server)
 
-WebSocket server for integrating Tobii Pro eye trackers with jsPsych experiments.
+WebSocket server for integrating Tobii eye trackers with jsPsych experiments.
+
+**Multi-SDK Support**: Works with both modern Tobii Pro series trackers and legacy X-series trackers (including X3-120)!
 
 ## Installation
 
+### For Tobii Pro Series Trackers
 ```bash
-pip install jspsych-tobii
+# Recommended: Install with Tobii Pro SDK
+pip install jspsych-tobii[tobii-pro]
 ```
 
-## Requirements
+### For Tobii X-Series Trackers (X3-120, X2-60, etc.)
+```bash
+# 1. Install jspsych-tobii
+pip install jspsych-tobii
 
-- Python 3.9 or higher
-- Tobii Pro SDK
-- Tobii Pro eye tracker (connected via USB or network)
+# 2. Install legacy Tobii Analytics SDK
+# Contact Tobii support for SDK installer
+# The server will auto-detect the legacy SDK
+```
+
+### For Testing Without Hardware
+```bash
+# Use built-in mock tracker
+pip install jspsych-tobii
+jspsych-tobii-server --mock
+```
+
+## Supported Hardware
+
+- ✅ **Tobii Pro Series**: Spectrum, Fusion, Nano, TX300 (via `tobii-research` SDK)
+- ✅ **Tobii X-Series**: X3-120, X2-60, X2-30, X1 Light (via legacy Analytics SDK)
+- ✅ **Mock Tracker**: For testing and development without hardware
+
+See [ADAPTER_GUIDE.md](ADAPTER_GUIDE.md) for detailed SDK information.
 
 ## Quick Start
 

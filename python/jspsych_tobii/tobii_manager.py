@@ -1,50 +1,67 @@
 """
-Tobii eye tracker management
+Tobii eye tracker management using adapter pattern for multi-SDK support
 """
 
 import time
 from typing import Optional, Dict, Any, Callable
 import logging
 
-# Note: In production, this would use: import tobii_research as tr
-# For now, we'll create a mock implementation
+from .adapters import (
+    create_tracker_adapter,
+    TobiiTrackerAdapter,
+    GazeDataPoint,
+    SDKType,
+)
 
 
 class TobiiManager:
-    """Manages Tobii eye tracker connection and data collection"""
+    """
+    Manages Tobii eye tracker connection and data collection.
 
-    def __init__(self, tracker_address: Optional[str] = None) -> None:
+    Uses adapter pattern to support multiple Tobii SDKs:
+    - tobii-research (Tobii Pro series)
+    - Legacy Analytics SDK (Tobii X-series including X3-120)
+    - Mock adapter for testing
+    """
+
+    def __init__(
+        self,
+        tracker_address: Optional[str] = None,
+        sdk_type: Optional[SDKType] = None,
+        use_mock: bool = False,
+    ) -> None:
         """
         Initialize Tobii manager
 
         Args:
             tracker_address: Specific tracker address, or None to auto-detect
+            sdk_type: Specific SDK to use (SDKType.TOBII_PRO or SDKType.TOBII_X_SERIES),
+                     or None for auto-detection
+            use_mock: If True, use mock tracker for testing
         """
         self.logger = logging.getLogger(__name__)
         self.tracker_address = tracker_address
-        self.tracker: Optional[Any] = None
         self.gaze_callback: Optional[Callable] = None
-        self.tracking = False
+
+        # Create appropriate adapter
+        try:
+            self.adapter: TobiiTrackerAdapter = create_tracker_adapter(
+                sdk_type=sdk_type, use_mock=use_mock
+            )
+            self.logger.info(f"Created adapter: {self.adapter.sdk_name} v{self.adapter.sdk_version}")
+        except ImportError as e:
+            self.logger.error(f"Failed to create tracker adapter: {e}")
+            raise
 
     def find_tracker(self) -> bool:
         """
-        Find and connect to Tobii eye tracker
+        Find and connect to Tobii eye tracker using the adapter
 
         Returns:
             True if tracker found and connected
         """
         try:
-            # In production:
-            # trackers = tr.find_all_eyetrackers()
-            # if not trackers:
-            #     self.logger.error("No eye trackers found")
-            #     return False
-            # self.tracker = trackers[0]
-
-            # Mock implementation
-            self.logger.info("Mock: Tobii tracker found")
-            self.tracker = MockTobiiTracker()
-            return True
+            return self.adapter.connect(self.tracker_address)
 
         except Exception as e:
             self.logger.error(f"Error finding tracker: {e}")
@@ -55,25 +72,30 @@ class TobiiManager:
         Start gaze data collection
 
         Args:
-            callback: Function to call with each gaze sample
+            callback: Function to call with each gaze sample (receives Dict with gaze data)
 
         Returns:
             True if tracking started
         """
-        if not self.tracker:
-            self.logger.error("No tracker connected")
-            return False
-
         try:
             self.gaze_callback = callback
-            # In production:
-            # self.tracker.subscribe_to(tr.EYETRACKER_GAZE_DATA, self._gaze_data_callback)
 
-            # Mock implementation
-            self.tracker.subscribe(self._gaze_data_callback)
-            self.tracking = True
-            self.logger.info("Gaze tracking started")
-            return True
+            # Wrap callback to convert GazeDataPoint to Dict
+            def adapter_callback(gaze_data: GazeDataPoint) -> None:
+                if self.gaze_callback:
+                    # Convert dataclass to dict for backward compatibility
+                    gaze_dict = {
+                        "x": gaze_data.x,
+                        "y": gaze_data.y,
+                        "timestamp": gaze_data.timestamp,
+                        "leftValid": gaze_data.left_valid,
+                        "rightValid": gaze_data.right_valid,
+                        "leftPupilDiameter": gaze_data.left_pupil_diameter,
+                        "rightPupilDiameter": gaze_data.right_pupil_diameter,
+                    }
+                    self.gaze_callback(gaze_dict)
+
+            return self.adapter.subscribe_to_gaze_data(adapter_callback)
 
         except Exception as e:
             self.logger.error(f"Error starting tracking: {e}")
@@ -86,62 +108,20 @@ class TobiiManager:
         Returns:
             True if tracking stopped
         """
-        if not self.tracker:
-            return False
-
         try:
-            # In production:
-            # self.tracker.unsubscribe_from(tr.EYETRACKER_GAZE_DATA)
-
-            # Mock implementation
-            self.tracker.unsubscribe()
-            self.tracking = False
-            self.logger.info("Gaze tracking stopped")
-            return True
+            result = self.adapter.unsubscribe_from_gaze_data()
+            if result:
+                self.gaze_callback = None
+                self.logger.info("Gaze tracking stopped")
+            return result
 
         except Exception as e:
             self.logger.error(f"Error stopping tracking: {e}")
             return False
 
-    def _gaze_data_callback(self, gaze_data: Any) -> None:
-        """
-        Internal callback for gaze data
-
-        Args:
-            gaze_data: Raw gaze data from Tobii SDK
-        """
-        if self.gaze_callback:
-            # Convert to standard format
-            formatted_data = self._format_gaze_data(gaze_data)
-            self.gaze_callback(formatted_data)
-
-    def _format_gaze_data(self, gaze_data: Any) -> Dict[str, Any]:
-        """
-        Format gaze data to standard structure
-
-        Args:
-            gaze_data: Raw gaze data
-
-        Returns:
-            Formatted gaze data
-        """
-        # In production, would extract from Tobii data structure
-        # For mock, generate simulated data
-        timestamp = time.time() * 1000
-
-        return {
-            "x": getattr(gaze_data, "x", 0.5),
-            "y": getattr(gaze_data, "y", 0.5),
-            "timestamp": timestamp,
-            "leftValid": getattr(gaze_data, "left_valid", True),
-            "rightValid": getattr(gaze_data, "right_valid", True),
-            "leftPupilDiameter": getattr(gaze_data, "left_pupil", 3.0),
-            "rightPupilDiameter": getattr(gaze_data, "right_pupil", 3.0),
-        }
-
     def is_tracking(self) -> bool:
         """Check if currently tracking"""
-        return self.tracking
+        return self.adapter.is_tracking()
 
     def get_tracker_info(self) -> Dict[str, Any]:
         """
@@ -150,54 +130,19 @@ class TobiiManager:
         Returns:
             Dictionary with tracker details
         """
-        if not self.tracker:
-            return {"connected": False}
+        tracker_info = self.adapter.get_tracker_info()
 
-        # In production:
-        # return {
-        #     "connected": True,
-        #     "model": self.tracker.model,
-        #     "serial": self.tracker.serial_number,
-        #     "address": self.tracker.address,
-        #     "name": self.tracker.device_name,
-        # }
+        if not tracker_info:
+            return {"connected": False}
 
         return {
             "connected": True,
-            "model": "Tobii Pro Mock",
-            "serial": "MOCK123456",
-            "address": "mock://localhost",
-            "name": "Mock Tracker",
+            "model": tracker_info.model,
+            "serial": tracker_info.serial_number,
+            "address": tracker_info.address,
+            "name": tracker_info.device_name,
+            "firmware": tracker_info.firmware_version,
+            "sampling_frequency": tracker_info.sampling_frequency,
+            "sdk": self.adapter.sdk_name,
+            "sdk_version": self.adapter.sdk_version,
         }
-
-
-class MockTobiiTracker:
-    """Mock Tobii tracker for testing"""
-
-    def __init__(self) -> None:
-        self.callback: Optional[Callable] = None
-        self.subscribed = False
-
-    def subscribe(self, callback: Callable) -> None:
-        """Subscribe to gaze data"""
-        self.callback = callback
-        self.subscribed = True
-
-    def unsubscribe(self) -> None:
-        """Unsubscribe from gaze data"""
-        self.callback = None
-        self.subscribed = False
-
-
-class MockGazeData:
-    """Mock gaze data point"""
-
-    def __init__(self) -> None:
-        import random
-
-        self.x = random.uniform(0.3, 0.7)
-        self.y = random.uniform(0.3, 0.7)
-        self.left_valid = True
-        self.right_valid = True
-        self.left_pupil = random.uniform(2.5, 4.0)
-        self.right_pupil = random.uniform(2.5, 4.0)
