@@ -1,0 +1,4 @@
+tobii-research>=1.11.0
+websockets>=12.0
+numpy>=1.24.0
+aiofiles>=23.0.0
