@@ -1,7 +1,7 @@
 import { makeRollupConfig } from "@jspsych/config/rollup";
 import postcss from "rollup-plugin-postcss";
 
-const config = makeRollupConfig("jsPsychPluginPluginTobiiCalibration");
+const config = makeRollupConfig("jsPsychTobiiCalibration");
 
 // Add postcss plugin to all configurations
 config.forEach((cfg) => {
