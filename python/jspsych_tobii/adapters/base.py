@@ -57,6 +57,31 @@ class CalibrationResult:
     point_errors: Optional[List[float]] = None  # Per-point errors in degrees
 
 
+@dataclass
+class UserPositionData:
+    """User position data from eye tracker"""
+
+    # Normalized position (0-1, where 0.5 is center)
+    left_x: Optional[float] = None
+    left_y: Optional[float] = None
+    left_z: Optional[float] = None  # Distance in normalized units (0=too close, 1=too far)
+    right_x: Optional[float] = None
+    right_y: Optional[float] = None
+    right_z: Optional[float] = None
+
+    # Validity flags
+    left_valid: bool = False
+    right_valid: bool = False
+
+    # Raw 3D coordinates in mm (optional)
+    left_origin_x: Optional[float] = None
+    left_origin_y: Optional[float] = None
+    left_origin_z: Optional[float] = None
+    right_origin_x: Optional[float] = None
+    right_origin_y: Optional[float] = None
+    right_origin_z: Optional[float] = None
+
+
 class TobiiTrackerAdapter(ABC):
     """
     Abstract base class for Tobii tracker adapters.
@@ -195,6 +220,16 @@ class TobiiTrackerAdapter(ABC):
     @abstractmethod
     def is_tracking(self) -> bool:
         """Check if currently collecting gaze data"""
+        pass
+
+    @abstractmethod
+    def get_user_position(self) -> Optional[UserPositionData]:
+        """
+        Get current user position data (head position).
+
+        Returns:
+            UserPositionData object or None if not available
+        """
         pass
 
     @property

@@ -143,6 +143,9 @@ class WebSocketHandler:
             client_time = data.get("clientTime", 0)
             response = self.time_sync.handle_sync_request(client_time)
 
+        elif message_type == "get_user_position":
+            response = self.handle_get_user_position()
+
         else:
             self.logger.warning(f"Unknown message type: {message_type}")
             response = {"type": "error", "error": f"Unknown message type: {message_type}"}
@@ -190,6 +193,14 @@ class WebSocketHandler:
     def handle_marker(self, data: Dict[str, Any]) -> None:
         """Handle marker"""
         self.data_buffer.add_marker(data)
+
+    def handle_get_user_position(self) -> Dict[str, Any]:
+        """Handle get user position request"""
+        position = self.tobii_manager.get_user_position()
+        return {
+            "type": "get_user_position",
+            "position": position,
+        }
 
     def on_gaze_data(self, gaze_data: Dict[str, Any]) -> None:
         """

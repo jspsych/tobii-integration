@@ -25,6 +25,7 @@ import type {
   CalibrationPoint,
   CalibrationResult,
   ValidationResult,
+  UserPositionData,
   MarkerData,
   ScreenDimensions,
   Coordinates,
@@ -290,6 +291,16 @@ class ExtensionTobiiExtension implements JsPsychExtension {
       type: "get_current_gaze",
     });
     return response.gaze || null;
+  }
+
+  /**
+   * Get current user position (head position)
+   */
+  async getUserPosition(): Promise<UserPositionData | null> {
+    const response = await this.ws.sendAndWait({
+      type: "get_user_position",
+    });
+    return response.position || null;
   }
 
   /**
