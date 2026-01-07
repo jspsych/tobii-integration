@@ -10,7 +10,17 @@ WebSocket server for integrating Tobii eye trackers with jsPsych experiments.
 ```bash
 # Recommended: Install with Tobii Pro SDK
 pip install jspsych-tobii[tobii-pro]
+
+# Or specify SDK version (supports 1.11.0 and later, including 2.x)
+pip install "jspsych-tobii[tobii-pro]" "tobii-research>=1.11.0"
 ```
+
+**SDK Compatibility**: This package works with both Tobii Pro SDK 1.x (≥1.11.0) and 2.x versions.
+- **Version 1.11.0**: Recommended for lab systems requiring this specific version
+- **Version 2.x**: Latest features, includes data buffering and ARM64 support
+- **Tobii Pro Spectrum + SDK 2.0+**: Requires [Tobii Pro Eye Tracker Manager 2.7.0+](https://www.tobii.com/products/software/applications-and-developer-kits/tobii-pro-eye-tracker-manager) for Network Runtime
+
+See [TOBII_SDK_COMPATIBILITY.md](../TOBII_SDK_COMPATIBILITY.md) for detailed compatibility information.
 
 ### For Tobii X-Series Trackers (X3-120, X2-60, etc.)
 ```bash
@@ -179,6 +189,16 @@ The server communicates via WebSocket using JSON messages.
 ```bash
 pip install -e ".[dev]"
 ```
+
+### Test SDK Compatibility
+
+After installing the Tobii SDK, verify compatibility:
+
+```bash
+python test_sdk_compatibility.py
+```
+
+This will check that all required APIs are available in your installed SDK version.
 
 ### Run Tests
 
