@@ -2,8 +2,20 @@
 Calibration and validation management using Tobii tracker adapters
 """
 
+import threading
 from typing import List, Dict, Any, Optional
 import logging
+
+
+class CalibrationSession:
+    """Per-client calibration/validation session state"""
+
+    def __init__(self, client_id: str):
+        self.client_id = client_id
+        self.calibration_points: List[Dict[str, float]] = []
+        self.validation_points: List[Dict[str, float]] = []
+        self.calibration_active = False
+        self.validation_active = False
 
 
 class CalibrationManager:
@@ -12,6 +24,9 @@ class CalibrationManager:
 
     This class provides a high-level interface for calibration and validation
     that works with any Tobii tracker through the adapter pattern.
+
+    Supports multiple clients with per-client session state and locking
+    to prevent concurrent calibration conflicts.
     """
 
     def __init__(self, tobii_manager: Any) -> None:
@@ -23,33 +38,65 @@ class CalibrationManager:
         """
         self.logger = logging.getLogger(__name__)
         self.tobii_manager = tobii_manager
-        self.calibration_points: List[Dict[str, float]] = []
-        self.validation_points: List[Dict[str, float]] = []
-        self.calibration_active = False
-        self.validation_active = False
+        self._sessions: Dict[str, CalibrationSession] = {}
+        self._calibration_lock = threading.Lock()
+        self._active_calibration_client: Optional[str] = None
 
-    def start_calibration(self) -> Dict[str, Any]:
+    def _get_or_create_session(self, client_id: str) -> CalibrationSession:
+        """Get or create a session for a client"""
+        if client_id not in self._sessions:
+            self._sessions[client_id] = CalibrationSession(client_id)
+        return self._sessions[client_id]
+
+    def remove_session(self, client_id: str) -> None:
+        """Remove a client's session (call when client disconnects)"""
+        with self._calibration_lock:
+            if client_id in self._sessions:
+                del self._sessions[client_id]
+            if self._active_calibration_client == client_id:
+                # Release calibration lock and leave calibration mode
+                try:
+                    self.tobii_manager.adapter.leave_calibration_mode()
+                except Exception:
+                    pass
+                self._active_calibration_client = None
+
+    def start_calibration(self, client_id: str = "default") -> Dict[str, Any]:
         """
         Start calibration procedure using the tracker adapter
+
+        Args:
+            client_id: Unique identifier for the client
 
         Returns:
             Response indicating calibration started
         """
         try:
-            # Use adapter to start calibration
-            success = self.tobii_manager.adapter.start_calibration()
+            with self._calibration_lock:
+                # Check if another client is calibrating
+                if self._active_calibration_client and self._active_calibration_client != client_id:
+                    return {
+                        "type": "calibration_start",
+                        "success": False,
+                        "error": "Another client is currently calibrating",
+                    }
 
-            if success:
-                self.calibration_active = True
-                self.calibration_points = []
-                self.logger.info("Calibration started")
-            else:
-                self.logger.error("Failed to start calibration")
+                # Use adapter to start calibration
+                success = self.tobii_manager.adapter.start_calibration()
 
-            return {
-                "type": "calibration_start",
-                "success": success,
-            }
+                if success:
+                    session = self._get_or_create_session(client_id)
+                    session.calibration_active = True
+                    session.calibration_points = []
+                    self._active_calibration_client = client_id
+                    self.logger.info(f"Calibration started for client {client_id}")
+                else:
+                    self.logger.error("Failed to start calibration")
+
+                return {
+                    "type": "calibration_start",
+                    "success": success,
+                }
 
         except Exception as e:
             self.logger.error(f"Error starting calibration: {e}")
@@ -60,7 +107,7 @@ class CalibrationManager:
             }
 
     def collect_calibration_point(
-        self, x: float, y: float, timestamp: float
+        self, x: float, y: float, timestamp: float, client_id: str = "default"
     ) -> Dict[str, Any]:
         """
         Collect calibration data for a point using the tracker adapter
@@ -69,15 +116,25 @@ class CalibrationManager:
             x: Normalized x coordinate (0-1)
             y: Normalized y coordinate (0-1)
             timestamp: Timestamp (for tracking purposes)
+            client_id: Unique identifier for the client
 
         Returns:
             Response indicating point collected
         """
-        if not self.calibration_active:
+        session = self._get_or_create_session(client_id)
+
+        if not session.calibration_active:
             return {
                 "type": "calibration_point",
                 "success": False,
                 "error": "Calibration not active",
+            }
+
+        if self._active_calibration_client != client_id:
+            return {
+                "type": "calibration_point",
+                "success": False,
+                "error": "This client does not own the active calibration",
             }
 
         try:
@@ -89,7 +146,7 @@ class CalibrationManager:
             success = self.tobii_manager.adapter.collect_calibration_data(point)
 
             if success:
-                self.calibration_points.append({"x": x, "y": y, "timestamp": timestamp})
+                session.calibration_points.append({"x": x, "y": y, "timestamp": timestamp})
                 self.logger.info(f"Collected calibration point ({x:.3f}, {y:.3f})")
             else:
                 self.logger.error(f"Failed to collect calibration point ({x:.3f}, {y:.3f})")
@@ -108,25 +165,41 @@ class CalibrationManager:
                 "error": str(e),
             }
 
-    def compute_calibration(self) -> Dict[str, Any]:
+    def compute_calibration(self, client_id: str = "default") -> Dict[str, Any]:
         """
         Compute calibration from collected points using the tracker adapter
+
+        Args:
+            client_id: Unique identifier for the client
 
         Returns:
             Calibration result with quality metrics
         """
-        if not self.calibration_active:
+        session = self._get_or_create_session(client_id)
+
+        if not session.calibration_active:
             return {
                 "type": "calibration_compute",
                 "success": False,
                 "error": "Calibration not active",
             }
 
+        if self._active_calibration_client != client_id:
+            return {
+                "type": "calibration_compute",
+                "success": False,
+                "error": "This client does not own the active calibration",
+            }
+
         try:
             # Use adapter to compute and apply calibration
             result = self.tobii_manager.adapter.compute_calibration()
 
-            self.calibration_active = False
+            # Always clean up calibration state
+            session.calibration_active = False
+            with self._calibration_lock:
+                if self._active_calibration_client == client_id:
+                    self._active_calibration_client = None
 
             if result.success:
                 self.logger.info(
@@ -137,13 +210,13 @@ class CalibrationManager:
 
                 # Build point quality data if available
                 point_quality = []
-                if result.point_errors and len(result.point_errors) == len(self.calibration_points):
+                if result.point_errors and len(result.point_errors) == len(session.calibration_points):
                     point_quality = [
                         {
-                            "point": self.calibration_points[i],
+                            "point": session.calibration_points[i],
                             "error": result.point_errors[i],
                         }
-                        for i in range(len(self.calibration_points))
+                        for i in range(len(session.calibration_points))
                     ]
             else:
                 self.logger.error("Calibration computation failed")
@@ -157,7 +230,15 @@ class CalibrationManager:
             }
 
         except Exception as e:
-            self.calibration_active = False
+            # Clean up on error - leave calibration mode on adapter
+            session.calibration_active = False
+            with self._calibration_lock:
+                if self._active_calibration_client == client_id:
+                    self._active_calibration_client = None
+            try:
+                self.tobii_manager.adapter.leave_calibration_mode()
+            except Exception:
+                pass
             self.logger.error(f"Error computing calibration: {e}")
             return {
                 "type": "calibration_compute",
@@ -165,12 +246,15 @@ class CalibrationManager:
                 "error": str(e),
             }
 
-    def start_validation(self) -> Dict[str, Any]:
+    def start_validation(self, client_id: str = "default") -> Dict[str, Any]:
         """
         Start validation procedure.
 
         Validation collects gaze data at known points to assess calibration quality.
         Note: Validation is an analysis procedure, not a tracker feature.
+
+        Args:
+            client_id: Unique identifier for the client
 
         Returns:
             Response indicating validation started
@@ -184,9 +268,10 @@ class CalibrationManager:
                     "error": "Tracker not connected",
                 }
 
-            self.validation_active = True
-            self.validation_points = []
-            self.logger.info("Validation started")
+            session = self._get_or_create_session(client_id)
+            session.validation_active = True
+            session.validation_points = []
+            self.logger.info(f"Validation started for client {client_id}")
 
             return {
                 "type": "validation_start",
@@ -202,7 +287,8 @@ class CalibrationManager:
             }
 
     def collect_validation_point(
-        self, x: float, y: float, timestamp: float, gaze_samples: Optional[List[Dict[str, Any]]] = None
+        self, x: float, y: float, timestamp: float, gaze_samples: Optional[List[Dict[str, Any]]] = None,
+        client_id: str = "default"
     ) -> Dict[str, Any]:
         """
         Collect validation data for a point.
@@ -215,11 +301,14 @@ class CalibrationManager:
             y: Normalized y coordinate (0-1) of validation point
             timestamp: Timestamp when point was shown
             gaze_samples: Optional gaze samples collected at this point
+            client_id: Unique identifier for the client
 
         Returns:
             Response indicating point collected
         """
-        if not self.validation_active:
+        session = self._get_or_create_session(client_id)
+
+        if not session.validation_active:
             return {
                 "type": "validation_point",
                 "success": False,
@@ -228,7 +317,7 @@ class CalibrationManager:
 
         try:
             # Store validation point with its expected position and collected gaze data
-            self.validation_points.append({
+            session.validation_points.append({
                 "x": x,
                 "y": y,
                 "timestamp": timestamp,
@@ -251,17 +340,22 @@ class CalibrationManager:
                 "error": str(e),
             }
 
-    def compute_validation(self) -> Dict[str, Any]:
+    def compute_validation(self, client_id: str = "default") -> Dict[str, Any]:
         """
         Compute validation metrics from collected points.
 
         Calculates accuracy (offset from target) and precision (consistency)
         for each validation point based on collected gaze samples.
 
+        Args:
+            client_id: Unique identifier for the client
+
         Returns:
             Validation result with accuracy/precision metrics
         """
-        if not self.validation_active:
+        session = self._get_or_create_session(client_id)
+
+        if not session.validation_active:
             return {
                 "type": "validation_compute",
                 "success": False,
@@ -269,11 +363,11 @@ class CalibrationManager:
             }
 
         try:
-            if len(self.validation_points) < 3:
+            if len(session.validation_points) < 3:
                 return {
                     "type": "validation_compute",
                     "success": False,
-                    "error": f"Need at least 3 validation points, got {len(self.validation_points)}",
+                    "error": f"Need at least 3 validation points, got {len(session.validation_points)}",
                 }
 
             # Compute metrics for each point
@@ -281,7 +375,9 @@ class CalibrationManager:
             all_accuracies = []
             all_precisions = []
 
-            for vp in self.validation_points:
+            import math
+
+            for vp in session.validation_points:
                 expected_x = vp["x"]
                 expected_y = vp["y"]
                 gaze_samples = vp.get("gaze_samples", [])
@@ -291,14 +387,15 @@ class CalibrationManager:
                     continue
 
                 # Calculate accuracy (mean distance from expected point)
-                import math
                 distances = []
+                valid_samples = []
                 for sample in gaze_samples:
                     if sample.get("leftValid") or sample.get("rightValid"):
                         dx = sample["x"] - expected_x
                         dy = sample["y"] - expected_y
                         distance = math.sqrt(dx**2 + dy**2)
                         distances.append(distance)
+                        valid_samples.append(sample)
 
                 if not distances:
                     continue
@@ -310,15 +407,14 @@ class CalibrationManager:
                 accuracy_degrees = accuracy_norm * 50 * 57.3 / 50  # ≈ normalized * 57.3
 
                 # Precision: standard deviation of gaze samples (consistency)
-                if len(gaze_samples) > 1:
-                    mean_x = sum(s["x"] for s in gaze_samples if s.get("leftValid") or s.get("rightValid")) / len(distances)
-                    mean_y = sum(s["y"] for s in gaze_samples if s.get("leftValid") or s.get("rightValid")) / len(distances)
+                if len(valid_samples) > 1:
+                    mean_x = sum(s["x"] for s in valid_samples) / len(valid_samples)
+                    mean_y = sum(s["y"] for s in valid_samples) / len(valid_samples)
                     variances = [
                         ((s["x"] - mean_x)**2 + (s["y"] - mean_y)**2)
-                        for s in gaze_samples
-                        if s.get("leftValid") or s.get("rightValid")
+                        for s in valid_samples
                     ]
-                    precision_norm = math.sqrt(sum(variances) / len(variances))
+                    precision_norm = math.sqrt(sum(variances) / len(variances)) if variances else 0.0
                     precision_degrees = precision_norm * 50 * 57.3 / 50
                 else:
                     precision_degrees = 0.0
@@ -334,16 +430,17 @@ class CalibrationManager:
 
             # Calculate overall metrics
             if not point_data:
+                session.validation_active = False
                 return {
                     "type": "validation_compute",
                     "success": False,
                     "error": "No valid gaze samples collected",
                 }
 
-            average_accuracy = sum(all_accuracies) / len(all_accuracies)
-            average_precision = sum(all_precisions) / len(all_precisions)
+            average_accuracy = sum(all_accuracies) / len(all_accuracies) if all_accuracies else 0.0
+            average_precision = sum(all_precisions) / len(all_precisions) if all_precisions else 0.0
 
-            self.validation_active = False
+            session.validation_active = False
             self.logger.info(
                 f"Validation computed: accuracy={average_accuracy:.2f}°, precision={average_precision:.2f}°"
             )
@@ -357,7 +454,7 @@ class CalibrationManager:
             }
 
         except Exception as e:
-            self.validation_active = False
+            session.validation_active = False
             self.logger.error(f"Error computing validation: {e}")
             return {
                 "type": "validation_compute",

@@ -197,10 +197,17 @@ export class WebSocketClient {
         `Attempting to reconnect (${this.currentReconnectAttempt}/${this.config.reconnectAttempts}) in ${delay}ms`
       );
 
-      this.reconnectTimeout = window.setTimeout(() => {
-        this.connect().catch((error) => {
+      this.reconnectTimeout = window.setTimeout(async () => {
+        try {
+          await this.connect();
+          // Emit reconnected event so listeners can re-sync time
+          const reconnectedHandler = this.messageHandlers.get("reconnected");
+          if (reconnectedHandler) {
+            reconnectedHandler({ type: "reconnected" });
+          }
+        } catch (error) {
           console.error("Reconnection failed:", error);
-        });
+        }
       }, delay);
     } else {
       console.error("Max reconnection attempts reached");

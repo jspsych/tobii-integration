@@ -76,6 +76,16 @@ class ExtensionTobiiExtension implements JsPsychExtension {
       }
     });
 
+    // Set up reconnection handler to re-sync time
+    this.ws.on("reconnected", async () => {
+      try {
+        await this.timeSync.synchronize();
+        console.info("Time re-synchronized after reconnection");
+      } catch (e) {
+        console.error("Failed to re-sync time after reconnection:", e);
+      }
+    });
+
     // Auto-connect if configured
     if (params.connection?.autoConnect) {
       await this.connect();
@@ -88,10 +98,12 @@ class ExtensionTobiiExtension implements JsPsychExtension {
     // Mark trial start
     this.dataManager.startTrial();
 
-    // Send trial start marker
+    // Send trial start marker with synchronized timestamp
+    const localTime = performance.now();
     await this.sendMarker({
       label: "trial_start",
-      timestamp: performance.now(),
+      timestamp: localTime,
+      syncedTimestamp: this.timeSync.isSynced() ? this.timeSync.toServerTime(localTime) : localTime,
       ...params.metadata,
     });
 
@@ -109,10 +121,12 @@ class ExtensionTobiiExtension implements JsPsychExtension {
     // Mark trial end
     this.dataManager.endTrial();
 
-    // Send trial end marker
+    // Send trial end marker with synchronized timestamp
+    const localTime = performance.now();
     await this.sendMarker({
       label: "trial_end",
-      timestamp: performance.now(),
+      timestamp: localTime,
+      syncedTimestamp: this.timeSync.isSynced() ? this.timeSync.toServerTime(localTime) : localTime,
     });
 
     // Get trial data
@@ -171,15 +185,25 @@ class ExtensionTobiiExtension implements JsPsychExtension {
       throw new Error("Not connected to server. Call connect() first.");
     }
 
-    await this.ws.send({ type: "start_tracking" });
-    this.tracking = true;
+    // Wait for server confirmation before setting state
+    const response = await this.ws.sendAndWait({ type: "start_tracking" });
+    if (response.success) {
+      this.tracking = true;
+    } else {
+      throw new Error("Server failed to start tracking");
+    }
   }
 
   /**
    * Stop eye tracking data collection
    */
   async stopTracking(): Promise<void> {
-    await this.ws.send({ type: "stop_tracking" });
+    // Wait for server confirmation before setting state
+    const response = await this.ws.sendAndWait({ type: "stop_tracking" });
+    if (response.success) {
+      this.tracking = false;
+    }
+    // Even if server fails, reset local tracking state
     this.tracking = false;
   }
 

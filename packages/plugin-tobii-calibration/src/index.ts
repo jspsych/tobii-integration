@@ -323,8 +323,14 @@ class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
     // Show instructions
     await calibrationDisplay.showInstructions();
 
-    // Get calibration points
-    const points = trial.custom_points || this.getCalibrationPoints(trial.calibration_points as 5 | 9);
+    // Get calibration points and validate custom points
+    let points: CalibrationPoint[];
+    if (trial.custom_points) {
+      // Validate custom points
+      points = this.validateCustomPoints(trial.custom_points);
+    } else {
+      points = this.getCalibrationPoints(trial.calibration_points as 5 | 9);
+    }
 
     // Start calibration on server
     await tobiiExt.startCalibration();
@@ -377,6 +383,34 @@ class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
     };
 
     this.jsPsych.finishTrial(trial_data);
+  }
+
+  /**
+   * Validate custom calibration points
+   */
+  private validateCustomPoints(points: any[]): CalibrationPoint[] {
+    if (!Array.isArray(points) || points.length === 0) {
+      throw new Error("custom_points must be a non-empty array");
+    }
+
+    const validated: CalibrationPoint[] = [];
+    for (let i = 0; i < points.length; i++) {
+      const point = points[i];
+      if (
+        typeof point !== "object" ||
+        point === null ||
+        typeof point.x !== "number" ||
+        typeof point.y !== "number"
+      ) {
+        throw new Error(`Invalid calibration point at index ${i}: must have numeric x and y`);
+      }
+      if (point.x < 0 || point.x > 1 || point.y < 0 || point.y > 1) {
+        throw new Error(`Calibration point at index ${i} out of range: x and y must be between 0 and 1`);
+      }
+      validated.push({ x: point.x, y: point.y });
+    }
+
+    return validated;
   }
 
   /**
