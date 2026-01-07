@@ -5,6 +5,7 @@
     <script src="https://unpkg.com/jspsych@7.3.4"></script>
     <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.3"></script>
     <script src="../../packages/extension-tobii/dist/index.browser.min.js"></script>
+    <script src="../../packages/plugin-tobii-user-position/dist/index.browser.min.js"></script>
     <script src="../../packages/plugin-tobii-calibration/dist/index.browser.min.js"></script>
     <script src="../../packages/plugin-tobii-validation/dist/index.browser.min.js"></script>
 
@@ -51,6 +52,18 @@
             <p>This experiment will calibrate the eye tracker and then show you some stimuli.</p>
             <p>Press any key to begin.</p>
         `,
+    });
+
+    // User position check
+    timeline.push({
+        type: jsPsychTobiiUserPosition,
+        message: 'Please position yourself so both indicators are green',
+        duration: null, // Manual continuation
+        update_interval: 100,
+        show_distance_feedback: true,
+        show_position_feedback: true,
+        button_text: 'Continue to Calibration',
+        require_good_position: false, // Set to true to require good position
     });
 
     // Calibration
