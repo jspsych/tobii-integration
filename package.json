@@ -1,0 +1,61 @@
+{
+  "name": "jspsych-tobii-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tobii eye tracker integration for jsPsych",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "build:watch": "npm run build:watch --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "eslint packages/*/src/**/*.ts",
+    "lint:fix": "eslint packages/*/src/**/*.ts --fix",
+    "format": "prettier --write \"packages/*/src/**/*.{ts,js,json,md}\"",
+    "format:check": "prettier --check \"packages/*/src/**/*.{ts,js,json,md}\"",
+    "clean": "npm run clean --workspaces --if-present",
+    "typecheck": "tsc --build tsconfig.base.json",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "npm run build && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.1",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.5",
+    "@types/jest": "^29.5.11",
+    "@types/node": "^20.10.6",
+    "@typescript-eslint/eslint-plugin": "^6.17.0",
+    "@typescript-eslint/parser": "^6.17.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "prettier": "^3.1.1",
+    "rollup": "^4.9.4",
+    "rollup-plugin-postcss": "^4.0.2",
+    "ts-jest": "^29.1.1",
+    "tslib": "^2.6.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jspsych/jspsych-tobii.git"
+  },
+  "keywords": [
+    "jspsych",
+    "eye-tracking",
+    "tobii",
+    "psychology",
+    "neuroscience"
+  ],
+  "author": "jsPsych Team",
+  "license": "MIT"
+}

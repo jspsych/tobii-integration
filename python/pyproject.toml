@@ -1,0 +1,86 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jspsych-tobii"
+version = "0.1.0"
+description = "WebSocket server for integrating Tobii Pro eye trackers with jsPsych"
+readme = "README.md"
+authors = [
+    {name = "jsPsych Team", email = "jspsych@gmail.com"}
+]
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+keywords = ["jspsych", "eye-tracking", "tobii", "psychology", "neuroscience", "websocket"]
+dependencies = [
+    "websockets>=12.0",
+    "numpy>=1.24.0",
+    "aiofiles>=23.0.0",
+]
+requires-python = ">=3.9"
+
+[project.optional-dependencies]
+# Tobii Pro series (modern trackers)
+tobii-pro = [
+    "tobii-research>=1.11.0",
+]
+# Legacy Tobii SDK for X-series trackers (X3-120, X2-60, etc.)
+# Note: Legacy SDK must be installed manually from Tobii
+# This is just a placeholder for documentation
+tobii-x-series = []
+# All tracker support (only includes installable SDKs)
+all-trackers = [
+    "tobii-research>=1.11.0",
+]
+# Development dependencies
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.12.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/jspsych/jspsych-tobii"
+Repository = "https://github.com/jspsych/jspsych-tobii"
+"Bug Tracker" = "https://github.com/jspsych/jspsych-tobii/issues"
+
+[project.scripts]
+jspsych-tobii = "jspsych_tobii.cli:main"
+jspsych-tobii-server = "jspsych_tobii.server:main"
+
+[tool.setuptools]
+packages = ["jspsych_tobii"]
+
+[tool.black]
+line-length = 100
+target-version = ['py39']
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+asyncio_mode = "auto"
