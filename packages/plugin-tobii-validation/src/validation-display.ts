@@ -134,6 +134,10 @@ export class ValidationDisplay {
   }
 
   private createVisualFeedback(pointData: PointValidationData[]): string {
+    const goodColor = (this.params as any).accuracy_good_color || "#00ff00";
+    const fairColor = (this.params as any).accuracy_fair_color || "#ffff00";
+    const poorColor = (this.params as any).accuracy_poor_color || "#ff0000";
+
     const canvas = `
       <div class="validation-feedback">
         <h3>Accuracy Map</h3>
@@ -155,9 +159,9 @@ export class ValidationDisplay {
             .join("")}
         </div>
         <div class="feedback-legend">
-          <span><span class="legend-color" style="background-color: #00ff00;"></span> Good (&lt;1°)</span>
-          <span><span class="legend-color" style="background-color: #ffff00;"></span> Fair (1-2°)</span>
-          <span><span class="legend-color" style="background-color: #ff0000;"></span> Poor (&gt;2°)</span>
+          <span><span class="legend-color" style="background-color: ${goodColor};"></span> Good (&lt;1°)</span>
+          <span><span class="legend-color" style="background-color: ${fairColor};"></span> Fair (1-2°)</span>
+          <span><span class="legend-color" style="background-color: ${poorColor};"></span> Poor (&gt;2°)</span>
         </div>
       </div>
     `;
@@ -165,9 +169,13 @@ export class ValidationDisplay {
   }
 
   private getAccuracyColor(accuracy: number): string {
-    if (accuracy < 1.0) return "#00ff00";
-    if (accuracy < 2.0) return "#ffff00";
-    return "#ff0000";
+    const goodColor = (this.params as any).accuracy_good_color || "#00ff00";
+    const fairColor = (this.params as any).accuracy_fair_color || "#ffff00";
+    const poorColor = (this.params as any).accuracy_poor_color || "#ff0000";
+
+    if (accuracy < 1.0) return goodColor;
+    if (accuracy < 2.0) return fairColor;
+    return poorColor;
   }
 
   clear(): void {
