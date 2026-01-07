@@ -263,116 +263,121 @@ class PluginTobiiUserPositionPlugin implements JsPsychPlugin<Info> {
     PluginTobiiUserPositionPlugin.styleInjected = true;
   }
 
-  async trial(display_element: HTMLElement, trial: TrialType<Info>) {
-    // Inject CSS
-    this.injectStyles(trial);
+  trial(display_element: HTMLElement, trial: TrialType<Info>) {
+    return new Promise<void>((resolve) => {
+      // Inject CSS
+      this.injectStyles(trial);
 
-    // Check for Tobii extension
-    const tobiiExtension = this.jsPsych.extensions.tobii as any;
-    if (!tobiiExtension) {
-      throw new Error("Tobii extension not loaded");
-    }
-
-    // Create container
-    display_element.innerHTML = `
-      <div class="tobii-user-position-container">
-      </div>
-    `;
-
-    const container = display_element.querySelector(".tobii-user-position-container") as HTMLElement;
-
-    // Create position display
-    const positionDisplay = new PositionDisplay(container, {
-      message: trial.message,
-      showDistanceFeedback: trial.show_distance_feedback,
-      showPositionFeedback: trial.show_position_feedback,
-      backgroundColor: trial.background_color,
-      goodColor: trial.good_color,
-      fairColor: trial.fair_color,
-      poorColor: trial.poor_color,
-      fontSize: trial.font_size,
-    });
-
-    // Add continue button if no duration specified
-    let continueButton: HTMLButtonElement | null = null;
-    if (trial.duration === null) {
-      continueButton = document.createElement("button");
-      continueButton.className = "tobii-user-position-button";
-      continueButton.textContent = trial.button_text;
-      if (trial.require_good_position) {
-        continueButton.disabled = true;
+      // Check for Tobii extension
+      const tobiiExtension = this.jsPsych.extensions.tobii as any;
+      if (!tobiiExtension) {
+        throw new Error("Tobii extension not loaded");
       }
-      container.appendChild(continueButton);
-    }
 
-    // Track position data
-    const positionSamples: PositionQuality[] = [];
-    const startTime = performance.now();
+      // Create container
+      display_element.innerHTML = `
+        <div class="tobii-user-position-container">
+        </div>
+      `;
 
-    // Update position display periodically
-    const updateInterval = setInterval(async () => {
-      try {
-        const positionData = await tobiiExtension.getUserPosition();
-        positionDisplay.updatePosition(positionData);
+      const container = display_element.querySelector(".tobii-user-position-container") as HTMLElement;
 
-        // Track position quality
-        const quality = positionDisplay.getCurrentQuality(positionData);
-        positionSamples.push(quality);
+      // Create position display
+      const positionDisplay = new PositionDisplay(container, {
+        message: trial.message,
+        showDistanceFeedback: trial.show_distance_feedback,
+        showPositionFeedback: trial.show_position_feedback,
+        backgroundColor: trial.background_color,
+        goodColor: trial.good_color,
+        fairColor: trial.fair_color,
+        poorColor: trial.poor_color,
+        fontSize: trial.font_size,
+      });
 
-        // Update button state if required
-        if (continueButton && trial.require_good_position) {
-          continueButton.disabled = !quality.isGoodPosition;
+      // Add continue button if no duration specified
+      let continueButton: HTMLButtonElement | null = null;
+      if (trial.duration === null) {
+        continueButton = document.createElement("button");
+        continueButton.className = "tobii-user-position-button";
+        continueButton.textContent = trial.button_text;
+        if (trial.require_good_position) {
+          continueButton.disabled = true;
         }
-      } catch (error) {
-        console.error("Error updating user position:", error);
-      }
-    }, trial.update_interval);
-
-    // Handle trial end
-    const endTrial = () => {
-      clearInterval(updateInterval);
-
-      // Calculate average position
-      const validSamples = positionSamples.filter(
-        (s) => s.averageX !== null && s.averageY !== null && s.averageZ !== null
-      );
-
-      let averageX = null;
-      let averageY = null;
-      let averageZ = null;
-      let finalQuality: PositionQuality | null = null;
-
-      if (validSamples.length > 0) {
-        averageX = validSamples.reduce((sum, s) => sum + s.averageX!, 0) / validSamples.length;
-        averageY = validSamples.reduce((sum, s) => sum + s.averageY!, 0) / validSamples.length;
-        averageZ = validSamples.reduce((sum, s) => sum + s.averageZ!, 0) / validSamples.length;
-        finalQuality = positionSamples[positionSamples.length - 1];
+        container.appendChild(continueButton);
       }
 
-      const trialData = {
-        average_x: averageX,
-        average_y: averageY,
-        average_z: averageZ,
-        position_good: finalQuality?.isGoodPosition ?? false,
-        horizontal_status: finalQuality?.horizontalStatus ?? "poor",
-        vertical_status: finalQuality?.verticalStatus ?? "poor",
-        distance_status: finalQuality?.distanceStatus ?? "poor",
-        rt: Math.round(performance.now() - startTime),
+      // Track position data
+      const positionSamples: PositionQuality[] = [];
+      const startTime = performance.now();
+
+      // Update position display periodically
+      const updateInterval = setInterval(async () => {
+        try {
+          console.log("Fetching user position...");
+          const positionData = await tobiiExtension.getUserPosition();
+          console.log("Position data received:", positionData);
+          positionDisplay.updatePosition(positionData);
+
+          // Track position quality
+          const quality = positionDisplay.getCurrentQuality(positionData);
+          positionSamples.push(quality);
+
+          // Update button state if required
+          if (continueButton && trial.require_good_position) {
+            continueButton.disabled = !quality.isGoodPosition;
+          }
+        } catch (error) {
+          console.error("Error updating user position:", error);
+        }
+      }, trial.update_interval);
+
+      // Handle trial end
+      const endTrial = () => {
+        clearInterval(updateInterval);
+
+        // Calculate average position
+        const validSamples = positionSamples.filter(
+          (s) => s.averageX !== null && s.averageY !== null && s.averageZ !== null
+        );
+
+        let averageX = null;
+        let averageY = null;
+        let averageZ = null;
+        let finalQuality: PositionQuality | null = null;
+
+        if (validSamples.length > 0) {
+          averageX = validSamples.reduce((sum, s) => sum + s.averageX!, 0) / validSamples.length;
+          averageY = validSamples.reduce((sum, s) => sum + s.averageY!, 0) / validSamples.length;
+          averageZ = validSamples.reduce((sum, s) => sum + s.averageZ!, 0) / validSamples.length;
+          finalQuality = positionSamples[positionSamples.length - 1];
+        }
+
+        const trialData = {
+          average_x: averageX,
+          average_y: averageY,
+          average_z: averageZ,
+          position_good: finalQuality?.isGoodPosition ?? false,
+          horizontal_status: finalQuality?.horizontalStatus ?? "poor",
+          vertical_status: finalQuality?.verticalStatus ?? "poor",
+          distance_status: finalQuality?.distanceStatus ?? "poor",
+          rt: Math.round(performance.now() - startTime),
+        };
+
+        positionDisplay.destroy();
+        this.jsPsych.finishTrial(trialData);
+        resolve();
       };
 
-      positionDisplay.destroy();
-      this.jsPsych.finishTrial(trialData);
-    };
+      // Set up continue button
+      if (continueButton) {
+        continueButton.addEventListener("click", endTrial);
+      }
 
-    // Set up continue button
-    if (continueButton) {
-      continueButton.addEventListener("click", endTrial);
-    }
-
-    // Set up duration timeout
-    if (trial.duration !== null) {
-      this.jsPsych.pluginAPI.setTimeout(endTrial, trial.duration);
-    }
+      // Set up duration timeout
+      if (trial.duration !== null) {
+        this.jsPsych.pluginAPI.setTimeout(endTrial, trial.duration);
+      }
+    });
   }
 }
 

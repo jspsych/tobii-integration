@@ -53,7 +53,7 @@ export class CalibrationDisplay {
         ${
           this.params.calibration_mode === "click"
             ? `<button class="calibration-start-btn">${this.params.button_text || "Start Calibration"}</button>`
-            : "<p>Calibration will start automatically...</p>"
+            : "<p>Starting in a moment...</p>"
         }
       </div>
     `;
@@ -69,7 +69,7 @@ export class CalibrationDisplay {
         });
       });
     } else {
-      await this.delay(2000);
+      await this.delay(3000);
       instructions.remove();
     }
   }
@@ -145,8 +145,8 @@ export class CalibrationDisplay {
       result.innerHTML = `
         <div class="result-content success">
           <h2>Calibration Successful!</h2>
-          ${averageError !== undefined ? `<p>Average error: ${averageError.toFixed(2)}°</p>` : ""}
-          <button class="calibration-continue-btn">Continue</button>
+          ${averageError != null ? `<p>Average error: ${averageError.toFixed(2)}°</p>` : ""}
+          <p>Continuing automatically...</p>
         </div>
       `;
     } else {
@@ -154,20 +154,15 @@ export class CalibrationDisplay {
         <div class="result-content error">
           <h2>Calibration Failed</h2>
           <p>Please try again.</p>
-          <button class="calibration-retry-btn">Retry</button>
         </div>
       `;
     }
 
     this.container.appendChild(result);
 
-    return new Promise((resolve) => {
-      const button = result.querySelector("button");
-      button?.addEventListener("click", () => {
-        result.remove();
-        resolve();
-      });
-    });
+    // Auto-advance after showing result
+    await this.delay(2000);
+    result.remove();
   }
 
   /**

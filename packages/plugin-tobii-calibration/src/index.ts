@@ -24,7 +24,7 @@ const info = <const>{
     /** Calibration mode: click or view */
     calibration_mode: {
       type: ParameterType.STRING,
-      default: "click",
+      default: "view",
     },
     /** Size of calibration points in pixels */
     point_size: {
@@ -36,15 +36,20 @@ const info = <const>{
       type: ParameterType.STRING,
       default: "#ff0000",
     },
-    /** Duration to show each point in view mode (ms) */
+    /** Duration to show each point before data collection (ms) - allows user to fixate */
     point_duration: {
       type: ParameterType.INT,
-      default: 1000,
+      default: 500,
     },
     /** Duration to collect data at each point (ms) */
     collection_duration: {
       type: ParameterType.INT,
       default: 1000,
+    },
+    /** Gap duration between points (ms) - blank screen before next point appears */
+    gap_duration: {
+      type: ParameterType.INT,
+      default: 250,
     },
     /** Show progress indicator */
     show_progress: {
@@ -65,7 +70,7 @@ const info = <const>{
     instructions: {
       type: ParameterType.STRING,
       default:
-        "Look at each point as it appears on the screen. Click when you are ready to continue.",
+        "Look at each point as it appears on the screen. Keep your gaze fixed on each point until it disappears.",
     },
     /** Button text for click mode */
     button_text: {
@@ -346,7 +351,7 @@ class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
         // Wait for user to click
         await calibrationDisplay.waitForClick();
       } else {
-        // Wait for fixed duration
+        // Wait for user to fixate on the point
         await this.delay(trial.point_duration);
       }
 
@@ -358,6 +363,11 @@ class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
 
       // Hide point
       await calibrationDisplay.hidePoint();
+
+      // Gap between points (blank screen to allow saccade to next location)
+      if (i < points.length - 1) {
+        await this.delay(trial.gap_duration);
+      }
     }
 
     // Compute calibration on server

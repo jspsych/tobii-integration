@@ -2,15 +2,14 @@
 <html>
 <head>
     <title>Basic Tobii Eye Tracking Experiment</title>
-    <script src="https://unpkg.com/jspsych@7.3.4"></script>
-    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.3"></script>
+    <script src="https://unpkg.com/jspsych@latest"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@latest"></script>
     <script src="../../packages/extension-tobii/dist/index.browser.min.js"></script>
+    <script src="../../packages/plugin-tobii-user-position/dist/index.browser.js"></script>
     <script src="../../packages/plugin-tobii-calibration/dist/index.browser.min.js"></script>
     <script src="../../packages/plugin-tobii-validation/dist/index.browser.min.js"></script>
 
-    <link href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css" rel="stylesheet" type="text/css" />
-    <link href="../../packages/plugin-tobii-calibration/dist/styles.css" rel="stylesheet" type="text/css" />
-    <link href="../../packages/plugin-tobii-validation/dist/styles.css" rel="stylesheet" type="text/css" />
+    <link href="https://unpkg.com/jspsych@latest/css/jspsych.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
 </body>
@@ -53,11 +52,15 @@
         `,
     });
 
+    // View
+    timeline.push({
+        type: jsPsychTobiiUserPosition
+    })
+
     // Calibration
     timeline.push({
         type: jsPsychTobiiCalibration,
         calibration_points: 9,
-        calibration_mode: 'click',
         point_size: 25,
         animation: 'shrink',
     });

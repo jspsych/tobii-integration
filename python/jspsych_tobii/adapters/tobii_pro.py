@@ -100,6 +100,8 @@ class TobiiProAdapter(TobiiTrackerAdapter):
         try:
             if self._is_tracking:
                 self.unsubscribe_from_gaze_data()
+            if hasattr(self, "_position_gaze_subscribed") and self._position_gaze_subscribed:
+                self.unsubscribe_from_position_gaze()
             if self._in_calibration_mode:
                 self.leave_calibration_mode()
             self._tracker = None
@@ -177,8 +179,8 @@ class TobiiProAdapter(TobiiTrackerAdapter):
                 if gaze_data.left_gaze_point_validity
                 else gaze_data.right_gaze_point_on_display_area[1],
                 timestamp=gaze_data.system_time_stamp / 1000.0,  # Convert to ms
-                left_valid=gaze_data.left_gaze_point_validity == tr.VALIDITY_VALID,
-                right_valid=gaze_data.right_gaze_point_validity == tr.VALIDITY_VALID,
+                left_valid=gaze_data.left_gaze_point_validity == 1,
+                right_valid=gaze_data.right_gaze_point_validity == 1,
                 left_pupil_diameter=gaze_data.left_pupil_diameter,
                 right_pupil_diameter=gaze_data.right_pupil_diameter,
                 left_gaze_origin_x=gaze_data.left_gaze_origin_in_user_coordinate_system[0],
@@ -242,9 +244,9 @@ class TobiiProAdapter(TobiiTrackerAdapter):
             errors = []
             for point in result.calibration_points:
                 for sample in point.calibration_samples:
-                    if sample.left_eye.validity == tr.VALIDITY_VALID:
+                    if sample.left_eye.validity == 1:
                         errors.append(self._calculate_error_degrees(sample.left_eye))
-                    if sample.right_eye.validity == tr.VALIDITY_VALID:
+                    if sample.right_eye.validity == 1:
                         errors.append(self._calculate_error_degrees(sample.right_eye))
 
             avg_error = sum(errors) / len(errors) if errors else None
@@ -324,6 +326,40 @@ class TobiiProAdapter(TobiiTrackerAdapter):
         """Check if currently tracking"""
         return self._is_tracking
 
+    def _position_gaze_callback(self, gaze_data: Any) -> None:
+        """Callback for position-only gaze subscription (activates illuminators)"""
+        # Log available attributes on first callback for debugging
+        if not hasattr(self, "_logged_gaze_attrs"):
+            self._logged_gaze_attrs = True
+            # Filter out private attributes for cleaner output
+            attrs = [a for a in dir(gaze_data) if not a.startswith("_")]
+            self.logger.info(f"GazeData attributes: {attrs}")
+            # Also log left_eye structure
+            if hasattr(gaze_data, "left_eye"):
+                left_attrs = [a for a in dir(gaze_data.left_eye) if not a.startswith("_")]
+                self.logger.info(f"left_eye attributes: {left_attrs}")
+                if hasattr(gaze_data.left_eye, "gaze_origin"):
+                    origin_attrs = [a for a in dir(gaze_data.left_eye.gaze_origin) if not a.startswith("_")]
+                    self.logger.info(f"gaze_origin attributes: {origin_attrs}")
+        # Store the gaze data for position calculations
+        with self._gaze_data_lock:
+            self._latest_gaze_data = gaze_data
+
+    def unsubscribe_from_position_gaze(self) -> bool:
+        """Unsubscribe from position-only gaze data"""
+        if not self._tracker:
+            return False
+
+        try:
+            if hasattr(self, "_position_gaze_subscribed") and self._position_gaze_subscribed:
+                self._tracker.unsubscribe_from(tr.EYETRACKER_GAZE_DATA, self._position_gaze_callback)
+                self._position_gaze_subscribed = False
+                self.logger.info("Unsubscribed from position gaze data")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error unsubscribing from position gaze: {e}")
+            return False
+
     def get_user_position(self) -> Optional[UserPositionData]:
         """
         Get current user position data (head position).
@@ -338,6 +374,14 @@ class TobiiProAdapter(TobiiTrackerAdapter):
         """
         if not self._tracker:
             return None
+
+        # Ensure we're subscribed to gaze data (this activates the IR illuminators)
+        # This is needed for position guide to work before tracking is started
+        if not self._is_tracking:
+            if not hasattr(self, "_position_gaze_subscribed") or not self._position_gaze_subscribed:
+                self.logger.info("Subscribing to gaze data for position guide (activates illuminators)")
+                self._tracker.subscribe_to(tr.EYETRACKER_GAZE_DATA, self._position_gaze_callback)
+                self._position_gaze_subscribed = True
 
         # Get latest gaze data if available (thread-safe)
         with self._gaze_data_lock:
@@ -382,21 +426,17 @@ class TobiiProAdapter(TobiiTrackerAdapter):
                 return norm_x, norm_y, norm_z
 
             # Process left eye position
-            left_origin = gaze_data.left_gaze_origin_in_user_coordinate_system
-            left_valid = (
-                gaze_data.left_gaze_origin_validity == tr.VALIDITY_VALID
-                if hasattr(gaze_data, "left_gaze_origin_validity")
-                else gaze_data.left_gaze_point_validity == tr.VALIDITY_VALID
-            )
+            # GazeData has nested left_eye and right_eye objects
+            left_eye = gaze_data.left_eye
+            left_origin = left_eye.gaze_origin.position_in_user_coordinates
+            # Validity is 1 for valid, 0 for invalid
+            left_valid = left_eye.gaze_origin.validity == 1
             left_x, left_y, left_z = normalize_position(left_origin, track_box)
 
             # Process right eye position
-            right_origin = gaze_data.right_gaze_origin_in_user_coordinate_system
-            right_valid = (
-                gaze_data.right_gaze_origin_validity == tr.VALIDITY_VALID
-                if hasattr(gaze_data, "right_gaze_origin_validity")
-                else gaze_data.right_gaze_point_validity == tr.VALIDITY_VALID
-            )
+            right_eye = gaze_data.right_eye
+            right_origin = right_eye.gaze_origin.position_in_user_coordinates
+            right_valid = right_eye.gaze_origin.validity == 1
             right_x, right_y, right_z = normalize_position(right_origin, track_box)
 
             return UserPositionData(

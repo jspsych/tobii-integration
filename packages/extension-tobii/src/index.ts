@@ -273,6 +273,7 @@ class ExtensionTobiiExtension implements JsPsychExtension {
     if (!Validation.validateCalibrationPoint({ x, y })) {
       throw new Error("Invalid validation point. Coordinates must be in range [0, 1].");
     }
+    console.log(`collectValidationPoint: (${x}, ${y}) with ${gazeSamples?.length || 0} gaze samples`);
 
     await this.ws.send({
       type: "validation_point",
@@ -294,9 +295,11 @@ class ExtensionTobiiExtension implements JsPsychExtension {
    * Compute validation from collected points
    */
   async computeValidation(): Promise<ValidationResult> {
+    console.log("computeValidation called");
     const response = await this.ws.sendAndWait({
       type: "validation_compute",
     });
+    console.log("computeValidation response:", response);
     return response as ValidationResult;
   }
 
@@ -321,9 +324,16 @@ class ExtensionTobiiExtension implements JsPsychExtension {
    * Get current user position (head position)
    */
   async getUserPosition(): Promise<UserPositionData | null> {
+    console.log("getUserPosition called, isConnected:", this.isConnected());
+    if (!this.isConnected()) {
+      console.warn("getUserPosition: Not connected to server!");
+      return null;
+    }
+    console.log("Sending get_user_position message to server...");
     const response = await this.ws.sendAndWait({
       type: "get_user_position",
     });
+    console.log("getUserPosition response:", response);
     return response.position || null;
   }
 
