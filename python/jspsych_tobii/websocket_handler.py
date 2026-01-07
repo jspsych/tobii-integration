@@ -116,10 +116,12 @@ class WebSocketHandler:
         elif message_type == "validation_point":
             point = data.get("point", {})
             timestamp = data.get("timestamp", 0)
+            gaze_samples = data.get("gaze_samples", [])
             response = self.calibration_manager.collect_validation_point(
                 point.get("x", 0),
                 point.get("y", 0),
                 timestamp,
+                gaze_samples,
             )
 
         elif message_type == "validation_compute":

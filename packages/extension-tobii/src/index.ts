@@ -33,7 +33,7 @@ import type {
 
 class ExtensionTobiiExtension implements JsPsychExtension {
   static info: JsPsychExtensionInfo = {
-    name: "extension-tobii",
+    name: "tobii",
     version: version,
     data: {
       /** Eye tracking gaze data collected during the trial */
@@ -240,8 +240,11 @@ class ExtensionTobiiExtension implements JsPsychExtension {
 
   /**
    * Collect validation data for a specific point
+   * @param x - Normalized x coordinate (0-1)
+   * @param y - Normalized y coordinate (0-1)
+   * @param gazeSamples - Optional array of gaze samples collected at this point
    */
-  async collectValidationPoint(x: number, y: number): Promise<void> {
+  async collectValidationPoint(x: number, y: number, gazeSamples?: GazeData[]): Promise<void> {
     if (!Validation.validateCalibrationPoint({ x, y })) {
       throw new Error("Invalid validation point. Coordinates must be in range [0, 1].");
     }
@@ -250,7 +253,16 @@ class ExtensionTobiiExtension implements JsPsychExtension {
       type: "validation_point",
       point: { x, y },
       timestamp: performance.now(),
+      gaze_samples: gazeSamples || [],
     });
+  }
+
+  /**
+   * Get recent gaze data from the data manager buffer
+   * @param durationMs - How many milliseconds of recent data to retrieve
+   */
+  getRecentGazeData(durationMs: number): GazeData[] {
+    return this.dataManager.getRecentData(durationMs);
   }
 
   /**

@@ -19,7 +19,7 @@
     const jsPsych = initJsPsych({
         extensions: [
             {
-                type: extension_tobii,
+                type: jsPsychExtensionTobii,
                 params: {
                     connection: {
                         url: 'ws://localhost:8080',
@@ -55,7 +55,7 @@
 
     // Calibration
     timeline.push({
-        type: plugin_tobii_calibration,
+        type: jsPsychTobiiCalibration,
         calibration_points: 9,
         calibration_mode: 'click',
         point_size: 25,
@@ -64,7 +64,7 @@
 
     // Validation
     timeline.push({
-        type: plugin_tobii_validation,
+        type: jsPsychTobiiValidation,
         validation_points: 9,
         show_feedback: true,
     });
@@ -90,7 +90,7 @@
             choices: [' '],
             extensions: [
                 {
-                    type: extension_tobii,
+                    type: jsPsychExtensionTobii,
                 },
             ],
             on_load: function() {

@@ -58,7 +58,7 @@ def get_available_sdks() -> List[Dict[str, Any]]:
         legacy_available = True
     except ImportError:
         try:
-            from tobiigazesdk import *
+            import tobiigazesdk
 
             legacy_available = True
         except ImportError:

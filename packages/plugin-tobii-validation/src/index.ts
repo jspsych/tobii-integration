@@ -124,8 +124,11 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
       // Wait for data collection
       await this.delay(trial.collection_duration);
 
-      // Collect validation data for this point
-      await tobiiExt.collectValidationPoint(point.x, point.y);
+      // Get gaze samples collected during this point's display
+      const gazeSamples = tobiiExt.getRecentGazeData(trial.collection_duration);
+
+      // Collect validation data for this point with the gaze samples
+      await tobiiExt.collectValidationPoint(point.x, point.y, gazeSamples);
 
       // Hide point
       await validationDisplay.hidePoint();

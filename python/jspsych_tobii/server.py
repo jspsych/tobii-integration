@@ -5,6 +5,7 @@ WebSocket server for Tobii eye tracker integration
 import asyncio
 import logging
 import signal
+import sys
 from typing import Set
 import websockets
 from websockets.server import WebSocketServerProtocol
@@ -109,11 +110,11 @@ class TobiiServer:
 
     async def run_forever(self) -> None:
         """Keep server running"""
-        # Set up signal handlers for graceful shutdown
-        loop = asyncio.get_event_loop()
-
-        for sig in (signal.SIGTERM, signal.SIGINT):
-            loop.add_signal_handler(sig, lambda: asyncio.create_task(self.shutdown()))
+        # Set up signal handlers for graceful shutdown (not supported on Windows)
+        if sys.platform != "win32":
+            loop = asyncio.get_event_loop()
+            for sig in (signal.SIGTERM, signal.SIGINT):
+                loop.add_signal_handler(sig, lambda: asyncio.create_task(self.shutdown()))
 
         # Periodic cleanup task
         while self.running:

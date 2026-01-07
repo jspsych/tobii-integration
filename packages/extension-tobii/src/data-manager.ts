@@ -87,4 +87,13 @@ export class DataManager {
   getBufferSize(): number {
     return this.gazeBuffer.length;
   }
+
+  /**
+   * Get recent gaze data from the last N milliseconds
+   */
+  getRecentData(durationMs: number): GazeData[] {
+    const now = performance.now();
+    const startTime = now - durationMs;
+    return this.gazeBuffer.filter((data) => data.timestamp >= startTime);
+  }
 }
