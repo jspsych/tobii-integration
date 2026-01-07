@@ -5,6 +5,7 @@ WebSocket connection handler
 import json
 import asyncio
 import logging
+import uuid
 from typing import Dict, Any, Optional
 import websockets
 from websockets.server import WebSocketServerProtocol
@@ -38,6 +39,8 @@ class WebSocketHandler:
         self.calibration_manager = calibration_manager
         self.logger = logging.getLogger(__name__)
         self.active = True
+        # Unique client ID for this connection
+        self.client_id = str(uuid.uuid4())
 
     async def handle(self) -> None:
         """Handle WebSocket connection"""
@@ -93,7 +96,7 @@ class WebSocketHandler:
             response = self.handle_stop_tracking()
 
         elif message_type == "calibration_start":
-            response = self.calibration_manager.start_calibration()
+            response = self.calibration_manager.start_calibration(self.client_id)
 
         elif message_type == "calibration_point":
             point = data.get("point", {})
@@ -102,16 +105,17 @@ class WebSocketHandler:
                 point.get("x", 0),
                 point.get("y", 0),
                 timestamp,
+                self.client_id,
             )
 
         elif message_type == "calibration_compute":
-            response = self.calibration_manager.compute_calibration()
+            response = self.calibration_manager.compute_calibration(self.client_id)
 
         elif message_type == "get_calibration_data":
-            response = self.calibration_manager.compute_calibration()
+            response = self.calibration_manager.compute_calibration(self.client_id)
 
         elif message_type == "validation_start":
-            response = self.calibration_manager.start_validation()
+            response = self.calibration_manager.start_validation(self.client_id)
 
         elif message_type == "validation_point":
             point = data.get("point", {})
@@ -122,10 +126,11 @@ class WebSocketHandler:
                 point.get("y", 0),
                 timestamp,
                 gaze_samples,
+                self.client_id,
             )
 
         elif message_type == "validation_compute":
-            response = self.calibration_manager.compute_validation()
+            response = self.calibration_manager.compute_validation(self.client_id)
 
         elif message_type == "get_current_gaze":
             response = self.handle_get_current_gaze()
@@ -212,15 +217,19 @@ class WebSocketHandler:
         # Add to buffer
         self.data_buffer.add_sample(gaze_data)
 
-        # Send to client in real-time
-        asyncio.create_task(
-            self.send(
-                {
-                    "type": "gaze_data",
-                    "gaze": gaze_data,
-                }
-            )
-        )
+        # Send to client in real-time with proper error handling
+        async def send_gaze_data():
+            try:
+                await self.send(
+                    {
+                        "type": "gaze_data",
+                        "gaze": gaze_data,
+                    }
+                )
+            except Exception as e:
+                self.logger.error(f"Error sending gaze data: {e}")
+
+        asyncio.create_task(send_gaze_data())
 
     async def send(self, data: Dict[str, Any]) -> None:
         """
@@ -251,5 +260,8 @@ class WebSocketHandler:
 
     async def cleanup(self) -> None:
         """Cleanup resources"""
+        # Remove calibration session for this client
+        self.calibration_manager.remove_session(self.client_id)
+
         if self.tobii_manager.is_tracking():
             self.tobii_manager.stop_tracking()

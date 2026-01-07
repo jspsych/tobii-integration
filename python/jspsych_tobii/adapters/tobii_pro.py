@@ -48,6 +48,9 @@ class TobiiProAdapter(TobiiTrackerAdapter):
         self._is_tracking = False
         self._in_calibration_mode = False
         self._latest_gaze_data: Optional[Any] = None
+        # Lock for thread-safe access to latest gaze data (SDK callbacks run on separate thread)
+        import threading
+        self._gaze_data_lock = threading.Lock()
 
     @property
     def sdk_name(self) -> str:
@@ -157,8 +160,9 @@ class TobiiProAdapter(TobiiTrackerAdapter):
 
     def _internal_gaze_callback(self, gaze_data: Any) -> None:
         """Internal callback that converts SDK data to standardized format"""
-        # Store latest gaze data for user position queries
-        self._latest_gaze_data = gaze_data
+        # Store latest gaze data for user position queries (thread-safe)
+        with self._gaze_data_lock:
+            self._latest_gaze_data = gaze_data
 
         if not self._gaze_callback:
             return
@@ -335,12 +339,13 @@ class TobiiProAdapter(TobiiTrackerAdapter):
         if not self._tracker:
             return None
 
-        # Get latest gaze data if available
-        if not self._latest_gaze_data:
-            return UserPositionData()
+        # Get latest gaze data if available (thread-safe)
+        with self._gaze_data_lock:
+            if not self._latest_gaze_data:
+                return UserPositionData()
+            gaze_data = self._latest_gaze_data
 
         try:
-            gaze_data = self._latest_gaze_data
 
             # Get track box for normalization
             track_box = self._tracker.get_track_box()

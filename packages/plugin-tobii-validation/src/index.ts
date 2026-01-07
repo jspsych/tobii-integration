@@ -356,8 +356,14 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
     // Show instructions
     await validationDisplay.showInstructions();
 
-    // Get validation points
-    const points = trial.custom_points || this.getValidationPoints(trial.validation_points as 5 | 9);
+    // Get validation points and validate custom points
+    let points: ValidationPoint[];
+    if (trial.custom_points) {
+      // Validate custom points
+      points = this.validateCustomPoints(trial.custom_points);
+    } else {
+      points = this.getValidationPoints(trial.validation_points as 5 | 9);
+    }
 
     // Start validation on server
     await tobiiExt.startValidation();
@@ -369,11 +375,18 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
       // Show point
       await validationDisplay.showPoint(point, i, points.length);
 
+      // Capture start time before collection period for precise time-range query
+      const collectionStartTime = performance.now();
+
       // Wait for data collection
       await this.delay(trial.collection_duration);
 
-      // Get gaze samples collected during this point's display
-      const gazeSamples = tobiiExt.getRecentGazeData(trial.collection_duration);
+      // Capture end time after collection period
+      const collectionEndTime = performance.now();
+
+      // Get gaze samples collected during exactly this point's display period
+      // Use time-range query for precise alignment instead of duration-based retrieval
+      const gazeSamples = await tobiiExt.getGazeData(collectionStartTime, collectionEndTime);
 
       // Collect validation data for this point with the gaze samples
       await tobiiExt.collectValidationPoint(point.x, point.y, gazeSamples);
@@ -407,6 +420,34 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
     };
 
     this.jsPsych.finishTrial(trial_data);
+  }
+
+  /**
+   * Validate custom validation points
+   */
+  private validateCustomPoints(points: any[]): ValidationPoint[] {
+    if (!Array.isArray(points) || points.length === 0) {
+      throw new Error("custom_points must be a non-empty array");
+    }
+
+    const validated: ValidationPoint[] = [];
+    for (let i = 0; i < points.length; i++) {
+      const point = points[i];
+      if (
+        typeof point !== "object" ||
+        point === null ||
+        typeof point.x !== "number" ||
+        typeof point.y !== "number"
+      ) {
+        throw new Error(`Invalid validation point at index ${i}: must have numeric x and y`);
+      }
+      if (point.x < 0 || point.x > 1 || point.y < 0 || point.y > 1) {
+        throw new Error(`Validation point at index ${i} out of range: x and y must be between 0 and 1`);
+      }
+      validated.push({ x: point.x, y: point.y });
+    }
+
+    return validated;
   }
 
   /**
