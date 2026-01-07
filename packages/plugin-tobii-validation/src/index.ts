@@ -11,7 +11,6 @@ import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from "jspsych";
 import { version } from "../package.json";
 import { ValidationDisplay } from "./validation-display";
 import type { ValidationParameters, ValidationPoint } from "./types";
-import "./styles.css";
 
 const info = <const>{
   name: "plugin-tobii-validation",
@@ -57,6 +56,56 @@ const info = <const>{
       type: ParameterType.STRING,
       default: "Look at each point as it appears on the screen to validate calibration accuracy.",
     },
+    /** Background color of the validation container */
+    background_color: {
+      type: ParameterType.STRING,
+      default: "#808080",
+    },
+    /** Primary button color */
+    button_color: {
+      type: ParameterType.STRING,
+      default: "#28a745",
+    },
+    /** Primary button hover color */
+    button_hover_color: {
+      type: ParameterType.STRING,
+      default: "#218838",
+    },
+    /** Retry button color */
+    retry_button_color: {
+      type: ParameterType.STRING,
+      default: "#dc3545",
+    },
+    /** Retry button hover color */
+    retry_button_hover_color: {
+      type: ParameterType.STRING,
+      default: "#c82333",
+    },
+    /** Success message color */
+    success_color: {
+      type: ParameterType.STRING,
+      default: "#28a745",
+    },
+    /** Error message color */
+    error_color: {
+      type: ParameterType.STRING,
+      default: "#dc3545",
+    },
+    /** Good accuracy color */
+    accuracy_good_color: {
+      type: ParameterType.STRING,
+      default: "#00ff00",
+    },
+    /** Fair accuracy color */
+    accuracy_fair_color: {
+      type: ParameterType.STRING,
+      default: "#ffff00",
+    },
+    /** Poor accuracy color */
+    accuracy_poor_color: {
+      type: ParameterType.STRING,
+      default: "#ff0000",
+    },
   },
   data: {
     /** Validation success status */
@@ -86,10 +135,209 @@ type Info = typeof info;
 
 class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
   static info = info;
+  private static styleInjected = false;
 
   constructor(private jsPsych: JsPsych) {}
 
+  private injectStyles(trial: TrialType<Info>): void {
+    // Only inject once per page
+    if (PluginTobiiValidationPlugin.styleInjected) {
+      return;
+    }
+
+    const css = `
+      .tobii-validation-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: ${trial.background_color};
+        z-index: 9999;
+      }
+
+      .tobii-validation-instructions {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        max-width: 600px;
+      }
+
+      .tobii-validation-instructions h2 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        font-size: 24px;
+        color: #333;
+      }
+
+      .tobii-validation-instructions p {
+        margin-bottom: 20px;
+        font-size: 16px;
+        line-height: 1.5;
+        color: #666;
+      }
+
+      .validation-start-btn,
+      .validation-continue-btn,
+      .validation-retry-btn {
+        background-color: ${trial.button_color};
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        font-size: 16px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      .validation-start-btn:hover,
+      .validation-continue-btn:hover {
+        background-color: ${trial.button_hover_color};
+      }
+
+      .validation-retry-btn {
+        background-color: ${trial.retry_button_color};
+      }
+
+      .validation-retry-btn:hover {
+        background-color: ${trial.retry_button_hover_color};
+      }
+
+      .tobii-validation-point {
+        position: absolute;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        animation: tobii-validation-pulse 1s infinite;
+      }
+
+      @keyframes tobii-validation-pulse {
+        0%, 100% {
+          transform: translate(-50%, -50%) scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: translate(-50%, -50%) scale(1.1);
+          opacity: 0.9;
+        }
+      }
+
+      .tobii-validation-progress {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-size: 14px;
+        z-index: 10000;
+      }
+
+      .tobii-validation-result {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        max-width: 800px;
+      }
+
+      .result-content h2 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        font-size: 24px;
+      }
+
+      .result-content.success h2 {
+        color: ${trial.success_color};
+      }
+
+      .result-content.error h2 {
+        color: ${trial.error_color};
+      }
+
+      .result-content p {
+        margin-bottom: 15px;
+        font-size: 16px;
+        color: #666;
+      }
+
+      .validation-feedback {
+        margin: 30px 0;
+      }
+
+      .validation-feedback h3 {
+        margin-bottom: 15px;
+        font-size: 18px;
+        color: #333;
+      }
+
+      .feedback-canvas {
+        position: relative;
+        width: 100%;
+        height: 300px;
+        background-color: #f0f0f0;
+        border: 2px solid #ddd;
+        border-radius: 5px;
+        margin-bottom: 15px;
+      }
+
+      .feedback-point {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        border: 2px solid #333;
+        cursor: help;
+      }
+
+      .feedback-legend {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        font-size: 14px;
+        color: #666;
+      }
+
+      .feedback-legend span {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .legend-color {
+        display: inline-block;
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        border: 1px solid #333;
+      }
+    `;
+
+    const styleElement = document.createElement("style");
+    styleElement.id = "tobii-validation-styles";
+    styleElement.textContent = css;
+    document.head.appendChild(styleElement);
+
+    PluginTobiiValidationPlugin.styleInjected = true;
+  }
+
   async trial(display_element: HTMLElement, trial: TrialType<Info>): Promise<void> {
+    // Inject styles
+    this.injectStyles(trial);
     // Get extension instance
     const tobiiExt = this.jsPsych.extensions.tobii as any;
 

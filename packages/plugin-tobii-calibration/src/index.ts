@@ -11,7 +11,6 @@ import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from "jspsych";
 import { version } from "../package.json";
 import { CalibrationDisplay } from "./calibration-display";
 import type { CalibrationParameters, CalibrationPoint } from "./types";
-import "./styles.css";
 
 const info = <const>{
   name: "plugin-tobii-calibration",
@@ -73,6 +72,41 @@ const info = <const>{
       type: ParameterType.STRING,
       default: "Start Calibration",
     },
+    /** Background color of the calibration container */
+    background_color: {
+      type: ParameterType.STRING,
+      default: "#808080",
+    },
+    /** Primary button color */
+    button_color: {
+      type: ParameterType.STRING,
+      default: "#007bff",
+    },
+    /** Primary button hover color */
+    button_hover_color: {
+      type: ParameterType.STRING,
+      default: "#0056b3",
+    },
+    /** Retry button color */
+    retry_button_color: {
+      type: ParameterType.STRING,
+      default: "#dc3545",
+    },
+    /** Retry button hover color */
+    retry_button_hover_color: {
+      type: ParameterType.STRING,
+      default: "#c82333",
+    },
+    /** Success message color */
+    success_color: {
+      type: ParameterType.STRING,
+      default: "#28a745",
+    },
+    /** Error message color */
+    error_color: {
+      type: ParameterType.STRING,
+      default: "#dc3545",
+    },
   },
   data: {
     /** Calibration success status */
@@ -102,10 +136,175 @@ type Info = typeof info;
 
 class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
   static info = info;
+  private static styleInjected = false;
 
   constructor(private jsPsych: JsPsych) {}
 
+  private injectStyles(trial: TrialType<Info>): void {
+    // Only inject once per page
+    if (PluginTobiiCalibrationPlugin.styleInjected) {
+      return;
+    }
+
+    const css = `
+      .tobii-calibration-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: ${trial.background_color};
+        z-index: 9999;
+      }
+
+      .tobii-calibration-instructions {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        max-width: 600px;
+      }
+
+      .tobii-calibration-instructions h2 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        font-size: 24px;
+        color: #333;
+      }
+
+      .tobii-calibration-instructions p {
+        margin-bottom: 20px;
+        font-size: 16px;
+        line-height: 1.5;
+        color: #666;
+      }
+
+      .calibration-start-btn,
+      .calibration-continue-btn,
+      .calibration-retry-btn {
+        background-color: ${trial.button_color};
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        font-size: 16px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      .calibration-start-btn:hover,
+      .calibration-continue-btn:hover {
+        background-color: ${trial.button_hover_color};
+      }
+
+      .calibration-retry-btn {
+        background-color: ${trial.retry_button_color};
+      }
+
+      .calibration-retry-btn:hover {
+        background-color: ${trial.retry_button_hover_color};
+      }
+
+      .tobii-calibration-point {
+        position: absolute;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        cursor: pointer;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      }
+
+      .tobii-calibration-point.animation-pulse {
+        animation: tobii-calibration-pulse 1s infinite;
+      }
+
+      @keyframes tobii-calibration-pulse {
+        0%, 100% {
+          transform: translate(-50%, -50%) scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: translate(-50%, -50%) scale(1.2);
+          opacity: 0.8;
+        }
+      }
+
+      .tobii-calibration-point.animation-shrink {
+        animation: tobii-calibration-shrink 1s ease-out;
+      }
+
+      @keyframes tobii-calibration-shrink {
+        0% {
+          transform: translate(-50%, -50%) scale(3);
+          opacity: 0.5;
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(1);
+          opacity: 1;
+        }
+      }
+
+      .tobii-calibration-progress {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-size: 14px;
+        z-index: 10000;
+      }
+
+      .tobii-calibration-result {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+
+      .result-content h2 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        font-size: 24px;
+      }
+
+      .result-content.success h2 {
+        color: ${trial.success_color};
+      }
+
+      .result-content.error h2 {
+        color: ${trial.error_color};
+      }
+
+      .result-content p {
+        margin-bottom: 20px;
+        font-size: 16px;
+        color: #666;
+      }
+    `;
+
+    const styleElement = document.createElement("style");
+    styleElement.id = "tobii-calibration-styles";
+    styleElement.textContent = css;
+    document.head.appendChild(styleElement);
+
+    PluginTobiiCalibrationPlugin.styleInjected = true;
+  }
+
   async trial(display_element: HTMLElement, trial: TrialType<Info>): Promise<void> {
+    // Inject styles
+    this.injectStyles(trial);
     // Get extension instance
     const tobiiExt = this.jsPsych.extensions.tobii as any;
 
