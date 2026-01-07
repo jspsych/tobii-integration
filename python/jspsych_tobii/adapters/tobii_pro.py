@@ -11,6 +11,7 @@ from .base import (
     TrackerInfo,
     CalibrationPoint,
     CalibrationResult,
+    UserPositionData,
 )
 
 # Try to import tobii_research
@@ -46,6 +47,7 @@ class TobiiProAdapter(TobiiTrackerAdapter):
         self._gaze_callback: Optional[Callable[[GazeDataPoint], None]] = None
         self._is_tracking = False
         self._in_calibration_mode = False
+        self._latest_gaze_data: Optional[Any] = None
 
     @property
     def sdk_name(self) -> str:
@@ -155,6 +157,9 @@ class TobiiProAdapter(TobiiTrackerAdapter):
 
     def _internal_gaze_callback(self, gaze_data: Any) -> None:
         """Internal callback that converts SDK data to standardized format"""
+        # Store latest gaze data for user position queries
+        self._latest_gaze_data = gaze_data
+
         if not self._gaze_callback:
             return
 
@@ -314,3 +319,104 @@ class TobiiProAdapter(TobiiTrackerAdapter):
     def is_tracking(self) -> bool:
         """Check if currently tracking"""
         return self._is_tracking
+
+    def get_user_position(self) -> Optional[UserPositionData]:
+        """
+        Get current user position data (head position).
+
+        Returns normalized position data based on the track box coordinates.
+        The track box defines the optimal tracking volume:
+        - X: 0 (left) to 1 (right)
+        - Y: 0 (top) to 1 (bottom)
+        - Z: 0 (too close) to 1 (too far)
+
+        Optimal position is typically around (0.5, 0.5, 0.5).
+        """
+        if not self._tracker:
+            return None
+
+        # Get latest gaze data if available
+        if not self._latest_gaze_data:
+            return UserPositionData()
+
+        try:
+            gaze_data = self._latest_gaze_data
+
+            # Get track box for normalization
+            track_box = self._tracker.get_track_box()
+
+            # Normalize positions relative to track box
+            # Track box defines the optimal tracking volume in 3D space
+            def normalize_position(origin_xyz, track_box):
+                """Normalize 3D position to 0-1 range based on track box"""
+                if not origin_xyz or len(origin_xyz) != 3:
+                    return None, None, None
+
+                x, y, z = origin_xyz
+
+                # Get track box boundaries (in mm)
+                # Track box has back_lower_left, back_lower_right, back_upper_left, etc.
+                # We'll approximate the center and size
+                back_lower_left = track_box.back_lower_left
+                front_upper_right = track_box.front_upper_right
+
+                # Calculate normalized positions
+                x_range = front_upper_right[0] - back_lower_left[0]
+                y_range = front_upper_right[1] - back_lower_left[1]
+                z_range = front_upper_right[2] - back_lower_left[2]
+
+                norm_x = (x - back_lower_left[0]) / x_range if x_range != 0 else 0.5
+                norm_y = (y - back_lower_left[1]) / y_range if y_range != 0 else 0.5
+                norm_z = (z - back_lower_left[2]) / z_range if z_range != 0 else 0.5
+
+                # Clamp to 0-1 range
+                norm_x = max(0.0, min(1.0, norm_x))
+                norm_y = max(0.0, min(1.0, norm_y))
+                norm_z = max(0.0, min(1.0, norm_z))
+
+                return norm_x, norm_y, norm_z
+
+            # Process left eye position
+            left_origin = gaze_data.left_gaze_origin_in_user_coordinate_system
+            left_valid = (
+                gaze_data.left_gaze_origin_validity == tr.VALIDITY_VALID
+                if hasattr(gaze_data, "left_gaze_origin_validity")
+                else gaze_data.left_gaze_point_validity == tr.VALIDITY_VALID
+            )
+            left_x, left_y, left_z = normalize_position(left_origin, track_box)
+
+            # Process right eye position
+            right_origin = gaze_data.right_gaze_origin_in_user_coordinate_system
+            right_valid = (
+                gaze_data.right_gaze_origin_validity == tr.VALIDITY_VALID
+                if hasattr(gaze_data, "right_gaze_origin_validity")
+                else gaze_data.right_gaze_point_validity == tr.VALIDITY_VALID
+            )
+            right_x, right_y, right_z = normalize_position(right_origin, track_box)
+
+            return UserPositionData(
+                left_x=left_x,
+                left_y=left_y,
+                left_z=left_z,
+                right_x=right_x,
+                right_y=right_y,
+                right_z=right_z,
+                left_valid=left_valid,
+                right_valid=right_valid,
+                left_origin_x=left_origin[0] if left_origin and len(left_origin) > 0 else None,
+                left_origin_y=left_origin[1] if left_origin and len(left_origin) > 1 else None,
+                left_origin_z=left_origin[2] if left_origin and len(left_origin) > 2 else None,
+                right_origin_x=(
+                    right_origin[0] if right_origin and len(right_origin) > 0 else None
+                ),
+                right_origin_y=(
+                    right_origin[1] if right_origin and len(right_origin) > 1 else None
+                ),
+                right_origin_z=(
+                    right_origin[2] if right_origin and len(right_origin) > 2 else None
+                ),
+            )
+
+        except Exception as e:
+            self.logger.error(f"Error getting user position: {e}")
+            return UserPositionData()

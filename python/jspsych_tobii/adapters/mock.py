@@ -14,6 +14,7 @@ from .base import (
     TrackerInfo,
     CalibrationPoint,
     CalibrationResult,
+    UserPositionData,
 )
 
 
@@ -257,3 +258,31 @@ class MockTrackerAdapter(TobiiTrackerAdapter):
     def is_tracking(self) -> bool:
         """Check if mock tracking is active"""
         return self._tracking
+
+    def get_user_position(self) -> Optional[UserPositionData]:
+        """Get mock user position data"""
+        if not self._connected:
+            return None
+
+        # Generate realistic mock position data
+        # Simulate user positioned reasonably well (around center with slight variation)
+        base_x, base_y, base_z = 0.5, 0.5, 0.5
+        variation = 0.05
+
+        return UserPositionData(
+            left_x=base_x + random.uniform(-variation, variation),
+            left_y=base_y + random.uniform(-variation, variation),
+            left_z=base_z + random.uniform(-variation, variation),
+            right_x=base_x + random.uniform(-variation, variation),
+            right_y=base_y + random.uniform(-variation, variation),
+            right_z=base_z + random.uniform(-variation, variation),
+            left_valid=True,
+            right_valid=True,
+            # Mock raw coordinates (in mm, centered around optimal distance)
+            left_origin_x=random.uniform(-20, 20),
+            left_origin_y=random.uniform(-15, 15),
+            left_origin_z=600 + random.uniform(-50, 50),
+            right_origin_x=random.uniform(-20, 20),
+            right_origin_y=random.uniform(-15, 15),
+            right_origin_z=600 + random.uniform(-50, 50),
+        )

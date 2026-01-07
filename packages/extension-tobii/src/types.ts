@@ -148,6 +148,7 @@ export type MessageType =
   | "validation_compute"
   | "get_current_gaze"
   | "get_data"
+  | "get_user_position"
   | "marker"
   | "time_sync"
   | "error";
@@ -206,4 +207,38 @@ export interface Coordinates {
   x: number;
   /** Y coordinate */
   y: number;
+}
+
+/**
+ * User position data (head position)
+ */
+export interface UserPositionData {
+  /** Left eye X position (normalized 0-1, 0.5 is center) */
+  leftX: number | null;
+  /** Left eye Y position (normalized 0-1, 0.5 is center) */
+  leftY: number | null;
+  /** Left eye Z position/distance (normalized 0-1, 0.5 is optimal) */
+  leftZ: number | null;
+  /** Right eye X position (normalized 0-1, 0.5 is center) */
+  rightX: number | null;
+  /** Right eye Y position (normalized 0-1, 0.5 is center) */
+  rightY: number | null;
+  /** Right eye Z position/distance (normalized 0-1, 0.5 is optimal) */
+  rightZ: number | null;
+  /** Left eye data validity */
+  leftValid: boolean;
+  /** Right eye data validity */
+  rightValid: boolean;
+  /** Raw left eye X origin in mm (optional) */
+  leftOriginX?: number | null;
+  /** Raw left eye Y origin in mm (optional) */
+  leftOriginY?: number | null;
+  /** Raw left eye Z origin in mm (optional) */
+  leftOriginZ?: number | null;
+  /** Raw right eye X origin in mm (optional) */
+  rightOriginX?: number | null;
+  /** Raw right eye Y origin in mm (optional) */
+  rightOriginY?: number | null;
+  /** Raw right eye Z origin in mm (optional) */
+  rightOriginZ?: number | null;
 }

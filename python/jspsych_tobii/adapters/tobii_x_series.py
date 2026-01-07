@@ -20,6 +20,7 @@ from .base import (
     TrackerInfo,
     CalibrationPoint,
     CalibrationResult,
+    UserPositionData,
 )
 
 # Try to import legacy Tobii Analytics SDK 3.0
@@ -67,6 +68,7 @@ class TobiiXSeriesAdapter(TobiiTrackerAdapter):
         self._is_tracking = False
         self._in_calibration_mode = False
         self._found_trackers: List[Any] = []
+        self._latest_gaze_data: Optional[Any] = None
 
     @property
     def sdk_name(self) -> str:
@@ -276,6 +278,10 @@ class TobiiXSeriesAdapter(TobiiTrackerAdapter):
         - LeftPupil: Pupil diameter in mm
         - RightPupil: Pupil diameter in mm
         """
+        # Store latest gaze data for user position queries
+        if not error and gaze_data:
+            self._latest_gaze_data = gaze_data
+
         if error or not self._gaze_callback:
             if error:
                 self.logger.warning(f"Gaze data error: {error}")
@@ -456,3 +462,95 @@ class TobiiXSeriesAdapter(TobiiTrackerAdapter):
     def is_tracking(self) -> bool:
         """Check if currently tracking"""
         return self._is_tracking
+
+    def get_user_position(self) -> Optional[UserPositionData]:
+        """
+        Get current user position data (head position).
+
+        For X-series trackers, this uses the 3D eye position data.
+        The Analytics SDK 3.0 provides LeftEyePosition3D and RightEyePosition3D
+        which represent the eye position in the user coordinate system.
+
+        Note: X-series trackers may have different coordinate systems than Pro series.
+        The values are normalized based on typical tracking distances (50-70cm optimal).
+        """
+        if not self._tracker:
+            return None
+
+        # Get latest gaze data if available
+        if not self._latest_gaze_data:
+            return UserPositionData()
+
+        try:
+            gaze_data = self._latest_gaze_data
+
+            # Normalize 3D eye positions
+            # X-series SDK provides eye position in mm
+            # Typical optimal distance is ~60cm (600mm)
+            # We'll normalize to 0-1 where 0.5 is optimal
+            def normalize_eye_position(eye_pos_3d):
+                """Normalize 3D eye position to 0-1 range"""
+                if not eye_pos_3d or not hasattr(eye_pos_3d, 'x'):
+                    return None, None, None
+
+                # Typical tracking box:
+                # X: -150mm to +150mm (left-right)
+                # Y: -100mm to +100mm (up-down)
+                # Z: 400mm to 800mm (near-far, optimal ~600mm)
+                x_center, x_range = 0, 300
+                y_center, y_range = 0, 200
+                z_center, z_range = 600, 400
+
+                norm_x = (eye_pos_3d.x - x_center) / x_range + 0.5
+                norm_y = (eye_pos_3d.y - y_center) / y_range + 0.5
+                norm_z = (eye_pos_3d.z - z_center) / z_range + 0.5
+
+                # Clamp to 0-1 range
+                norm_x = max(0.0, min(1.0, norm_x))
+                norm_y = max(0.0, min(1.0, norm_y))
+                norm_z = max(0.0, min(1.0, norm_z))
+
+                return norm_x, norm_y, norm_z
+
+            # Process left eye
+            left_valid = gaze_data.LeftValidity == 0
+            left_x, left_y, left_z = None, None, None
+            left_origin_x, left_origin_y, left_origin_z = None, None, None
+
+            if hasattr(gaze_data, 'LeftEyePosition3D') and gaze_data.LeftEyePosition3D:
+                left_x, left_y, left_z = normalize_eye_position(gaze_data.LeftEyePosition3D)
+                left_origin_x = gaze_data.LeftEyePosition3D.x
+                left_origin_y = gaze_data.LeftEyePosition3D.y
+                left_origin_z = gaze_data.LeftEyePosition3D.z
+
+            # Process right eye
+            right_valid = gaze_data.RightValidity == 0
+            right_x, right_y, right_z = None, None, None
+            right_origin_x, right_origin_y, right_origin_z = None, None, None
+
+            if hasattr(gaze_data, 'RightEyePosition3D') and gaze_data.RightEyePosition3D:
+                right_x, right_y, right_z = normalize_eye_position(gaze_data.RightEyePosition3D)
+                right_origin_x = gaze_data.RightEyePosition3D.x
+                right_origin_y = gaze_data.RightEyePosition3D.y
+                right_origin_z = gaze_data.RightEyePosition3D.z
+
+            return UserPositionData(
+                left_x=left_x,
+                left_y=left_y,
+                left_z=left_z,
+                right_x=right_x,
+                right_y=right_y,
+                right_z=right_z,
+                left_valid=left_valid,
+                right_valid=right_valid,
+                left_origin_x=left_origin_x,
+                left_origin_y=left_origin_y,
+                left_origin_z=left_origin_z,
+                right_origin_x=right_origin_x,
+                right_origin_y=right_origin_y,
+                right_origin_z=right_origin_z,
+            )
+
+        except Exception as e:
+            self.logger.error(f"Error getting user position: {e}")
+            return UserPositionData()

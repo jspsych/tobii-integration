@@ -10,6 +10,7 @@ from .adapters import (
     create_tracker_adapter,
     TobiiTrackerAdapter,
     GazeDataPoint,
+    UserPositionData,
     SDKType,
 )
 
@@ -146,3 +147,38 @@ class TobiiManager:
             "sdk": self.adapter.sdk_name,
             "sdk_version": self.adapter.sdk_version,
         }
+
+    def get_user_position(self) -> Optional[Dict[str, Any]]:
+        """
+        Get current user position data (head position)
+
+        Returns:
+            Dictionary with user position data or None if not available
+        """
+        try:
+            position_data = self.adapter.get_user_position()
+
+            if not position_data:
+                return None
+
+            # Convert UserPositionData to dict for JSON serialization
+            return {
+                "leftX": position_data.left_x,
+                "leftY": position_data.left_y,
+                "leftZ": position_data.left_z,
+                "rightX": position_data.right_x,
+                "rightY": position_data.right_y,
+                "rightZ": position_data.right_z,
+                "leftValid": position_data.left_valid,
+                "rightValid": position_data.right_valid,
+                "leftOriginX": position_data.left_origin_x,
+                "leftOriginY": position_data.left_origin_y,
+                "leftOriginZ": position_data.left_origin_z,
+                "rightOriginX": position_data.right_origin_x,
+                "rightOriginY": position_data.right_origin_y,
+                "rightOriginZ": position_data.right_origin_z,
+            }
+
+        except Exception as e:
+            self.logger.error(f"Error getting user position: {e}")
+            return None
