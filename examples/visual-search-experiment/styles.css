@@ -1,0 +1,193 @@
+/**
+ * Visual Search Experiment Styles
+ */
+
+/* Base styles */
+body {
+    background-color: #808080;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* Instructions styling */
+.instructions {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px;
+    text-align: center;
+    font-size: 18px;
+    line-height: 1.6;
+    background-color: #f5f5f5;
+    border-radius: 10px;
+}
+
+.instructions h1 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.instructions h2 {
+    color: #444;
+    margin-bottom: 15px;
+}
+
+.instructions h3 {
+    color: #555;
+    margin-top: 20px;
+}
+
+.instructions p {
+    color: #666;
+    margin: 10px 0;
+}
+
+.instructions hr {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 25px 0;
+}
+
+.instructions strong {
+    color: #333;
+}
+
+/* Target example display */
+.target-example {
+    display: inline-block;
+    background-color: #808080;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.target-example p {
+    color: #fff;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+/* Example display container */
+.example-display {
+    background-color: #808080;
+    padding: 20px;
+    border-radius: 8px;
+    display: inline-block;
+    margin: 20px 0;
+}
+
+/* Fixation cross */
+.fixation {
+    font-size: 72px;
+    font-weight: bold;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* Search display container */
+.search-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+}
+
+.search-display {
+    background-color: #808080;
+}
+
+/* Feedback messages */
+.feedback {
+    font-size: 36px;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.feedback.correct {
+    color: #4CAF50;
+}
+
+.feedback.incorrect {
+    color: #f44336;
+}
+
+/* Response key reminder (optional overlay) */
+.key-reminder {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+/* Progress indicator */
+.progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 4px;
+    background-color: #4CAF50;
+    transition: width 0.3s ease;
+}
+
+/* jsPsych button styling override */
+.jspsych-btn {
+    font-size: 18px;
+    padding: 15px 30px;
+    margin: 10px;
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.jspsych-btn:hover {
+    background-color: #1976D2;
+}
+
+/* Survey text input styling */
+.jspsych-survey-text {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Fullscreen prompt styling */
+.jspsych-fullscreen-message {
+    font-size: 18px;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Loading message */
+.loading {
+    font-size: 24px;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* Animation for attention */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.attention {
+    animation: pulse 1.5s infinite;
+}

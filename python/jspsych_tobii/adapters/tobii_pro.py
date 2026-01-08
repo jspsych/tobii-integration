@@ -395,27 +395,48 @@ class TobiiProAdapter(TobiiTrackerAdapter):
 
             # Normalize positions relative to track box
             # Track box defines the optimal tracking volume in 3D space
+            # UCS coordinates: X = user's right (+), Y = up (+), Z = towards user (+)
             def normalize_position(origin_xyz, track_box):
-                """Normalize 3D position to 0-1 range based on track box"""
+                """Normalize 3D position to 0-1 range based on track box.
+
+                Returns normalized coordinates where:
+                - X: 0 = user's far left, 0.5 = center, 1 = user's far right
+                - Y: 0 = bottom, 0.5 = center, 1 = top
+                - Z: 0 = far from screen (back of track box), 1 = close to screen (front)
+                """
                 if not origin_xyz or len(origin_xyz) != 3:
                     return None, None, None
 
                 x, y, z = origin_xyz
 
-                # Get track box boundaries (in mm)
-                # Track box has back_lower_left, back_lower_right, back_upper_left, etc.
-                # We'll approximate the center and size
+                # Get track box corners (in mm, UCS coordinates)
+                # Use corners that span the full range for each axis:
+                # X: back_lower_left (left) to back_lower_right (right)
+                # Y: back_lower_left (bottom) to back_upper_left (top)
+                # Z: back_lower_left (far) to front_lower_left (close)
                 back_lower_left = track_box.back_lower_left
-                front_upper_right = track_box.front_upper_right
+                back_lower_right = track_box.back_lower_right
+                back_upper_left = track_box.back_upper_left
+                front_lower_left = track_box.front_lower_left
 
-                # Calculate normalized positions
-                x_range = front_upper_right[0] - back_lower_left[0]
-                y_range = front_upper_right[1] - back_lower_left[1]
-                z_range = front_upper_right[2] - back_lower_left[2]
+                # X range: left to right (user's perspective)
+                x_min = back_lower_left[0]
+                x_max = back_lower_right[0]
+                x_range = x_max - x_min
 
-                norm_x = (x - back_lower_left[0]) / x_range if x_range != 0 else 0.5
-                norm_y = (y - back_lower_left[1]) / y_range if y_range != 0 else 0.5
-                norm_z = (z - back_lower_left[2]) / z_range if z_range != 0 else 0.5
+                # Y range: bottom to top
+                y_min = back_lower_left[1]
+                y_max = back_upper_left[1]
+                y_range = y_max - y_min
+
+                # Z range: back (far from user) to front (close to user)
+                z_min = back_lower_left[2]
+                z_max = front_lower_left[2]
+                z_range = z_max - z_min
+
+                norm_x = (x - x_min) / x_range if x_range != 0 else 0.5
+                norm_y = (y - y_min) / y_range if y_range != 0 else 0.5
+                norm_z = (z - z_min) / z_range if z_range != 0 else 0.5
 
                 # Clamp to 0-1 range
                 norm_x = max(0.0, min(1.0, norm_x))

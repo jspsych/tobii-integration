@@ -144,8 +144,7 @@ class PluginTobiiUserPositionPlugin implements JsPsychPlugin<Info> {
         justify-content: center;
         width: 100%;
         height: 100vh;
-        background-color: ${trial.background_color};
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
         font-size: ${trial.font_size};
       }
 

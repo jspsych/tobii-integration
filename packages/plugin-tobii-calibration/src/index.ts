@@ -159,6 +159,7 @@ class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
         width: 100%;
         height: 100%;
         background-color: ${trial.background_color};
+        font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
         z-index: 9999;
       }
 
