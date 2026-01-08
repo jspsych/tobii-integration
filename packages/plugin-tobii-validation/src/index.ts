@@ -219,17 +219,31 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
         border-radius: 50%;
         transform: translate(-50%, -50%);
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-        animation: tobii-validation-pulse 1s infinite;
       }
 
-      @keyframes tobii-validation-pulse {
-        0%, 100% {
+      .tobii-validation-point.animation-zoom-out {
+        animation: tobii-validation-zoom-out 0.3s ease-out forwards;
+      }
+
+      @keyframes tobii-validation-zoom-out {
+        0% {
           transform: translate(-50%, -50%) scale(1);
-          opacity: 1;
         }
-        50% {
-          transform: translate(-50%, -50%) scale(1.1);
-          opacity: 0.9;
+        100% {
+          transform: translate(-50%, -50%) scale(2.5);
+        }
+      }
+
+      .tobii-validation-point.animation-zoom-in {
+        animation: tobii-validation-zoom-in 0.3s ease-out forwards;
+      }
+
+      @keyframes tobii-validation-zoom-in {
+        0% {
+          transform: translate(-50%, -50%) scale(2.5);
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(1);
         }
       }
 
@@ -510,12 +524,21 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
     // Start tracking to collect gaze data
     await tobiiExt.startTracking();
 
-    // Show each point and collect validation data
+    // Initialize point at screen center (with brief pause)
+    await validationDisplay.initializePoint();
+
+    // Show each point and collect validation data with smooth path animation
     for (let i = 0; i < points.length; i++) {
       const point = points[i];
 
-      // Show point
-      await validationDisplay.showPoint(point, i, points.length);
+      // Travel to the point location (smooth animation from current position)
+      await validationDisplay.travelToPoint(point, i, points.length);
+
+      // Zoom out (point grows larger to attract attention)
+      await validationDisplay.playZoomOut();
+
+      // Zoom in (point shrinks to fixation size)
+      await validationDisplay.playZoomIn();
 
       // Capture start time before collection period for precise time-range query
       const collectionStartTime = performance.now();
@@ -533,9 +556,14 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
       // Collect validation data for this point with the gaze samples
       await tobiiExt.collectValidationPoint(point.x, point.y, gazeSamples);
 
-      // Hide point
-      await validationDisplay.hidePoint();
+      // Reset point for next travel (don't remove element)
+      if (i < points.length - 1) {
+        await validationDisplay.resetPointForTravel();
+      }
     }
+
+    // Hide point after final data collection
+    await validationDisplay.hidePoint();
 
     // Stop tracking
     await tobiiExt.stopTracking();

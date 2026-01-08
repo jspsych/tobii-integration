@@ -8,6 +8,8 @@ export class CalibrationDisplay {
   private container: HTMLElement;
   private currentPoint: HTMLElement | null = null;
   private progressElement: HTMLElement | null = null;
+  private currentX: number = 0.5; // Start at center
+  private currentY: number = 0.5;
 
   constructor(
     private displayElement: HTMLElement,
@@ -75,7 +77,103 @@ export class CalibrationDisplay {
   }
 
   /**
-   * Show calibration point at specified location
+   * Initialize the traveling point at screen center
+   */
+  async initializePoint(): Promise<void> {
+    if (this.currentPoint) return;
+
+    this.currentPoint = document.createElement("div");
+    this.currentPoint.className = "tobii-calibration-point";
+
+    // Start at center
+    const x = 0.5 * window.innerWidth;
+    const y = 0.5 * window.innerHeight;
+    this.currentX = 0.5;
+    this.currentY = 0.5;
+
+    Object.assign(this.currentPoint.style, {
+      left: `${x}px`,
+      top: `${y}px`,
+      width: `${this.params.point_size || 20}px`,
+      height: `${this.params.point_size || 20}px`,
+      backgroundColor: this.params.point_color || "#ff0000",
+      transition: "none",
+    });
+
+    this.container.appendChild(this.currentPoint);
+
+    // Brief pause to show point at center before traveling
+    await this.delay(300);
+  }
+
+  /**
+   * Travel to the next point location with smooth animation
+   */
+  async travelToPoint(point: CalibrationPoint, index: number, total: number): Promise<void> {
+    if (!this.currentPoint) {
+      await this.initializePoint();
+    }
+
+    // Update progress
+    if (this.progressElement) {
+      this.progressElement.textContent = `Point ${index + 1} of ${total}`;
+    }
+
+    // Calculate travel distance for dynamic duration
+    const dx = point.x - this.currentX;
+    const dy = point.y - this.currentY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Travel duration: 150ms base + 200ms per normalized unit distance (quick travel)
+    const travelDuration = Math.max(150, Math.min(400, 150 + distance * 200));
+
+    // Convert normalized coordinates to pixels
+    const x = point.x * window.innerWidth;
+    const y = point.y * window.innerHeight;
+
+    // Set up travel transition
+    this.currentPoint!.style.transition = `left ${travelDuration}ms ease-in-out, top ${travelDuration}ms ease-in-out`;
+    this.currentPoint!.classList.remove("animation-explosion", "animation-shrink", "animation-pulse", "animation-zoom-out", "animation-zoom-in");
+
+    // Move to new position
+    this.currentPoint!.style.left = `${x}px`;
+    this.currentPoint!.style.top = `${y}px`;
+
+    // Update current position
+    this.currentX = point.x;
+    this.currentY = point.y;
+
+    // Wait for travel to complete
+    await this.delay(travelDuration);
+  }
+
+  /**
+   * Play zoom out animation (point grows larger)
+   */
+  async playZoomOut(): Promise<void> {
+    if (!this.currentPoint) return;
+
+    this.currentPoint.style.transition = "none";
+    this.currentPoint.classList.remove("animation-shrink", "animation-pulse", "animation-explosion", "animation-zoom-in");
+    this.currentPoint.classList.add("animation-zoom-out");
+
+    await this.delay(300);
+  }
+
+  /**
+   * Play zoom in animation (point shrinks to fixation size)
+   */
+  async playZoomIn(): Promise<void> {
+    if (!this.currentPoint) return;
+
+    this.currentPoint.classList.remove("animation-zoom-out");
+    this.currentPoint.classList.add("animation-zoom-in");
+
+    await this.delay(300);
+  }
+
+  /**
+   * Show calibration point at specified location (legacy method for compatibility)
    */
   async showPoint(point: CalibrationPoint, index: number, total: number): Promise<void> {
     // Update progress
@@ -134,7 +232,7 @@ export class CalibrationDisplay {
   }
 
   /**
-   * Hide current calibration point
+   * Hide current calibration point (removes element)
    */
   async hidePoint(): Promise<void> {
     if (this.currentPoint) {
@@ -142,6 +240,21 @@ export class CalibrationDisplay {
       this.currentPoint = null;
     }
     await this.delay(200);
+  }
+
+  /**
+   * Reset point state after explosion (keeps element for continued travel)
+   */
+  async resetPointAfterExplosion(): Promise<void> {
+    if (!this.currentPoint) return;
+
+    // Reset to normal size and opacity for next travel
+    this.currentPoint.classList.remove("animation-explosion");
+    this.currentPoint.style.transform = "translate(-50%, -50%) scale(1)";
+    this.currentPoint.style.opacity = "1";
+    this.currentPoint.style.backgroundColor = this.params.point_color || "#ff0000";
+
+    await this.delay(50);
   }
 
   /**

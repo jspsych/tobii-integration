@@ -272,6 +272,32 @@ class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
         }
       }
 
+      .tobii-calibration-point.animation-zoom-out {
+        animation: tobii-calibration-zoom-out 0.3s ease-out forwards;
+      }
+
+      @keyframes tobii-calibration-zoom-out {
+        0% {
+          transform: translate(-50%, -50%) scale(1);
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(2.5);
+        }
+      }
+
+      .tobii-calibration-point.animation-zoom-in {
+        animation: tobii-calibration-zoom-in 0.3s ease-out forwards;
+      }
+
+      @keyframes tobii-calibration-zoom-in {
+        0% {
+          transform: translate(-50%, -50%) scale(2.5);
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(1);
+        }
+      }
+
       .tobii-calibration-progress {
         position: fixed;
         top: 20px;
@@ -359,12 +385,21 @@ class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
     // Start calibration on server
     await tobiiExt.startCalibration();
 
-    // Show each point and collect calibration data
+    // Initialize point at screen center (with brief pause)
+    await calibrationDisplay.initializePoint();
+
+    // Show each point and collect calibration data with smooth path animation
     for (let i = 0; i < points.length; i++) {
       const point = points[i];
 
-      // Show point
-      await calibrationDisplay.showPoint(point, i, points.length);
+      // Travel to the point location (smooth animation from current position)
+      await calibrationDisplay.travelToPoint(point, i, points.length);
+
+      // Zoom out (point grows larger to attract attention)
+      await calibrationDisplay.playZoomOut();
+
+      // Zoom in (point shrinks to fixation size)
+      await calibrationDisplay.playZoomIn();
 
       if (trial.calibration_mode === "click") {
         // Wait for user to click
@@ -380,14 +415,14 @@ class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
       // Play explosion animation based on result
       await calibrationDisplay.playExplosion(result.success);
 
-      // Hide point (already faded from explosion)
-      await calibrationDisplay.hidePoint();
-
-      // Gap between points (blank screen to allow saccade to next location)
+      // Reset point for next travel (don't remove element)
       if (i < points.length - 1) {
-        await this.delay(trial.gap_duration);
+        await calibrationDisplay.resetPointAfterExplosion();
       }
     }
+
+    // Hide point after final explosion
+    await calibrationDisplay.hidePoint();
 
     // Compute calibration on server
     const calibrationResult = await tobiiExt.computeCalibration();
