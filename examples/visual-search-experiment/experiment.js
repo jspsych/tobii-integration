@@ -70,6 +70,11 @@ const jsPsych = initJsPsych({
     }
 });
 
+// Add random subject ID
+jsPsych.data.addProperties({
+    subject: jsPsych.randomization.randomID(12)
+});
+
 // Create timeline
 const timeline = [];
 
