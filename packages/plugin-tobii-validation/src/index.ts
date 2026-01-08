@@ -106,6 +106,11 @@ const info = <const>{
       type: ParameterType.STRING,
       default: "#ff0000",
     },
+    /** Normalized tolerance for acceptable accuracy (0-1 scale, validation passes if average error <= this) */
+    tolerance: {
+      type: ParameterType.FLOAT,
+      default: 0.05,
+    },
   },
   data: {
     /** Validation success status */
@@ -247,11 +252,14 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
         left: 50%;
         transform: translate(-50%, -50%);
         background-color: white;
-        padding: 40px;
+        padding: 40px 60px;
         border-radius: 10px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         text-align: center;
-        max-width: 800px;
+        width: 80vw;
+        max-width: 1400px;
+        max-height: 90vh;
+        overflow-y: auto;
       }
 
       .result-content h2 {
@@ -325,6 +333,137 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
         border-radius: 50%;
         border: 1px solid #333;
       }
+
+      .target-legend {
+        background-color: transparent;
+        border: 3px solid #333;
+      }
+
+      .feedback-canvas-fullscreen {
+        position: relative;
+        width: 100%;
+        background-color: #2a2a2a;
+        border: 2px solid #444;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        overflow: hidden;
+      }
+
+      .feedback-target {
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        border: 3px solid #fff;
+        background-color: transparent;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .target-label {
+        color: #fff;
+        font-size: 10px;
+        font-weight: bold;
+      }
+
+      .feedback-gaze {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        border: 2px solid;
+        z-index: 11;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: help;
+      }
+
+      .gaze-label {
+        color: #000;
+        font-size: 9px;
+        font-weight: bold;
+      }
+
+      .feedback-sample {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(100, 100, 255, 0.4);
+        z-index: 5;
+      }
+
+      .accuracy-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        font-size: 13px;
+        text-align: left;
+      }
+
+      .accuracy-table th,
+      .accuracy-table td {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+      }
+
+      .accuracy-table th {
+        background-color: #f5f5f5;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .accuracy-table tr:nth-child(even) {
+        background-color: #fafafa;
+      }
+
+      .accuracy-table td {
+        color: #555;
+      }
+
+      .saccade-note {
+        font-size: 12px;
+        color: #888;
+        font-style: italic;
+        margin-top: 10px;
+      }
+
+      .tolerance-info {
+        font-size: 14px;
+        color: #666;
+      }
+
+      .gaze-pass-legend {
+        background-color: #4ade80;
+      }
+
+      .gaze-fail-legend {
+        background-color: #f87171;
+      }
+
+      .feedback-gaze.gaze-pass {
+        background-color: #4ade80;
+        border-color: #22c55e;
+      }
+
+      .feedback-gaze.gaze-fail {
+        background-color: #f87171;
+        border-color: #ef4444;
+      }
+
+      .feedback-sample.sample-pass {
+        background-color: rgba(74, 222, 128, 0.5);
+      }
+
+      .feedback-sample.sample-fail {
+        background-color: rgba(248, 113, 113, 0.5);
+      }
     `;
 
     const styleElement = document.createElement("style");
@@ -368,6 +507,9 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
     // Start validation on server
     await tobiiExt.startValidation();
 
+    // Start tracking to collect gaze data
+    await tobiiExt.startTracking();
+
     // Show each point and collect validation data
     for (let i = 0; i < points.length; i++) {
       const point = points[i];
@@ -395,15 +537,26 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
       await validationDisplay.hidePoint();
     }
 
+    // Stop tracking
+    await tobiiExt.stopTracking();
+
     // Compute validation on server
     const validationResult = await tobiiExt.computeValidation();
 
+    // Get normalized accuracy values from server
+    const avgAccuracyNorm = validationResult.averageAccuracyNorm || 0;
+    const avgPrecisionNorm = validationResult.averagePrecisionNorm || 0;
+
+    // Determine if validation passes based on normalized tolerance
+    const validationPassed = validationResult.success && avgAccuracyNorm <= trial.tolerance;
+
     // Show result
     await validationDisplay.showResult(
-      validationResult.success,
-      validationResult.averageAccuracy,
-      validationResult.averagePrecision,
-      validationResult.pointData
+      validationPassed,
+      avgAccuracyNorm,
+      avgPrecisionNorm,
+      validationResult.pointData || [],
+      trial.tolerance
     );
 
     // Clear display
@@ -412,9 +565,10 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
 
     // Finish trial
     const trial_data = {
-      validation_success: validationResult.success,
-      average_accuracy: validationResult.averageAccuracy || null,
-      average_precision: validationResult.averagePrecision || null,
+      validation_success: validationPassed,
+      average_accuracy_norm: avgAccuracyNorm,
+      average_precision_norm: avgPrecisionNorm,
+      tolerance: trial.tolerance,
       num_points: points.length,
       validation_data: validationResult,
     };

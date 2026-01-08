@@ -111,6 +111,29 @@ export class CalibrationDisplay {
   }
 
   /**
+   * Play explosion animation on the current point
+   */
+  async playExplosion(success: boolean): Promise<void> {
+    if (!this.currentPoint) return;
+
+    // Remove any existing animation classes
+    this.currentPoint.classList.remove("animation-pulse", "animation-shrink");
+
+    // Add explosion animation class
+    this.currentPoint.classList.add("animation-explosion");
+
+    // Change color based on success
+    if (success) {
+      this.currentPoint.style.backgroundColor = "#4ade80"; // green
+    } else {
+      this.currentPoint.style.backgroundColor = "#f87171"; // red
+    }
+
+    // Wait for animation to complete
+    await this.delay(400);
+  }
+
+  /**
    * Hide current calibration point
    */
   async hidePoint(): Promise<void> {

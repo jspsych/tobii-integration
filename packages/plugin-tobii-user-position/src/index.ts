@@ -313,9 +313,7 @@ class PluginTobiiUserPositionPlugin implements JsPsychPlugin<Info> {
       // Update position display periodically
       const updateInterval = setInterval(async () => {
         try {
-          console.log("Fetching user position...");
           const positionData = await tobiiExtension.getUserPosition();
-          console.log("Position data received:", positionData);
           positionDisplay.updatePosition(positionData);
 
           // Track position quality

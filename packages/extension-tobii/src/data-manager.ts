@@ -55,18 +55,24 @@ export class DataManager {
 
     const endTime = this.trialEndTime || performance.now();
 
-    return this.gazeBuffer.filter(
-      (data) => data.timestamp >= this.trialStartTime! && data.timestamp <= endTime
-    );
+    return this.gazeBuffer.filter((data) => {
+      // Use clientTimestamp for filtering (set by extension when gaze data arrives)
+      // This is in the same time domain as performance.now() used by startTrial/endTrial
+      const ts = (data as any).clientTimestamp ?? data.timestamp;
+      return ts >= this.trialStartTime! && ts <= endTime;
+    });
   }
 
   /**
-   * Get gaze data for specific time range
+   * Get gaze data for specific time range (using clientTimestamp if available)
    */
   getDataRange(startTime: number, endTime: number): GazeData[] {
-    return this.gazeBuffer.filter(
-      (data) => data.timestamp >= startTime && data.timestamp <= endTime
-    );
+    return this.gazeBuffer.filter((data) => {
+      // Use clientTimestamp for filtering (set by extension when gaze data arrives)
+      // Fall back to timestamp if clientTimestamp not available
+      const ts = (data as any).clientTimestamp ?? data.timestamp;
+      return ts >= startTime && ts <= endTime;
+    });
   }
 
   /**
@@ -93,7 +99,10 @@ export class DataManager {
    */
   clearOldData(keepDuration: number = 60000): void {
     const cutoffTime = performance.now() - keepDuration;
-    this.gazeBuffer = this.gazeBuffer.filter((data) => data.timestamp >= cutoffTime);
+    this.gazeBuffer = this.gazeBuffer.filter((data) => {
+      const ts = (data as any).clientTimestamp ?? data.timestamp;
+      return ts >= cutoffTime;
+    });
   }
 
   /**
@@ -109,6 +118,9 @@ export class DataManager {
   getRecentData(durationMs: number): GazeData[] {
     const now = performance.now();
     const startTime = now - durationMs;
-    return this.gazeBuffer.filter((data) => data.timestamp >= startTime);
+    return this.gazeBuffer.filter((data) => {
+      const ts = (data as any).clientTimestamp ?? data.timestamp;
+      return ts >= startTime;
+    });
   }
 }

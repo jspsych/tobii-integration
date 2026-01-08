@@ -5,10 +5,30 @@ WebSocket connection handler
 import json
 import asyncio
 import logging
+import math
 import uuid
 from typing import Dict, Any, Optional
 import websockets
 from websockets.server import WebSocketServerProtocol
+
+
+def sanitize_for_json(obj: Any) -> Any:
+    """
+    Recursively sanitize an object for JSON serialization.
+    Converts NaN and Infinity to None since JSON doesn't support them.
+    """
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+    elif isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [sanitize_for_json(item) for item in obj]
+    elif hasattr(obj, "__dict__"):
+        # Handle dataclass-like objects
+        return sanitize_for_json(vars(obj))
+    return obj
 
 
 class WebSocketHandler:
@@ -41,9 +61,14 @@ class WebSocketHandler:
         self.active = True
         # Unique client ID for this connection
         self.client_id = str(uuid.uuid4())
+        # Store reference to event loop for cross-thread callbacks
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
 
     async def handle(self) -> None:
         """Handle WebSocket connection"""
+        # Capture the event loop for use in cross-thread callbacks
+        self._loop = asyncio.get_running_loop()
+
         try:
             self.logger.info(f"Client connected: {self.websocket.remote_address}")
 
@@ -209,7 +234,9 @@ class WebSocketHandler:
 
     def on_gaze_data(self, gaze_data: Dict[str, Any]) -> None:
         """
-        Callback for gaze data from Tobii tracker
+        Callback for gaze data from Tobii tracker.
+        This runs in a different thread (Tobii SDK thread), so we need to
+        use run_coroutine_threadsafe to schedule the WebSocket send.
 
         Args:
             gaze_data: Gaze data sample
@@ -217,7 +244,10 @@ class WebSocketHandler:
         # Add to buffer
         self.data_buffer.add_sample(gaze_data)
 
-        # Send to client in real-time with proper error handling
+        # Send to client in real-time
+        if not self._loop or not self.active:
+            return
+
         async def send_gaze_data():
             try:
                 await self.send(
@@ -229,7 +259,8 @@ class WebSocketHandler:
             except Exception as e:
                 self.logger.error(f"Error sending gaze data: {e}")
 
-        asyncio.create_task(send_gaze_data())
+        # Schedule the coroutine on the main event loop from this thread
+        asyncio.run_coroutine_threadsafe(send_gaze_data(), self._loop)
 
     async def send(self, data: Dict[str, Any]) -> None:
         """
@@ -240,7 +271,9 @@ class WebSocketHandler:
         """
         try:
             if self.active:
-                await self.websocket.send(json.dumps(data))
+                # Sanitize data to handle NaN/Infinity which aren't valid JSON
+                sanitized = sanitize_for_json(data)
+                await self.websocket.send(json.dumps(sanitized))
         except Exception as e:
             self.logger.error(f"Error sending data: {e}")
 

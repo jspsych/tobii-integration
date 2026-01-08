@@ -89,38 +89,30 @@ export class ValidationDisplay {
 
   async showResult(
     success: boolean,
-    averageAccuracy?: number,
-    averagePrecision?: number,
-    pointData?: PointValidationData[]
+    averageAccuracyNorm?: number,
+    averagePrecisionNorm?: number,
+    pointData?: PointValidationData[],
+    tolerance?: number
   ): Promise<void> {
     const result = document.createElement("div");
     result.className = "tobii-validation-result";
 
-    if (success) {
-      let feedbackHTML = "";
-
-      if (this.params.show_feedback && pointData) {
-        feedbackHTML = this.createVisualFeedback(pointData);
-      }
-
-      result.innerHTML = `
-        <div class="result-content success">
-          <h2>Validation Complete</h2>
-          ${averageAccuracy !== undefined ? `<p>Average accuracy: ${averageAccuracy.toFixed(2)}°</p>` : ""}
-          ${averagePrecision !== undefined ? `<p>Average precision: ${averagePrecision.toFixed(2)}°</p>` : ""}
-          ${feedbackHTML}
-          <button class="validation-continue-btn">Continue</button>
-        </div>
-      `;
-    } else {
-      result.innerHTML = `
-        <div class="result-content error">
-          <h2>Validation Failed</h2>
-          <p>Please recalibrate.</p>
-          <button class="validation-retry-btn">Retry</button>
-        </div>
-      `;
+    let feedbackHTML = "";
+    if (this.params.show_feedback && pointData) {
+      feedbackHTML = this.createVisualFeedback(pointData, tolerance);
     }
+
+    const statusClass = success ? "success" : "error";
+    const statusText = success ? "Validation Passed" : "Validation Failed";
+
+    result.innerHTML = `
+      <div class="result-content ${statusClass}">
+        <h2>${statusText}</h2>
+        <p>Average error: ${((averageAccuracyNorm || 0) * 100).toFixed(1)}% (tolerance: ${((tolerance || 0) * 100).toFixed(0)}%)</p>
+        ${feedbackHTML}
+        <button class="${success ? 'validation-continue-btn' : 'validation-retry-btn'}">${success ? 'Continue' : 'Retry'}</button>
+      </div>
+    `;
 
     this.container.appendChild(result);
 
@@ -133,49 +125,88 @@ export class ValidationDisplay {
     });
   }
 
-  private createVisualFeedback(pointData: PointValidationData[]): string {
-    const goodColor = (this.params as any).accuracy_good_color || "#00ff00";
-    const fairColor = (this.params as any).accuracy_fair_color || "#ffff00";
-    const poorColor = (this.params as any).accuracy_poor_color || "#ff0000";
+  private createVisualFeedback(pointData: PointValidationData[], tolerance?: number): string {
+    const tol = tolerance || 0.05;
+
+    // Create full-screen visualization showing actual screen positions
+    const targetMarkers = pointData.map((data, idx) => {
+      const x = data.point.x * 100;
+      const y = data.point.y * 100;
+      return `
+        <div class="feedback-target" style="
+          left: ${x}%;
+          top: ${y}%;
+        " title="Target ${idx + 1}">
+          <span class="target-label">${idx + 1}</span>
+        </div>
+      `;
+    }).join("");
+
+    // Mean gaze positions - color coded based on tolerance
+    const gazeMarkers = pointData.map((data, idx) => {
+      if (!data.meanGaze) return "";
+      const x = data.meanGaze.x * 100;
+      const y = data.meanGaze.y * 100;
+      const withinTolerance = data.accuracyNorm <= tol;
+      const colorClass = withinTolerance ? "gaze-pass" : "gaze-fail";
+      return `
+        <div class="feedback-gaze ${colorClass}" style="
+          left: ${x}%;
+          top: ${y}%;
+        " title="Error: ${(data.accuracyNorm * 100).toFixed(1)}%">
+          <span class="gaze-label">${idx + 1}</span>
+        </div>
+      `;
+    }).join("");
+
+    // Draw lines connecting targets to mean gaze positions - color coded
+    const connectionLines = pointData.map((data) => {
+      if (!data.meanGaze) return "";
+      const x1 = data.point.x * 100;
+      const y1 = data.point.y * 100;
+      const x2 = data.meanGaze.x * 100;
+      const y2 = data.meanGaze.y * 100;
+      const withinTolerance = data.accuracyNorm <= tol;
+      const lineColor = withinTolerance ? "#4ade80" : "#f87171";
+      return `
+        <svg class="feedback-line" style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none;">
+          <line x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%"
+                stroke="${lineColor}" stroke-width="2" stroke-dasharray="5,3" opacity="0.7"/>
+        </svg>
+      `;
+    }).join("");
+
+    // Show all individual gaze samples as small dots - color coded per point
+    const gazeSampleDots = pointData.map((data) => {
+      if (!data.gazeSamples) return "";
+      const withinTolerance = data.accuracyNorm <= tol;
+      const sampleClass = withinTolerance ? "sample-pass" : "sample-fail";
+      return data.gazeSamples.map((sample) => {
+        const x = sample.x * 100;
+        const y = sample.y * 100;
+        return `<div class="feedback-sample ${sampleClass}" style="left: ${x}%; top: ${y}%;"></div>`;
+      }).join("");
+    }).join("");
+
+    // Calculate aspect ratio from viewport
+    const aspectRatio = window.innerWidth / window.innerHeight;
 
     const canvas = `
       <div class="validation-feedback">
-        <h3>Accuracy Map</h3>
-        <div class="feedback-canvas">
-          ${pointData
-            .map((data) => {
-              const x = data.point.x * 100;
-              const y = data.point.y * 100;
-              const color = this.getAccuracyColor(data.accuracy);
-              return `
-                <div class="feedback-point" style="
-                  left: ${x}%;
-                  top: ${y}%;
-                  background-color: ${color};
-                " title="Accuracy: ${data.accuracy.toFixed(2)}°">
-                </div>
-              `;
-            })
-            .join("")}
+        <div class="feedback-canvas-fullscreen" style="aspect-ratio: ${aspectRatio.toFixed(3)};">
+          ${connectionLines}
+          ${gazeSampleDots}
+          ${targetMarkers}
+          ${gazeMarkers}
         </div>
         <div class="feedback-legend">
-          <span><span class="legend-color" style="background-color: ${goodColor};"></span> Good (&lt;1°)</span>
-          <span><span class="legend-color" style="background-color: ${fairColor};"></span> Fair (1-2°)</span>
-          <span><span class="legend-color" style="background-color: ${poorColor};"></span> Poor (&gt;2°)</span>
+          <span><span class="legend-color target-legend"></span> Target</span>
+          <span><span class="legend-color gaze-pass-legend"></span> Pass</span>
+          <span><span class="legend-color gaze-fail-legend"></span> Fail</span>
         </div>
       </div>
     `;
     return canvas;
-  }
-
-  private getAccuracyColor(accuracy: number): string {
-    const goodColor = (this.params as any).accuracy_good_color || "#00ff00";
-    const fairColor = (this.params as any).accuracy_fair_color || "#ffff00";
-    const poorColor = (this.params as any).accuracy_poor_color || "#ff0000";
-
-    if (accuracy < 1.0) return goodColor;
-    if (accuracy < 2.0) return fairColor;
-    return poorColor;
   }
 
   clear(): void {

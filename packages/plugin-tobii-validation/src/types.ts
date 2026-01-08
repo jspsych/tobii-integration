@@ -26,8 +26,18 @@ export interface ValidationParameters {
   instructions?: string;
 }
 
+export interface GazeSample {
+  x: number;
+  y: number;
+}
+
 export interface PointValidationData {
   point: ValidationPoint;
-  accuracy: number;
-  precision: number;
+  accuracyNorm: number;
+  precisionNorm: number;
+  meanGaze?: { x: number; y: number };
+  numSamples?: number;
+  numSamplesTotal?: number;
+  numSamplesSkipped?: number;
+  gazeSamples?: GazeSample[];
 }

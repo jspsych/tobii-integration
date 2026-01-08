@@ -195,6 +195,9 @@ class CalibrationManager:
             # Use adapter to compute and apply calibration
             result = self.tobii_manager.adapter.compute_calibration()
 
+            # Leave calibration mode on the tracker (required by Tobii SDK)
+            self.tobii_manager.adapter.leave_calibration_mode()
+
             # Always clean up calibration state
             session.calibration_active = False
             with self._calibration_lock:
@@ -377,6 +380,10 @@ class CalibrationManager:
 
             import math
 
+            # Saccade exclusion: skip first portion of samples to allow fixation
+            # At 120Hz, 300ms = ~36 samples. We'll skip first 30% of samples.
+            SACCADE_SKIP_RATIO = 0.3
+
             for vp in session.validation_points:
                 expected_x = vp["x"]
                 expected_y = vp["y"]
@@ -386,10 +393,17 @@ class CalibrationManager:
                     # No gaze data collected for this point
                     continue
 
+                # Skip initial samples to exclude saccade period
+                skip_count = int(len(gaze_samples) * SACCADE_SKIP_RATIO)
+                fixation_samples = gaze_samples[skip_count:]
+
+                if not fixation_samples:
+                    continue
+
                 # Calculate accuracy (mean distance from expected point)
                 distances = []
                 valid_samples = []
-                for sample in gaze_samples:
+                for sample in fixation_samples:
                     if sample.get("leftValid") or sample.get("rightValid"):
                         dx = sample["x"] - expected_x
                         dy = sample["y"] - expected_y
@@ -402,9 +416,6 @@ class CalibrationManager:
 
                 # Accuracy: mean distance from target (in normalized coordinates)
                 accuracy_norm = sum(distances) / len(distances)
-                # Convert to approximate degrees (assume ~50cm viewing distance, ~50cm screen width)
-                # This is a rough approximation: degrees ≈ normalized_distance * screen_width_cm * (180/π) / viewing_distance_cm
-                accuracy_degrees = accuracy_norm * 50 * 57.3 / 50  # ≈ normalized * 57.3
 
                 # Precision: standard deviation of gaze samples (consistency)
                 if len(valid_samples) > 1:
@@ -415,18 +426,27 @@ class CalibrationManager:
                         for s in valid_samples
                     ]
                     precision_norm = math.sqrt(sum(variances) / len(variances)) if variances else 0.0
-                    precision_degrees = precision_norm * 50 * 57.3 / 50
                 else:
-                    precision_degrees = 0.0
+                    precision_norm = 0.0
 
+                # Calculate mean gaze position for visualization
+                mean_gaze_x = sum(s["x"] for s in valid_samples) / len(valid_samples)
+                mean_gaze_y = sum(s["y"] for s in valid_samples) / len(valid_samples)
+
+                # Return normalized values - client will convert to pixels
                 point_data.append({
                     "point": {"x": expected_x, "y": expected_y},
-                    "accuracy": accuracy_degrees,
-                    "precision": precision_degrees,
+                    "accuracyNorm": accuracy_norm,
+                    "precisionNorm": precision_norm,
+                    "meanGaze": {"x": mean_gaze_x, "y": mean_gaze_y},
+                    "numSamples": len(valid_samples),
+                    "numSamplesTotal": len(gaze_samples),
+                    "numSamplesSkipped": skip_count,
+                    "gazeSamples": [{"x": s["x"], "y": s["y"]} for s in valid_samples],
                 })
 
-                all_accuracies.append(accuracy_degrees)
-                all_precisions.append(precision_degrees)
+                all_accuracies.append(accuracy_norm)
+                all_precisions.append(precision_norm)
 
             # Calculate overall metrics
             if not point_data:
@@ -437,19 +457,19 @@ class CalibrationManager:
                     "error": "No valid gaze samples collected",
                 }
 
-            average_accuracy = sum(all_accuracies) / len(all_accuracies) if all_accuracies else 0.0
-            average_precision = sum(all_precisions) / len(all_precisions) if all_precisions else 0.0
+            avg_accuracy_norm = sum(all_accuracies) / len(all_accuracies) if all_accuracies else 0.0
+            avg_precision_norm = sum(all_precisions) / len(all_precisions) if all_precisions else 0.0
 
             session.validation_active = False
             self.logger.info(
-                f"Validation computed: accuracy={average_accuracy:.2f}°, precision={average_precision:.2f}°"
+                f"Validation computed: accuracy_norm={avg_accuracy_norm:.4f}, precision_norm={avg_precision_norm:.4f}"
             )
 
             return {
                 "type": "validation_compute",
                 "success": True,
-                "averageAccuracy": average_accuracy,
-                "averagePrecision": average_precision,
+                "averageAccuracyNorm": avg_accuracy_norm,
+                "averagePrecisionNorm": avg_precision_norm,
                 "pointData": point_data,
             }
 

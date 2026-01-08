@@ -170,25 +170,39 @@ class TobiiProAdapter(TobiiTrackerAdapter):
             return
 
         try:
+            # Access nested structure: gaze_data.left_eye.gaze_point, etc.
+            left_eye = gaze_data.left_eye
+            right_eye = gaze_data.right_eye
+
+            # Get gaze point data
+            left_gaze_point = left_eye.gaze_point.position_on_display_area
+            right_gaze_point = right_eye.gaze_point.position_on_display_area
+            left_gaze_valid = left_eye.gaze_point.validity == 1
+            right_gaze_valid = right_eye.gaze_point.validity == 1
+
+            # Get gaze origin (eye position in user coordinates)
+            left_origin = left_eye.gaze_origin.position_in_user_coordinates
+            right_origin = right_eye.gaze_origin.position_in_user_coordinates
+
+            # Get pupil data
+            left_pupil = left_eye.pupil.diameter
+            right_pupil = right_eye.pupil.diameter
+
             # Convert tobii-research gaze data to standardized format
             standardized = GazeDataPoint(
-                x=gaze_data.left_gaze_point_on_display_area[0]
-                if gaze_data.left_gaze_point_validity
-                else gaze_data.right_gaze_point_on_display_area[0],
-                y=gaze_data.left_gaze_point_on_display_area[1]
-                if gaze_data.left_gaze_point_validity
-                else gaze_data.right_gaze_point_on_display_area[1],
+                x=left_gaze_point[0] if left_gaze_valid else right_gaze_point[0],
+                y=left_gaze_point[1] if left_gaze_valid else right_gaze_point[1],
                 timestamp=gaze_data.system_time_stamp / 1000.0,  # Convert to ms
-                left_valid=gaze_data.left_gaze_point_validity == 1,
-                right_valid=gaze_data.right_gaze_point_validity == 1,
-                left_pupil_diameter=gaze_data.left_pupil_diameter,
-                right_pupil_diameter=gaze_data.right_pupil_diameter,
-                left_gaze_origin_x=gaze_data.left_gaze_origin_in_user_coordinate_system[0],
-                left_gaze_origin_y=gaze_data.left_gaze_origin_in_user_coordinate_system[1],
-                left_gaze_origin_z=gaze_data.left_gaze_origin_in_user_coordinate_system[2],
-                right_gaze_origin_x=gaze_data.right_gaze_origin_in_user_coordinate_system[0],
-                right_gaze_origin_y=gaze_data.right_gaze_origin_in_user_coordinate_system[1],
-                right_gaze_origin_z=gaze_data.right_gaze_origin_in_user_coordinate_system[2],
+                left_valid=left_gaze_valid,
+                right_valid=right_gaze_valid,
+                left_pupil_diameter=left_pupil,
+                right_pupil_diameter=right_pupil,
+                left_gaze_origin_x=left_origin[0] if left_origin else None,
+                left_gaze_origin_y=left_origin[1] if left_origin else None,
+                left_gaze_origin_z=left_origin[2] if left_origin else None,
+                right_gaze_origin_x=right_origin[0] if right_origin else None,
+                right_gaze_origin_y=right_origin[1] if right_origin else None,
+                right_gaze_origin_z=right_origin[2] if right_origin else None,
             )
 
             self._gaze_callback(standardized)
@@ -328,20 +342,6 @@ class TobiiProAdapter(TobiiTrackerAdapter):
 
     def _position_gaze_callback(self, gaze_data: Any) -> None:
         """Callback for position-only gaze subscription (activates illuminators)"""
-        # Log available attributes on first callback for debugging
-        if not hasattr(self, "_logged_gaze_attrs"):
-            self._logged_gaze_attrs = True
-            # Filter out private attributes for cleaner output
-            attrs = [a for a in dir(gaze_data) if not a.startswith("_")]
-            self.logger.info(f"GazeData attributes: {attrs}")
-            # Also log left_eye structure
-            if hasattr(gaze_data, "left_eye"):
-                left_attrs = [a for a in dir(gaze_data.left_eye) if not a.startswith("_")]
-                self.logger.info(f"left_eye attributes: {left_attrs}")
-                if hasattr(gaze_data.left_eye, "gaze_origin"):
-                    origin_attrs = [a for a in dir(gaze_data.left_eye.gaze_origin) if not a.startswith("_")]
-                    self.logger.info(f"gaze_origin attributes: {origin_attrs}")
-        # Store the gaze data for position calculations
         with self._gaze_data_lock:
             self._latest_gaze_data = gaze_data
 
@@ -379,7 +379,6 @@ class TobiiProAdapter(TobiiTrackerAdapter):
         # This is needed for position guide to work before tracking is started
         if not self._is_tracking:
             if not hasattr(self, "_position_gaze_subscribed") or not self._position_gaze_subscribed:
-                self.logger.info("Subscribing to gaze data for position guide (activates illuminators)")
                 self._tracker.subscribe_to(tr.EYETRACKER_GAZE_DATA, self._position_gaze_callback)
                 self._position_gaze_subscribed = True
 

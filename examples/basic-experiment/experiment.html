@@ -4,10 +4,10 @@
     <title>Basic Tobii Eye Tracking Experiment</title>
     <script src="https://unpkg.com/jspsych@latest"></script>
     <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@latest"></script>
-    <script src="../../packages/extension-tobii/dist/index.browser.min.js"></script>
-    <script src="../../packages/plugin-tobii-user-position/dist/index.browser.js"></script>
-    <script src="../../packages/plugin-tobii-calibration/dist/index.browser.min.js"></script>
-    <script src="../../packages/plugin-tobii-validation/dist/index.browser.min.js"></script>
+    <script src="../../packages/extension-tobii/dist/index.browser.min.js?v=4"></script>
+    <script src="../../packages/plugin-tobii-user-position/dist/index.browser.js?v=4"></script>
+    <script src="../../packages/plugin-tobii-calibration/dist/index.browser.min.js?v=4"></script>
+    <script src="../../packages/plugin-tobii-validation/dist/index.browser.min.js?v=4"></script>
 
     <link href="https://unpkg.com/jspsych@latest/css/jspsych.css" rel="stylesheet" type="text/css" />
 </head>
@@ -57,7 +57,7 @@
         type: jsPsychTobiiUserPosition
     })
 
-    // Calibration
+    // Calibration (5-point: corners + center)
     timeline.push({
         type: jsPsychTobiiCalibration,
         calibration_points: 9,
@@ -65,7 +65,7 @@
         animation: 'shrink',
     });
 
-    // Validation
+    // Validation (5-point: corners + center)
     timeline.push({
         type: jsPsychTobiiValidation,
         validation_points: 9,

@@ -253,6 +253,25 @@ class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
         }
       }
 
+      .tobii-calibration-point.animation-explosion {
+        animation: tobii-calibration-explosion 0.4s ease-out forwards;
+      }
+
+      @keyframes tobii-calibration-explosion {
+        0% {
+          transform: translate(-50%, -50%) scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: translate(-50%, -50%) scale(2);
+          opacity: 0.8;
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(0);
+          opacity: 0;
+        }
+      }
+
       .tobii-calibration-progress {
         position: fixed;
         top: 20px;
@@ -355,13 +374,13 @@ class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
         await this.delay(trial.point_duration);
       }
 
-      // Collect calibration data for this point
-      await tobiiExt.collectCalibrationPoint(point.x, point.y);
+      // Collect calibration data for this point (blocks until SDK finishes)
+      const result = await tobiiExt.collectCalibrationPoint(point.x, point.y);
 
-      // Wait for data collection
-      await this.delay(trial.collection_duration);
+      // Play explosion animation based on result
+      await calibrationDisplay.playExplosion(result.success);
 
-      // Hide point
+      // Hide point (already faded from explosion)
       await calibrationDisplay.hidePoint();
 
       // Gap between points (blank screen to allow saccade to next location)

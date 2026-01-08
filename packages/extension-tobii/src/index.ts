@@ -72,7 +72,12 @@ class ExtensionTobiiExtension implements JsPsychExtension {
     // Set up gaze data handler
     this.ws.on("gaze_data", (data) => {
       if (data.gaze && Validation.validateGazeData(data.gaze)) {
-        this.dataManager.addGazeData(data.gaze);
+        // Add client timestamp for time-range queries using performance.now()
+        const gazeWithClientTime = {
+          ...data.gaze,
+          clientTimestamp: performance.now(),
+        };
+        this.dataManager.addGazeData(gazeWithClientTime);
       }
     });
 
@@ -80,9 +85,8 @@ class ExtensionTobiiExtension implements JsPsychExtension {
     this.ws.on("reconnected", async () => {
       try {
         await this.timeSync.synchronize();
-        console.info("Time re-synchronized after reconnection");
       } catch (e) {
-        console.error("Failed to re-sync time after reconnection:", e);
+        // Time sync failed after reconnection
       }
     });
 
@@ -223,17 +227,20 @@ class ExtensionTobiiExtension implements JsPsychExtension {
 
   /**
    * Collect calibration data for a specific point
+   * @returns Promise resolving to success status when SDK finishes collecting
    */
-  async collectCalibrationPoint(x: number, y: number): Promise<void> {
+  async collectCalibrationPoint(x: number, y: number): Promise<{ success: boolean }> {
     if (!Validation.validateCalibrationPoint({ x, y })) {
       throw new Error("Invalid calibration point. Coordinates must be in range [0, 1].");
     }
 
-    await this.ws.send({
+    const response = await this.ws.sendAndWait({
       type: "calibration_point",
       point: { x, y },
       timestamp: performance.now(),
     });
+
+    return { success: response.success === true };
   }
 
   /**
@@ -273,7 +280,6 @@ class ExtensionTobiiExtension implements JsPsychExtension {
     if (!Validation.validateCalibrationPoint({ x, y })) {
       throw new Error("Invalid validation point. Coordinates must be in range [0, 1].");
     }
-    console.log(`collectValidationPoint: (${x}, ${y}) with ${gazeSamples?.length || 0} gaze samples`);
 
     await this.ws.send({
       type: "validation_point",
@@ -295,11 +301,9 @@ class ExtensionTobiiExtension implements JsPsychExtension {
    * Compute validation from collected points
    */
   async computeValidation(): Promise<ValidationResult> {
-    console.log("computeValidation called");
     const response = await this.ws.sendAndWait({
       type: "validation_compute",
     });
-    console.log("computeValidation response:", response);
     return response as ValidationResult;
   }
 
@@ -324,16 +328,12 @@ class ExtensionTobiiExtension implements JsPsychExtension {
    * Get current user position (head position)
    */
   async getUserPosition(): Promise<UserPositionData | null> {
-    console.log("getUserPosition called, isConnected:", this.isConnected());
     if (!this.isConnected()) {
-      console.warn("getUserPosition: Not connected to server!");
       return null;
     }
-    console.log("Sending get_user_position message to server...");
     const response = await this.ws.sendAndWait({
       type: "get_user_position",
     });
-    console.log("getUserPosition response:", response);
     return response.position || null;
   }
 
