@@ -187,14 +187,18 @@ const VisualSearchStimuli = (function() {
         const numDistractors = targetPresent ? setSize - 1 : setSize;
         let distractorTypes = [];
 
-        // Create equal numbers of each distractor type
+        // Create equal numbers of each distractor type (3 types: Red O, Blue X, Blue O)
         for (let i = 0; i < numDistractors; i++) {
-            if (i % 2 === 0) {
+            const type = i % 3;
+            if (type === 0) {
                 // Red O (same color, different shape)
                 distractorTypes.push({ color: COLORS.red, shape: SHAPES.O });
-            } else {
+            } else if (type === 1) {
                 // Blue X (different color, same shape)
                 distractorTypes.push({ color: COLORS.blue, shape: SHAPES.X });
+            } else {
+                // Blue O (different color, different shape)
+                distractorTypes.push({ color: COLORS.blue, shape: SHAPES.O });
             }
         }
 

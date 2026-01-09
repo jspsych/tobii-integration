@@ -62,8 +62,7 @@ const jsPsych = initJsPsych({
     ],
     on_finish: function () {
         // Export all data as JSON
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        jsPsych.data.get().localSave('json', `visual_search_data_${timestamp}.json`);
+        jsPsych.data.get().localSave('json', `visual_search_data_${jsPsych.data.get().values()[0].subject}.json`);
 
         // Display completion message
         jsPsych.data.displayData();
@@ -92,7 +91,7 @@ timeline.push({
             <h1>Visual Search Experiment</h1>
             <p>Welcome! In this experiment, you will search for a target item among distractors.</p>
             <p>Your eye movements will be recorded using an eye tracker.</p>
-            <p>The experiment takes approximately 30-40 minutes to complete.</p>
+            <p>The experiment takes approximately 10 minutes to complete.</p>
             <hr>
             <p>Press <strong>any key</strong> to continue.</p>
         </div>
@@ -134,7 +133,7 @@ timeline.push({
 });
 
 // Calibration
-/*timeline.push({
+timeline.push({
     type: jsPsychTobiiCalibration,
     calibration_points: CONFIG.calibrationPoints,
     point_size: 25,
@@ -146,7 +145,7 @@ timeline.push({
     type: jsPsychTobiiValidation,
     validation_points: CONFIG.validationPoints,
     show_feedback: true,
-});*/
+});
 
 // ============================================================================
 // TASK INSTRUCTIONS
@@ -206,6 +205,27 @@ timeline.push({
     },
 });
 
+timeline.push({
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: function() {
+        const exampleDisplay = VisualSearchStimuli.generateConjunctionSearchDisplay(
+            8, false, 600, 400
+        );
+        return `
+            <div class="instructions">
+                <h2>Example Display</h2>
+                <p>Here is another example of a search display.</p>
+                <div class="example-display">
+                    ${exampleDisplay.html}
+                </div>
+                <p><em>The target is ABSENT in this display.</em></p>
+                <hr>
+                <p>Press <strong>any key</strong> to continue.</p>
+            </div>
+        `;
+    },
+});
+
 // ============================================================================
 // PRACTICE TRIALS
 // ============================================================================
@@ -247,25 +267,27 @@ const practiceProcedure = {
         {
             type: jsPsychHtmlKeyboardResponse,
             stimulus: function() {
-                const condition = jsPsych.evaluateTimelineVariable('condition');
+                const searchType = jsPsych.evaluateTimelineVariable('searchType');
+                const targetPresent = jsPsych.evaluateTimelineVariable('targetPresent');
+                const setSize = jsPsych.evaluateTimelineVariable('setSize');
                 // Generate display with current window dimensions
                 const displayWidth = window.innerWidth - 100;
                 const displayHeight = window.innerHeight - 150;
 
                 let display;
-                if (condition.searchType === 'feature') {
+                if (searchType === 'feature') {
                     const featureType = Math.random() < 0.5 ? 'color' : 'orientation';
                     display = VisualSearchStimuli.generateFeatureSearchDisplay(
-                        condition.setSize,
-                        condition.targetPresent,
+                        setSize,
+                        targetPresent,
                         featureType,
                         displayWidth,
                         displayHeight
                     );
                 } else {
                     display = VisualSearchStimuli.generateConjunctionSearchDisplay(
-                        condition.setSize,
-                        condition.targetPresent,
+                        setSize,
+                        targetPresent,
                         displayWidth,
                         displayHeight
                     );
@@ -289,11 +311,10 @@ const practiceProcedure = {
                 },
             ],
             data: function() {
-                const condition = jsPsych.evaluateTimelineVariable('condition');
                 return {
                     task: 'visual_search',
-                    search_type: condition.searchType,
-                    set_size: condition.setSize,
+                    search_type: jsPsych.evaluateTimelineVariable('searchType'),
+                    set_size: jsPsych.evaluateTimelineVariable('setSize'),
                     is_practice: true
                 };
             },
@@ -353,7 +374,7 @@ const practiceProcedure = {
             trial_duration: CONFIG.feedbackDuration,
         }
     ],
-    timeline_variables: practiceConditions.map(c => ({ condition: c })),
+    timeline_variables: practiceConditions,
     randomize_order: true
 };
 
@@ -418,9 +439,13 @@ const trialProcedure = {
         {
             type: jsPsychHtmlKeyboardResponse,
             stimulus: function() {
-                const trial = jsPsych.evaluateTimelineVariable('trial');
+                const searchType = jsPsych.evaluateTimelineVariable('searchType');
+                const setSize = jsPsych.evaluateTimelineVariable('setSize');
+                const targetPresent = jsPsych.evaluateTimelineVariable('targetPresent');
                 const display = VisualSearchStimuli.generateDisplayForTrial({
-                    ...trial,
+                    searchType,
+                    setSize,
+                    targetPresent,
                     displayWidth: window.innerWidth - 100,
                     displayHeight: window.innerHeight - 150
                 });
@@ -444,11 +469,10 @@ const trialProcedure = {
                 },
             ],
             data: function() {
-                const trial = jsPsych.evaluateTimelineVariable('trial');
                 return {
                     task: 'visual_search',
-                    search_type: trial.searchType,
-                    set_size: trial.setSize,
+                    search_type: jsPsych.evaluateTimelineVariable('searchType'),
+                    set_size: jsPsych.evaluateTimelineVariable('setSize'),
                     is_practice: false
                 };
             },
@@ -501,7 +525,7 @@ const trialProcedure = {
             trial_duration: CONFIG.interTrialInterval,
         }
     ],
-    timeline_variables: allConditions.map(c => ({ trial: c })),
+    timeline_variables: allConditions,
     sample: {
         type: 'fixed-repetitions',
         size: 2  // Each of 16 conditions repeated twice = 32 trials per block
