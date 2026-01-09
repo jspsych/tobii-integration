@@ -1,10 +1,10 @@
 /**
- * **plugin-tobii-user-position**
- *
- * jsPsych plugin for Tobii eye tracker user position guide
- *
+ * @title Tobii User Position
+ * @description jsPsych plugin for Tobii eye tracker user position guide. Displays real-time
+ * head position feedback to help participants maintain optimal positioning for eye tracking.
+ * @version 1.0.0
  * @author jsPsych Team
- * @see {@link https://github.com/jspsych/jspsych-tobii/tree/main/packages/plugin-tobii-user-position#readme}
+ * @see {@link https://github.com/jspsych/jspsych-tobii/tree/main/packages/plugin-tobii-user-position#readme Documentation}
  */
 
 import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from "jspsych";
@@ -13,7 +13,7 @@ import { PositionDisplay } from "./position-display";
 import type { UserPositionData, PositionQuality } from "./types";
 
 const info = <const>{
-  name: "plugin-tobii-user-position",
+  name: "tobii-user-position",
   version: version,
   parameters: {
     /** Duration to show the position guide (ms), null for manual */
@@ -125,14 +125,14 @@ const info = <const>{
 
 type Info = typeof info;
 
-class PluginTobiiUserPositionPlugin implements JsPsychPlugin<Info> {
+class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
   static info = info;
   private static styleInjected = false;
 
   constructor(private jsPsych: JsPsych) {}
 
   private injectStyles(trial: TrialType<Info>): void {
-    if (PluginTobiiUserPositionPlugin.styleInjected) {
+    if (TobiiUserPositionPlugin.styleInjected) {
       return;
     }
 
@@ -259,7 +259,7 @@ class PluginTobiiUserPositionPlugin implements JsPsychPlugin<Info> {
     styleElement.textContent = css;
     document.head.appendChild(styleElement);
 
-    PluginTobiiUserPositionPlugin.styleInjected = true;
+    TobiiUserPositionPlugin.styleInjected = true;
   }
 
   trial(display_element: HTMLElement, trial: TrialType<Info>) {
@@ -378,4 +378,4 @@ class PluginTobiiUserPositionPlugin implements JsPsychPlugin<Info> {
   }
 }
 
-export default PluginTobiiUserPositionPlugin;
+export default TobiiUserPositionPlugin;

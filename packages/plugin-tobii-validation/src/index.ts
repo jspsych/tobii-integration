@@ -1,10 +1,10 @@
 /**
- * **plugin-tobii-validation**
- *
- * jsPsych plugin for Tobii eye tracker validation
- *
+ * @title Tobii Validation
+ * @description jsPsych plugin for Tobii eye tracker validation. Validates calibration
+ * accuracy by measuring gaze error at target points and provides detailed feedback.
+ * @version 1.0.0
  * @author jsPsych Team
- * @see {@link https://github.com/jspsych/jspsych-tobii/tree/main/packages/plugin-tobii-validation#readme}
+ * @see {@link https://github.com/jspsych/jspsych-tobii/tree/main/packages/plugin-tobii-validation#readme Documentation}
  */
 
 import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from "jspsych";
@@ -13,7 +13,7 @@ import { ValidationDisplay } from "./validation-display";
 import type { ValidationParameters, ValidationPoint } from "./types";
 
 const info = <const>{
-  name: "plugin-tobii-validation",
+  name: "tobii-validation",
   version: version,
   parameters: {
     /** Number of validation points (5 or 9) */
@@ -138,7 +138,7 @@ const info = <const>{
 
 type Info = typeof info;
 
-class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
+class TobiiValidationPlugin implements JsPsychPlugin<Info> {
   static info = info;
   private static styleInjected = false;
 
@@ -146,7 +146,7 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
 
   private injectStyles(trial: TrialType<Info>): void {
     // Only inject once per page
-    if (PluginTobiiValidationPlugin.styleInjected) {
+    if (TobiiValidationPlugin.styleInjected) {
       return;
     }
 
@@ -486,7 +486,7 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
     styleElement.textContent = css;
     document.head.appendChild(styleElement);
 
-    PluginTobiiValidationPlugin.styleInjected = true;
+    TobiiValidationPlugin.styleInjected = true;
   }
 
   async trial(display_element: HTMLElement, trial: TrialType<Info>): Promise<void> {
@@ -668,4 +668,4 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
   }
 }
 
-export default PluginTobiiValidationPlugin;
+export default TobiiValidationPlugin;

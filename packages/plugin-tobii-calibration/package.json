@@ -43,7 +43,7 @@
   },
   "homepage": "https://github.com/jspsych/jspsych-tobii/tree/main/packages/plugin-tobii-calibration#readme",
   "peerDependencies": {
-    "jspsych": ">=7.0.0",
+    "jspsych": ">=8.0.0",
     "@jspsych/extension-tobii": "^0.1.0"
   },
   "dependencies": {
