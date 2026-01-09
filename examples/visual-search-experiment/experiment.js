@@ -152,15 +152,17 @@ timeline.push({
     stimulus: `
         <div class="instructions">
             <h2>Task Instructions</h2>
-            <p>On each trial, you will see a display of colored bars.</p>
+            <p>On each trial, you will see a display of X's and O's.</p>
             <p>Your task is to search for the <strong>TARGET</strong>:</p>
 
             <div class="target-example">
                 <svg width="100" height="100">
-                    <line x1="50" y1="25" x2="50" y2="75"
+                    <line x1="30" y1="30" x2="70" y2="70"
+                          stroke="${VisualSearchStimuli.COLORS.red}" stroke-width="6" stroke-linecap="round"/>
+                    <line x1="70" y1="30" x2="30" y2="70"
                           stroke="${VisualSearchStimuli.COLORS.red}" stroke-width="6" stroke-linecap="round"/>
                 </svg>
-                <p><strong>Red Vertical Bar</strong></p>
+                <p><strong>Red X</strong></p>
             </div>
 
             <p>Press <strong>'P'</strong> if the target is <strong>PRESENT</strong></p>
@@ -168,7 +170,7 @@ timeline.push({
 
             <p>Respond as <strong>quickly and accurately</strong> as possible.</p>
             <hr>
-            <p>Press <strong>any key</strong> to see examples of the displays.</p>
+            <p>Press <strong>any key</strong> to see an example display.</p>
         </div>
     `,
 });
@@ -187,7 +189,7 @@ timeline.push({
             <div class="instructions">
                 <h2>Example Display</h2>
                 <p>Here is an example of a search display.</p>
-                <p>Look for the <strong>red vertical bar</strong> among the other items.</p>
+                <p>Look for the <strong>red X</strong> among the other items.</p>
                 <div class="example-display">
                     ${exampleDisplay.html}
                 </div>
@@ -269,7 +271,8 @@ const practiceProcedure = {
                     targetPresent: display.targetPresent,
                     targetPosition: display.targetPosition,
                     featureType: display.featureType,
-                    itemCount: display.items.length
+                    itemCount: display.items.length,
+                    items: display.items
                 };
 
                 return `<div class="search-container">${display.html}</div>`;
@@ -310,6 +313,15 @@ const practiceProcedure = {
                 data.feature_type = currentDisplayInfo.featureType;
                 data.item_count = currentDisplayInfo.itemCount;
                 data.correct = correct;
+
+                // Add all item positions (x, y, color, shape, isTarget)
+                data.item_positions = currentDisplayInfo.items.map(item => ({
+                    x: Math.round(item.x),
+                    y: Math.round(item.y),
+                    color: item.color,
+                    shape: item.shape,
+                    isTarget: item.isTarget
+                }));
 
                 // Send response marker
                 jsPsych.extensions.tobii.sendMarker({
@@ -414,7 +426,8 @@ const trialProcedure = {
                     targetPosition: display.targetPosition,
                     featureType: display.featureType,
                     itemCount: display.items.length,
-                    searchType: display.searchType
+                    searchType: display.searchType,
+                    items: display.items
                 };
 
                 return `<div class="search-container">${display.html}</div>`;
@@ -456,6 +469,15 @@ const trialProcedure = {
                 data.feature_type = currentDisplayInfo.featureType;
                 data.item_count = currentDisplayInfo.itemCount;
                 data.correct = correct;
+
+                // Add all item positions (x, y, color, shape, isTarget)
+                data.item_positions = currentDisplayInfo.items.map(item => ({
+                    x: Math.round(item.x),
+                    y: Math.round(item.y),
+                    color: item.color,
+                    shape: item.shape,
+                    isTarget: item.isTarget
+                }));
 
                 // Send response marker
                 jsPsych.extensions.tobii.sendMarker({

@@ -2,27 +2,29 @@
  * Visual Search Stimuli Generator
  *
  * Generates search displays for feature and conjunction search tasks.
- * - Feature search: Target differs from distractors by a single feature (e.g., color OR orientation)
- * - Conjunction search: Target differs by a combination of features (e.g., color AND orientation)
+ * - Feature search: Target differs from distractors by a single feature (e.g., color OR shape)
+ * - Conjunction search: Target differs by a combination of features (e.g., color AND shape)
+ *
+ * Stimuli: X's and O's in red and blue
  */
 
 const VisualSearchStimuli = (function() {
     // Stimulus parameters
-    const ITEM_SIZE = 40; // pixels
+    const ITEM_SIZE = 36; // pixels
     const ITEM_STROKE_WIDTH = 4;
     const MIN_SPACING = 60; // minimum distance between item centers
     const DISPLAY_PADDING = 100; // padding from screen edges
 
-    // Colors
+    // Colors (more saturated blue)
     const COLORS = {
         red: '#E53935',
-        blue: '#1E88E5'
+        blue: '#0D47A1'  // More saturated blue
     };
 
-    // Orientations (in degrees)
-    const ORIENTATIONS = {
-        vertical: 0,
-        horizontal: 90
+    // Shapes
+    const SHAPES = {
+        X: 'X',
+        O: 'O'
     };
 
     /**
@@ -65,30 +67,31 @@ const VisualSearchStimuli = (function() {
     }
 
     /**
-     * Create SVG for a single item (oriented bar)
+     * Create SVG for a single item (X or O)
      */
-    function createItemSVG(color, orientation, x, y) {
+    function createItemSVG(color, shape, x, y) {
         const halfSize = ITEM_SIZE / 2;
-        const rad = (orientation * Math.PI) / 180;
 
-        // Calculate line endpoints
-        const x1 = x - halfSize * Math.sin(rad);
-        const y1 = y - halfSize * Math.cos(rad);
-        const x2 = x + halfSize * Math.sin(rad);
-        const y2 = y + halfSize * Math.cos(rad);
-
-        return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
-                      stroke="${color}" stroke-width="${ITEM_STROKE_WIDTH}"
-                      stroke-linecap="round"/>`;
+        if (shape === SHAPES.X) {
+            // Draw an X
+            return `<line x1="${x - halfSize}" y1="${y - halfSize}" x2="${x + halfSize}" y2="${y + halfSize}"
+                          stroke="${color}" stroke-width="${ITEM_STROKE_WIDTH}" stroke-linecap="round"/>
+                    <line x1="${x + halfSize}" y1="${y - halfSize}" x2="${x - halfSize}" y2="${y + halfSize}"
+                          stroke="${color}" stroke-width="${ITEM_STROKE_WIDTH}" stroke-linecap="round"/>`;
+        } else {
+            // Draw an O (circle)
+            return `<circle cx="${x}" cy="${y}" r="${halfSize}"
+                            stroke="${color}" stroke-width="${ITEM_STROKE_WIDTH}" fill="none"/>`;
+        }
     }
 
     /**
      * Generate a feature search display
-     * Target differs from distractors by ONE feature (color OR orientation)
+     * Target differs from distractors by ONE feature (color OR shape)
      *
      * @param {number} setSize - Number of items in the display
      * @param {boolean} targetPresent - Whether the target is present
-     * @param {string} featureType - 'color' or 'orientation'
+     * @param {string} featureType - 'color' or 'shape'
      * @param {number} displayWidth - Width of display area
      * @param {number} displayHeight - Height of display area
      * @returns {Object} Display configuration and HTML
@@ -98,20 +101,20 @@ const VisualSearchStimuli = (function() {
         const items = [];
 
         // Define target and distractor features
-        let targetColor, targetOrientation, distractorColor, distractorOrientation;
+        let targetColor, targetShape, distractorColor, distractorShape;
 
-        // Target is always red vertical bar
+        // Target is always red X
         targetColor = COLORS.red;
-        targetOrientation = ORIENTATIONS.vertical;
+        targetShape = SHAPES.X;
 
         if (featureType === 'color') {
-            // Color feature search: red vertical target among blue vertical distractors
+            // Color feature search: red X target among blue X distractors
             distractorColor = COLORS.blue;
-            distractorOrientation = ORIENTATIONS.vertical;
+            distractorShape = SHAPES.X;
         } else {
-            // Orientation feature search: red vertical target among red horizontal distractors
+            // Shape feature search: red X target among red O distractors
             distractorColor = COLORS.red;
-            distractorOrientation = ORIENTATIONS.horizontal;
+            distractorShape = SHAPES.O;
         }
 
         // Generate positions
@@ -126,13 +129,13 @@ const VisualSearchStimuli = (function() {
         for (let i = 0; i < setSize; i++) {
             const isTarget = i === targetIndex;
             const color = isTarget ? targetColor : distractorColor;
-            const orientation = isTarget ? targetOrientation : distractorOrientation;
+            const shape = isTarget ? targetShape : distractorShape;
 
             items.push({
                 x: positions[i].x,
                 y: positions[i].y,
                 color: color,
-                orientation: orientation,
+                shape: shape,
                 isTarget: isTarget
             });
         }
@@ -153,10 +156,10 @@ const VisualSearchStimuli = (function() {
 
     /**
      * Generate a conjunction search display
-     * Target differs from distractors by a COMBINATION of features (color AND orientation)
+     * Target differs from distractors by a COMBINATION of features (color AND shape)
      *
-     * Target: Red vertical bar
-     * Distractors: Red horizontal bars AND Green vertical bars
+     * Target: Red X
+     * Distractors: Red O's AND Blue X's
      *
      * @param {number} setSize - Number of items in the display
      * @param {boolean} targetPresent - Whether the target is present
@@ -168,9 +171,9 @@ const VisualSearchStimuli = (function() {
         const positions = [];
         const items = [];
 
-        // Target: Red vertical
+        // Target: Red X
         const targetColor = COLORS.red;
-        const targetOrientation = ORIENTATIONS.vertical;
+        const targetShape = SHAPES.X;
 
         // Generate positions
         for (let i = 0; i < setSize; i++) {
@@ -187,11 +190,11 @@ const VisualSearchStimuli = (function() {
         // Create equal numbers of each distractor type
         for (let i = 0; i < numDistractors; i++) {
             if (i % 2 === 0) {
-                // Red horizontal
-                distractorTypes.push({ color: COLORS.red, orientation: ORIENTATIONS.horizontal });
+                // Red O (same color, different shape)
+                distractorTypes.push({ color: COLORS.red, shape: SHAPES.O });
             } else {
-                // Blue vertical
-                distractorTypes.push({ color: COLORS.blue, orientation: ORIENTATIONS.vertical });
+                // Blue X (different color, same shape)
+                distractorTypes.push({ color: COLORS.blue, shape: SHAPES.X });
             }
         }
 
@@ -202,13 +205,13 @@ const VisualSearchStimuli = (function() {
         for (let i = 0; i < setSize; i++) {
             const isTarget = i === targetIndex;
 
-            let color, orientation;
+            let color, shape;
             if (isTarget) {
                 color = targetColor;
-                orientation = targetOrientation;
+                shape = targetShape;
             } else {
                 color = distractorTypes[distractorIndex].color;
-                orientation = distractorTypes[distractorIndex].orientation;
+                shape = distractorTypes[distractorIndex].shape;
                 distractorIndex++;
             }
 
@@ -216,7 +219,7 @@ const VisualSearchStimuli = (function() {
                 x: positions[i].x,
                 y: positions[i].y,
                 color: color,
-                orientation: orientation,
+                shape: shape,
                 isTarget: isTarget
             });
         }
@@ -229,7 +232,7 @@ const VisualSearchStimuli = (function() {
             items: items,
             targetPosition: targetPresent ? positions[targetIndex] : null,
             searchType: 'conjunction',
-            featureType: 'color_and_orientation',
+            featureType: 'color_and_shape',
             setSize: setSize,
             targetPresent: targetPresent
         };
@@ -241,7 +244,7 @@ const VisualSearchStimuli = (function() {
     function generateSVG(items, width, height) {
         let svgContent = '';
         for (const item of items) {
-            svgContent += createItemSVG(item.color, item.orientation, item.x, item.y);
+            svgContent += createItemSVG(item.color, item.shape, item.x, item.y);
         }
 
         return `<svg width="${width}" height="${height}" class="search-display">
@@ -314,8 +317,8 @@ const VisualSearchStimuli = (function() {
      */
     function generateDisplayForTrial(trial) {
         if (trial.searchType === 'feature') {
-            // Alternate between color and orientation feature search
-            const featureType = Math.random() < 0.5 ? 'color' : 'orientation';
+            // Alternate between color and shape feature search
+            const featureType = Math.random() < 0.5 ? 'color' : 'shape';
             return generateFeatureSearchDisplay(
                 trial.setSize,
                 trial.targetPresent,
@@ -342,7 +345,7 @@ const VisualSearchStimuli = (function() {
         generateDisplayForTrial,
         shuffleArray,
         COLORS,
-        ORIENTATIONS,
+        SHAPES,
         ITEM_SIZE
     };
 })();
