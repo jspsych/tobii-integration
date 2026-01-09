@@ -395,6 +395,37 @@ class ExtensionTobiiExtension implements JsPsychExtension {
   }
 
   /**
+   * Convert window pixel coordinates to container-relative coordinates
+   * @param x - X coordinate in window pixels
+   * @param y - Y coordinate in window pixels
+   * @param container - Optional container element (defaults to jsPsych display element)
+   */
+  windowToContainer(x: number, y: number, container?: HTMLElement): Coordinates {
+    const el = container || this.jsPsych.getDisplayElement();
+    return CoordinateUtils.windowToContainer(x, y, el);
+  }
+
+  /**
+   * Get container dimensions
+   * @param container - Optional container element (defaults to jsPsych display element)
+   */
+  getContainerDimensions(container?: HTMLElement): ScreenDimensions {
+    const el = container || this.jsPsych.getDisplayElement();
+    return CoordinateUtils.getContainerDimensions(el);
+  }
+
+  /**
+   * Check if window coordinates fall within a container
+   * @param x - X coordinate in window pixels
+   * @param y - Y coordinate in window pixels
+   * @param container - Optional container element (defaults to jsPsych display element)
+   */
+  isWithinContainer(x: number, y: number, container?: HTMLElement): boolean {
+    const el = container || this.jsPsych.getDisplayElement();
+    return CoordinateUtils.isWithinContainer(x, y, el);
+  }
+
+  /**
    * Export gaze data to CSV
    */
   exportToCSV(data: any[], filename: string): void {

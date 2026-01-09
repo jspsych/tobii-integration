@@ -12,8 +12,8 @@ export function normalizedToPixels(x: number, y: number): Coordinates {
   const height = window.innerHeight;
 
   return {
-    x: x * width,
-    y: y * height,
+    x: Math.round(x * width),
+    y: Math.round(y * height),
   };
 }
 
@@ -67,4 +67,34 @@ export function angle(p1: Coordinates, p2: Coordinates): number {
   const dx = p2.x - p1.x;
   const dy = p2.y - p1.y;
   return (Math.atan2(dy, dx) * 180) / Math.PI;
+}
+
+/**
+ * Convert window pixel coordinates to container-relative coordinates
+ */
+export function windowToContainer(x: number, y: number, container: HTMLElement): Coordinates {
+  const rect = container.getBoundingClientRect();
+  return {
+    x: Math.round(x - rect.left),
+    y: Math.round(y - rect.top),
+  };
+}
+
+/**
+ * Get container dimensions
+ */
+export function getContainerDimensions(container: HTMLElement): ScreenDimensions {
+  const rect = container.getBoundingClientRect();
+  return {
+    width: rect.width,
+    height: rect.height,
+  };
+}
+
+/**
+ * Check if window coordinates fall within a container
+ */
+export function isWithinContainer(x: number, y: number, container: HTMLElement): boolean {
+  const rect = container.getBoundingClientRect();
+  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 }
