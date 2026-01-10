@@ -1,10 +1,10 @@
 /**
- * **plugin-tobii-calibration**
- *
- * jsPsych plugin for Tobii eye tracker calibration
- *
+ * @title Tobii Calibration
+ * @description jsPsych plugin for Tobii eye tracker calibration. Provides a visual
+ * calibration procedure with animated points and real-time feedback.
+ * @version 1.0.0
  * @author jsPsych Team
- * @see {@link https://github.com/jspsych/jspsych-tobii/tree/main/packages/plugin-tobii-calibration#readme}
+ * @see {@link https://github.com/jspsych/jspsych-tobii/tree/main/packages/plugin-tobii-calibration#readme Documentation}
  */
 
 import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from "jspsych";
@@ -13,7 +13,7 @@ import { CalibrationDisplay } from "./calibration-display";
 import type { CalibrationParameters, CalibrationPoint } from "./types";
 
 const info = <const>{
-  name: "plugin-tobii-calibration",
+  name: "tobii-calibration",
   version: version,
   parameters: {
     /** Number of calibration points (5 or 9) */
@@ -139,7 +139,7 @@ const info = <const>{
 
 type Info = typeof info;
 
-class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
+class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
   static info = info;
   private static styleInjected = false;
 
@@ -147,7 +147,7 @@ class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
 
   private injectStyles(trial: TrialType<Info>): void {
     // Only inject once per page
-    if (PluginTobiiCalibrationPlugin.styleInjected) {
+    if (TobiiCalibrationPlugin.styleInjected) {
       return;
     }
 
@@ -350,7 +350,7 @@ class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
     styleElement.textContent = css;
     document.head.appendChild(styleElement);
 
-    PluginTobiiCalibrationPlugin.styleInjected = true;
+    TobiiCalibrationPlugin.styleInjected = true;
   }
 
   async trial(display_element: HTMLElement, trial: TrialType<Info>): Promise<void> {
@@ -513,4 +513,4 @@ class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
   }
 }
 
-export default PluginTobiiCalibrationPlugin;
+export default TobiiCalibrationPlugin;

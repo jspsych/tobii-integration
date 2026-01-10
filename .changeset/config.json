@@ -3,7 +3,14 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [],
-  "linked": [],
+  "linked": [
+    [
+      "@jspsych/extension-tobii",
+      "@jspsych/plugin-tobii-calibration",
+      "@jspsych/plugin-tobii-validation",
+      "@jspsych/plugin-tobii-user-position"
+    ]
+  ],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",

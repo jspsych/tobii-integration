@@ -1,10 +1,11 @@
 /**
- * **extension-tobii**
- *
- * jsPsych extension for Tobii eye tracker integration via WebSocket
- *
+ * @title Tobii Extension
+ * @description jsPsych extension for Tobii eye tracker integration via WebSocket.
+ * Provides real-time gaze data streaming, calibration control, time synchronization,
+ * and coordinate utilities for eye tracking experiments.
+ * @version 1.0.0
  * @author jsPsych Team
- * @see {@link https://github.com/jspsych/jspsych-tobii/tree/main/packages/extension-tobii#readme}
+ * @see {@link https://github.com/jspsych/jspsych-tobii/tree/main/packages/extension-tobii#readme Documentation}
  */
 
 import { JsPsych, JsPsychExtension, JsPsychExtensionInfo, ParameterType } from "jspsych";
@@ -32,7 +33,7 @@ import type {
   ConnectionStatus,
 } from "./types";
 
-class ExtensionTobiiExtension implements JsPsychExtension {
+class TobiiExtension implements JsPsychExtension {
   static info: JsPsychExtensionInfo = {
     name: "tobii",
     version: version,
@@ -468,7 +469,7 @@ class ExtensionTobiiExtension implements JsPsychExtension {
   }
 }
 
-export default ExtensionTobiiExtension;
+export default TobiiExtension;
 
 // Export types for use by plugins and experiments
 export type {
