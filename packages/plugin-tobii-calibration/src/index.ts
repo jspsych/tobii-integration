@@ -154,6 +154,14 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
 
   constructor(private jsPsych: JsPsych) {}
 
+  private static removeStyles(): void {
+    const el = document.getElementById('tobii-calibration-styles');
+    if (el) {
+      el.remove();
+    }
+    TobiiCalibrationPlugin.styleInjected = false;
+  }
+
   private injectStyles(trial: TrialType<Info>): void {
     // Only inject once per page
     if (TobiiCalibrationPlugin.styleInjected) {
@@ -463,9 +471,10 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
       calibrationDisplay.resetForRetry();
     }
 
-    // Clear display
+    // Clear display and remove injected styles
     calibrationDisplay.clear();
     display_element.innerHTML = '';
+    TobiiCalibrationPlugin.removeStyles();
 
     // Finish trial
     const trial_data = {

@@ -151,6 +151,14 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
 
   constructor(private jsPsych: JsPsych) {}
 
+  private static removeStyles(): void {
+    const el = document.getElementById('tobii-user-position-styles');
+    if (el) {
+      el.remove();
+    }
+    TobiiUserPositionPlugin.styleInjected = false;
+  }
+
   private injectStyles(trial: TrialType<Info>): void {
     if (TobiiUserPositionPlugin.styleInjected) {
       return;
@@ -276,6 +284,7 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
     `;
 
     const styleElement = document.createElement('style');
+    styleElement.id = 'tobii-user-position-styles';
     styleElement.textContent = css;
     document.head.appendChild(styleElement);
 
@@ -387,6 +396,7 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
         };
 
         positionDisplay.destroy();
+        TobiiUserPositionPlugin.removeStyles();
         this.jsPsych.finishTrial(trialData);
         resolve();
       };

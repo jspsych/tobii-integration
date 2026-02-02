@@ -36,14 +36,7 @@ const requestId = `req_${Date.now()}_${Math.random()}`;
 
 ### Remaining Issues
 
-#### 1. Styles Persist After Plugin Unload (LOW)
-**File:** `packages/plugin-tobii-calibration/src/index.ts`
-
-The `injectStyles` method adds styles to `document.head` with a static flag. Styles remain after the trial completes.
-
-**Recommendation:** Add cleanup in `on_finish` or provide a `removeStyles` method.
-
-#### 2. calibration_points Type Not Properly Constrained (LOW)
+#### 1. calibration_points Type Not Properly Constrained (LOW)
 **File:** `packages/plugin-tobii-calibration/src/index.ts`
 
 ```typescript
@@ -213,6 +206,7 @@ The following critical and important issues have been addressed:
 - ~~Hard-coded success threshold~~ -- `tolerance` parameter already existed
 - ~~Magic numbers for position thresholds~~ -- configurable via `position_threshold_good/fair` and `distance_threshold_good/fair` parameters
 - ~~No retry mechanism for failed calibration~~ -- `max_retries` parameter with in-plugin retry loop for both calibration and validation
+- ~~Styles persist after plugin unload~~ -- `removeStyles()` cleans up injected `<style>` elements and resets static flag at trial end for all three plugins
 
 ### Remaining Nice-to-Have Enhancements
 1. Improve error messages and standardize format

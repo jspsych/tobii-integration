@@ -153,6 +153,14 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
 
   constructor(private jsPsych: JsPsych) {}
 
+  private static removeStyles(): void {
+    const el = document.getElementById('tobii-validation-styles');
+    if (el) {
+      el.remove();
+    }
+    TobiiValidationPlugin.styleInjected = false;
+  }
+
   private injectStyles(trial: TrialType<Info>): void {
     // Only inject once per page
     if (TobiiValidationPlugin.styleInjected) {
@@ -619,9 +627,10 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
       validationDisplay.resetForRetry();
     }
 
-    // Clear display
+    // Clear display and remove injected styles
     validationDisplay.clear();
     display_element.innerHTML = '';
+    TobiiValidationPlugin.removeStyles();
 
     // Finish trial
     const trial_data = {
