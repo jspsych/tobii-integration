@@ -7,13 +7,13 @@
  * @see {@link https://github.com/jspsych/jspsych-tobii/tree/main/packages/plugin-tobii-calibration#readme Documentation}
  */
 
-import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from "jspsych";
-import { version } from "../package.json";
-import { CalibrationDisplay } from "./calibration-display";
-import type { CalibrationParameters, CalibrationPoint } from "./types";
+import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from 'jspsych';
+import { version } from '../package.json';
+import { CalibrationDisplay } from './calibration-display';
+import type { CalibrationParameters, CalibrationPoint } from './types';
 
 const info = <const>{
-  name: "tobii-calibration",
+  name: 'tobii-calibration',
   version: version,
   parameters: {
     /** Number of calibration points (5 or 9) */
@@ -24,7 +24,7 @@ const info = <const>{
     /** Calibration mode: click or view */
     calibration_mode: {
       type: ParameterType.STRING,
-      default: "view",
+      default: 'view',
     },
     /** Size of calibration points in pixels */
     point_size: {
@@ -34,7 +34,7 @@ const info = <const>{
     /** Color of calibration points */
     point_color: {
       type: ParameterType.STRING,
-      default: "#ff0000",
+      default: '#ff0000',
     },
     /** Duration to show each point before data collection (ms) - allows user to fixate */
     point_duration: {
@@ -64,53 +64,53 @@ const info = <const>{
     /** Animation style */
     animation: {
       type: ParameterType.STRING,
-      default: "shrink",
+      default: 'shrink',
     },
     /** Instructions text */
     instructions: {
       type: ParameterType.STRING,
       default:
-        "Look at each point as it appears on the screen. Keep your gaze fixed on each point until it disappears.",
+        'Look at each point as it appears on the screen. Keep your gaze fixed on each point until it disappears.',
     },
     /** Button text for click mode */
     button_text: {
       type: ParameterType.STRING,
-      default: "Start Calibration",
+      default: 'Start Calibration',
     },
     /** Background color of the calibration container */
     background_color: {
       type: ParameterType.STRING,
-      default: "#808080",
+      default: '#808080',
     },
     /** Primary button color */
     button_color: {
       type: ParameterType.STRING,
-      default: "#007bff",
+      default: '#007bff',
     },
     /** Primary button hover color */
     button_hover_color: {
       type: ParameterType.STRING,
-      default: "#0056b3",
+      default: '#0056b3',
     },
     /** Retry button color */
     retry_button_color: {
       type: ParameterType.STRING,
-      default: "#dc3545",
+      default: '#dc3545',
     },
     /** Retry button hover color */
     retry_button_hover_color: {
       type: ParameterType.STRING,
-      default: "#c82333",
+      default: '#c82333',
     },
     /** Success message color */
     success_color: {
       type: ParameterType.STRING,
-      default: "#28a745",
+      default: '#28a745',
     },
     /** Error message color */
     error_color: {
       type: ParameterType.STRING,
-      default: "#dc3545",
+      default: '#dc3545',
     },
   },
   data: {
@@ -345,8 +345,8 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
       }
     `;
 
-    const styleElement = document.createElement("style");
-    styleElement.id = "tobii-calibration-styles";
+    const styleElement = document.createElement('style');
+    styleElement.id = 'tobii-calibration-styles';
     styleElement.textContent = css;
     document.head.appendChild(styleElement);
 
@@ -360,16 +360,19 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
     const tobiiExt = this.jsPsych.extensions.tobii as any;
 
     if (!tobiiExt) {
-      throw new Error("Tobii extension not initialized");
+      throw new Error('Tobii extension not initialized');
     }
 
     // Check connection
     if (!tobiiExt.isConnected()) {
-      throw new Error("Not connected to Tobii server");
+      throw new Error('Not connected to Tobii server');
     }
 
     // Create calibration display
-    const calibrationDisplay = new CalibrationDisplay(display_element, trial as any as CalibrationParameters);
+    const calibrationDisplay = new CalibrationDisplay(
+      display_element,
+      trial as any as CalibrationParameters
+    );
 
     // Show instructions
     await calibrationDisplay.showInstructions();
@@ -402,7 +405,7 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
       // Zoom in (point shrinks to fixation size)
       await calibrationDisplay.playZoomIn();
 
-      if (trial.calibration_mode === "click") {
+      if (trial.calibration_mode === 'click') {
         // Wait for user to click
         await calibrationDisplay.waitForClick();
       } else {
@@ -429,14 +432,11 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
     const calibrationResult = await tobiiExt.computeCalibration();
 
     // Show result
-    await calibrationDisplay.showResult(
-      calibrationResult.success,
-      calibrationResult.averageError
-    );
+    await calibrationDisplay.showResult(calibrationResult.success, calibrationResult.averageError);
 
     // Clear display
     calibrationDisplay.clear();
-    display_element.innerHTML = "";
+    display_element.innerHTML = '';
 
     // Finish trial
     const trial_data = {
@@ -455,22 +455,24 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
    */
   private validateCustomPoints(points: any[]): CalibrationPoint[] {
     if (!Array.isArray(points) || points.length === 0) {
-      throw new Error("custom_points must be a non-empty array");
+      throw new Error('custom_points must be a non-empty array');
     }
 
     const validated: CalibrationPoint[] = [];
     for (let i = 0; i < points.length; i++) {
       const point = points[i];
       if (
-        typeof point !== "object" ||
+        typeof point !== 'object' ||
         point === null ||
-        typeof point.x !== "number" ||
-        typeof point.y !== "number"
+        typeof point.x !== 'number' ||
+        typeof point.y !== 'number'
       ) {
         throw new Error(`Invalid calibration point at index ${i}: must have numeric x and y`);
       }
       if (point.x < 0 || point.x > 1 || point.y < 0 || point.y > 1) {
-        throw new Error(`Calibration point at index ${i} out of range: x and y must be between 0 and 1`);
+        throw new Error(
+          `Calibration point at index ${i} out of range: x and y must be between 0 and 1`
+        );
       }
       validated.push({ x: point.x, y: point.y });
     }

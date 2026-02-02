@@ -11,7 +11,7 @@ export interface CalibrationParameters {
   /** Number of calibration points (5 or 9) */
   calibration_points?: 5 | 9;
   /** Calibration mode: click to advance or view for fixed duration */
-  calibration_mode?: "click" | "view";
+  calibration_mode?: 'click' | 'view';
   /** Size of calibration point in pixels */
   point_size?: number;
   /** Color of calibration point */
@@ -27,7 +27,7 @@ export interface CalibrationParameters {
   /** Custom calibration points (overrides calibration_points) */
   custom_points?: CalibrationPoint[];
   /** Animation style for point appearance */
-  animation?: "none" | "pulse" | "shrink";
+  animation?: 'none' | 'pulse' | 'shrink';
   /** Instructions text */
   instructions?: string;
   /** Button text for click mode */

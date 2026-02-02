@@ -30,9 +30,9 @@ export class PositionDisplay {
   // Constants for the display
   private readonly BOX_WIDTH = 400;
   private readonly BOX_HEIGHT = 300;
-  private readonly MIN_FACE_SCALE = 0.4;  // Scale when far away
-  private readonly MAX_FACE_SCALE = 1.6;  // Scale when too close
-  private readonly OPTIMAL_FACE_SCALE = 1.0;  // Scale at optimal distance
+  private readonly MIN_FACE_SCALE = 0.4; // Scale when far away
+  private readonly MAX_FACE_SCALE = 1.6; // Scale when too close
+  private readonly OPTIMAL_FACE_SCALE = 1.0; // Scale at optimal distance
 
   constructor(container: HTMLElement, options: PositionDisplayOptions) {
     this.container = container;
@@ -201,7 +201,10 @@ export class PositionDisplay {
     svg.appendChild(faceOutline);
 
     // Left eye socket
-    this.leftEyeElement = document.createElementNS('http://www.w3.org/2000/svg', 'circle') as unknown as HTMLElement;
+    this.leftEyeElement = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'circle'
+    ) as unknown as HTMLElement;
     this.leftEyeElement.setAttribute('cx', '40');
     this.leftEyeElement.setAttribute('cy', '65');
     this.leftEyeElement.setAttribute('r', '12');
@@ -211,7 +214,10 @@ export class PositionDisplay {
     svg.appendChild(this.leftEyeElement as unknown as SVGElement);
 
     // Right eye socket
-    this.rightEyeElement = document.createElementNS('http://www.w3.org/2000/svg', 'circle') as unknown as HTMLElement;
+    this.rightEyeElement = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'circle'
+    ) as unknown as HTMLElement;
     this.rightEyeElement.setAttribute('cx', '80');
     this.rightEyeElement.setAttribute('cy', '65');
     this.rightEyeElement.setAttribute('r', '12');
@@ -241,9 +247,24 @@ export class PositionDisplay {
     }
 
     // Calculate average position from both eyes
-    const avgX = this.getAveragePosition(positionData.leftX, positionData.rightX, positionData.leftValid, positionData.rightValid);
-    const avgY = this.getAveragePosition(positionData.leftY, positionData.rightY, positionData.leftValid, positionData.rightValid);
-    const avgZ = this.getAveragePosition(positionData.leftZ, positionData.rightZ, positionData.leftValid, positionData.rightValid);
+    const avgX = this.getAveragePosition(
+      positionData.leftX,
+      positionData.rightX,
+      positionData.leftValid,
+      positionData.rightValid
+    );
+    const avgY = this.getAveragePosition(
+      positionData.leftY,
+      positionData.rightY,
+      positionData.leftValid,
+      positionData.rightValid
+    );
+    const avgZ = this.getAveragePosition(
+      positionData.leftZ,
+      positionData.rightZ,
+      positionData.leftValid,
+      positionData.rightValid
+    );
 
     // Update face position and scale
     this.updateFaceDisplay(avgX, avgY, avgZ, positionData);
@@ -260,7 +281,12 @@ export class PositionDisplay {
     this.updateTextualFeedback(avgX, avgY, avgZ);
   }
 
-  private getAveragePosition(left: number | null, right: number | null, leftValid: boolean, rightValid: boolean): number | null {
+  private getAveragePosition(
+    left: number | null,
+    right: number | null,
+    leftValid: boolean,
+    rightValid: boolean
+  ): number | null {
     if (leftValid && rightValid && left !== null && right !== null) {
       return (left + right) / 2;
     } else if (leftValid && left !== null) {
@@ -271,7 +297,12 @@ export class PositionDisplay {
     return null;
   }
 
-  private updateFaceDisplay(x: number | null, y: number | null, z: number | null, positionData: UserPositionData): void {
+  private updateFaceDisplay(
+    x: number | null,
+    y: number | null,
+    z: number | null,
+    positionData: UserPositionData
+  ): void {
     if (x === null || y === null) {
       this.faceOutlineElement.style.opacity = '0.3';
       return;
@@ -283,7 +314,7 @@ export class PositionDisplay {
     // x, y are 0-1 where 0.5 is center
     // Y axis is inverted: y=0 is bottom, y=1 is top, so we invert it for screen coordinates
     const offsetX = (x - 0.5) * this.BOX_WIDTH * 0.8;
-    const offsetY = (0.5 - y) * this.BOX_HEIGHT * 0.8;  // Inverted Y
+    const offsetY = (0.5 - y) * this.BOX_HEIGHT * 0.8; // Inverted Y
 
     // Calculate scale based on distance (z)
     // z is 0-1 where ~0.5 is optimal
@@ -291,7 +322,7 @@ export class PositionDisplay {
     let scale = this.OPTIMAL_FACE_SCALE;
     if (z !== null) {
       // z=1 (close) -> MAX_FACE_SCALE, z=0.5 -> OPTIMAL_FACE_SCALE, z=0 (far) -> MIN_FACE_SCALE
-      scale = this.MIN_FACE_SCALE + (z * (this.MAX_FACE_SCALE - this.MIN_FACE_SCALE));
+      scale = this.MIN_FACE_SCALE + z * (this.MAX_FACE_SCALE - this.MIN_FACE_SCALE);
       scale = Math.max(this.MIN_FACE_SCALE, Math.min(this.MAX_FACE_SCALE, scale));
     }
 
@@ -336,7 +367,8 @@ export class PositionDisplay {
     if (!this.feedbackElement) return;
 
     if (x === null || y === null || z === null) {
-      this.feedbackElement.textContent = 'Eyes not detected - please position yourself in front of the tracker';
+      this.feedbackElement.textContent =
+        'Eyes not detected - please position yourself in front of the tracker';
       this.feedbackElement.style.color = this.options.poorColor;
       return;
     }
@@ -370,9 +402,12 @@ export class PositionDisplay {
         feedback = 'Position: Almost there...';
       }
 
-      color = quality.distanceStatus === 'poor' || quality.horizontalStatus === 'poor' || quality.verticalStatus === 'poor'
-        ? this.options.poorColor
-        : this.options.fairColor;
+      color =
+        quality.distanceStatus === 'poor' ||
+        quality.horizontalStatus === 'poor' ||
+        quality.verticalStatus === 'poor'
+          ? this.options.poorColor
+          : this.options.fairColor;
     }
 
     this.feedbackElement.textContent = feedback;
@@ -401,7 +436,8 @@ export class PositionDisplay {
     else if (zOffset < 0.2) distanceStatus = 'fair';
     else distanceStatus = 'poor';
 
-    const isGoodPosition = horizontalStatus === 'good' && verticalStatus === 'good' && distanceStatus === 'good';
+    const isGoodPosition =
+      horizontalStatus === 'good' && verticalStatus === 'good' && distanceStatus === 'good';
 
     return {
       isGoodPosition,
@@ -438,9 +474,24 @@ export class PositionDisplay {
       };
     }
 
-    const avgX = this.getAveragePosition(positionData.leftX, positionData.rightX, positionData.leftValid, positionData.rightValid);
-    const avgY = this.getAveragePosition(positionData.leftY, positionData.rightY, positionData.leftValid, positionData.rightValid);
-    const avgZ = this.getAveragePosition(positionData.leftZ, positionData.rightZ, positionData.leftValid, positionData.rightValid);
+    const avgX = this.getAveragePosition(
+      positionData.leftX,
+      positionData.rightX,
+      positionData.leftValid,
+      positionData.rightValid
+    );
+    const avgY = this.getAveragePosition(
+      positionData.leftY,
+      positionData.rightY,
+      positionData.leftValid,
+      positionData.rightValid
+    );
+    const avgZ = this.getAveragePosition(
+      positionData.leftZ,
+      positionData.rightZ,
+      positionData.leftValid,
+      positionData.rightValid
+    );
 
     if (avgX === null || avgY === null || avgZ === null) {
       return {

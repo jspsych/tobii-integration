@@ -2,7 +2,7 @@
  * Coordinate conversion utilities
  */
 
-import type { Coordinates, ScreenDimensions } from "./types";
+import type { Coordinates, ScreenDimensions } from './types';
 
 /**
  * Convert normalized coordinates (0-1) to pixels

@@ -7,13 +7,13 @@
  * @see {@link https://github.com/jspsych/jspsych-tobii/tree/main/packages/plugin-tobii-validation#readme Documentation}
  */
 
-import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from "jspsych";
-import { version } from "../package.json";
-import { ValidationDisplay } from "./validation-display";
-import type { ValidationParameters, ValidationPoint } from "./types";
+import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from 'jspsych';
+import { version } from '../package.json';
+import { ValidationDisplay } from './validation-display';
+import type { ValidationParameters, ValidationPoint } from './types';
 
 const info = <const>{
-  name: "tobii-validation",
+  name: 'tobii-validation',
   version: version,
   parameters: {
     /** Number of validation points (5 or 9) */
@@ -29,7 +29,7 @@ const info = <const>{
     /** Color of validation points */
     point_color: {
       type: ParameterType.STRING,
-      default: "#00ff00",
+      default: '#00ff00',
     },
     /** Duration to collect data at each point (ms) */
     collection_duration: {
@@ -54,57 +54,57 @@ const info = <const>{
     /** Instructions text */
     instructions: {
       type: ParameterType.STRING,
-      default: "Look at each point as it appears on the screen to validate calibration accuracy.",
+      default: 'Look at each point as it appears on the screen to validate calibration accuracy.',
     },
     /** Background color of the validation container */
     background_color: {
       type: ParameterType.STRING,
-      default: "#808080",
+      default: '#808080',
     },
     /** Primary button color */
     button_color: {
       type: ParameterType.STRING,
-      default: "#28a745",
+      default: '#28a745',
     },
     /** Primary button hover color */
     button_hover_color: {
       type: ParameterType.STRING,
-      default: "#218838",
+      default: '#218838',
     },
     /** Retry button color */
     retry_button_color: {
       type: ParameterType.STRING,
-      default: "#dc3545",
+      default: '#dc3545',
     },
     /** Retry button hover color */
     retry_button_hover_color: {
       type: ParameterType.STRING,
-      default: "#c82333",
+      default: '#c82333',
     },
     /** Success message color */
     success_color: {
       type: ParameterType.STRING,
-      default: "#28a745",
+      default: '#28a745',
     },
     /** Error message color */
     error_color: {
       type: ParameterType.STRING,
-      default: "#dc3545",
+      default: '#dc3545',
     },
     /** Good accuracy color */
     accuracy_good_color: {
       type: ParameterType.STRING,
-      default: "#00ff00",
+      default: '#00ff00',
     },
     /** Fair accuracy color */
     accuracy_fair_color: {
       type: ParameterType.STRING,
-      default: "#ffff00",
+      default: '#ffff00',
     },
     /** Poor accuracy color */
     accuracy_poor_color: {
       type: ParameterType.STRING,
-      default: "#ff0000",
+      default: '#ff0000',
     },
     /** Normalized tolerance for acceptable accuracy (0-1 scale, validation passes if average error <= this) */
     tolerance: {
@@ -481,8 +481,8 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
       }
     `;
 
-    const styleElement = document.createElement("style");
-    styleElement.id = "tobii-validation-styles";
+    const styleElement = document.createElement('style');
+    styleElement.id = 'tobii-validation-styles';
     styleElement.textContent = css;
     document.head.appendChild(styleElement);
 
@@ -496,16 +496,19 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
     const tobiiExt = this.jsPsych.extensions.tobii as any;
 
     if (!tobiiExt) {
-      throw new Error("Tobii extension not initialized");
+      throw new Error('Tobii extension not initialized');
     }
 
     // Check connection
     if (!tobiiExt.isConnected()) {
-      throw new Error("Not connected to Tobii server");
+      throw new Error('Not connected to Tobii server');
     }
 
     // Create validation display
-    const validationDisplay = new ValidationDisplay(display_element, trial as any as ValidationParameters);
+    const validationDisplay = new ValidationDisplay(
+      display_element,
+      trial as any as ValidationParameters
+    );
 
     // Show instructions
     await validationDisplay.showInstructions();
@@ -590,7 +593,7 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
 
     // Clear display
     validationDisplay.clear();
-    display_element.innerHTML = "";
+    display_element.innerHTML = '';
 
     // Finish trial
     const trial_data = {
@@ -610,22 +613,24 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
    */
   private validateCustomPoints(points: any[]): ValidationPoint[] {
     if (!Array.isArray(points) || points.length === 0) {
-      throw new Error("custom_points must be a non-empty array");
+      throw new Error('custom_points must be a non-empty array');
     }
 
     const validated: ValidationPoint[] = [];
     for (let i = 0; i < points.length; i++) {
       const point = points[i];
       if (
-        typeof point !== "object" ||
+        typeof point !== 'object' ||
         point === null ||
-        typeof point.x !== "number" ||
-        typeof point.y !== "number"
+        typeof point.x !== 'number' ||
+        typeof point.y !== 'number'
       ) {
         throw new Error(`Invalid validation point at index ${i}: must have numeric x and y`);
       }
       if (point.x < 0 || point.x > 1 || point.y < 0 || point.y > 1) {
-        throw new Error(`Validation point at index ${i} out of range: x and y must be between 0 and 1`);
+        throw new Error(
+          `Validation point at index ${i} out of range: x and y must be between 0 and 1`
+        );
       }
       validated.push({ x: point.x, y: point.y });
     }

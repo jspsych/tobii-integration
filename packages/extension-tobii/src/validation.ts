@@ -2,18 +2,18 @@
  * Data validation utilities
  */
 
-import type { GazeData, CalibrationPoint } from "./types";
+import type { GazeData, CalibrationPoint } from './types';
 
 /**
  * Validate gaze data point
  */
 export function validateGazeData(data: any): data is GazeData {
   return (
-    typeof data === "object" &&
+    typeof data === 'object' &&
     data !== null &&
-    typeof data.x === "number" &&
-    typeof data.y === "number" &&
-    typeof data.timestamp === "number" &&
+    typeof data.x === 'number' &&
+    typeof data.y === 'number' &&
+    typeof data.timestamp === 'number' &&
     !isNaN(data.x) &&
     !isNaN(data.y) &&
     !isNaN(data.timestamp)
@@ -25,10 +25,10 @@ export function validateGazeData(data: any): data is GazeData {
  */
 export function validateCalibrationPoint(point: any): point is CalibrationPoint {
   return (
-    typeof point === "object" &&
+    typeof point === 'object' &&
     point !== null &&
-    typeof point.x === "number" &&
-    typeof point.y === "number" &&
+    typeof point.x === 'number' &&
+    typeof point.y === 'number' &&
     point.x >= 0 &&
     point.x <= 1 &&
     point.y >= 0 &&

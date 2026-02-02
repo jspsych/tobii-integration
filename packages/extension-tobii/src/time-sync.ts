@@ -2,7 +2,7 @@
  * Time synchronization between browser and server
  */
 
-import type { WebSocketClient } from "./websocket-client";
+import type { WebSocketClient } from './websocket-client';
 
 export class TimeSync {
   private offset: number = 0;
@@ -21,7 +21,7 @@ export class TimeSync {
       const t0 = performance.now();
 
       const response = await this.ws.sendAndWait({
-        type: "time_sync",
+        type: 'time_sync',
         clientTime: t0,
       });
 
