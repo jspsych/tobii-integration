@@ -13,6 +13,9 @@ name: Python CI
       - 'python/**'
       - '.github/workflows/python-ci.yml'
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
