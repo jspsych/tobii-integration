@@ -198,13 +198,24 @@ export class ValidationDisplay {
     await this.delay(200);
   }
 
+  /**
+   * Show validation result
+   * @param success Whether validation passed
+   * @param averageAccuracyNorm Average accuracy in normalized units
+   * @param averagePrecisionNorm Average precision in normalized units
+   * @param pointData Per-point validation data
+   * @param tolerance Tolerance threshold
+   * @param canRetry Whether a retry button should be shown on failure
+   * @returns 'retry' if user chose to retry, 'continue' otherwise
+   */
   async showResult(
     success: boolean,
     averageAccuracyNorm?: number,
     averagePrecisionNorm?: number,
     pointData?: PointValidationData[],
-    tolerance?: number
-  ): Promise<void> {
+    tolerance?: number,
+    canRetry: boolean = false
+  ): Promise<'retry' | 'continue'> {
     const result = document.createElement('div');
     result.className = 'tobii-validation-result';
 
@@ -216,24 +227,51 @@ export class ValidationDisplay {
     const statusClass = success ? 'success' : 'error';
     const statusText = success ? 'Validation Passed' : 'Validation Failed';
 
+    let buttonsHTML: string;
+    if (success) {
+      buttonsHTML = `<button class="validation-continue-btn">Continue</button>`;
+    } else if (canRetry) {
+      buttonsHTML = `<button class="validation-retry-btn">Retry</button>
+        <button class="validation-continue-btn" style="margin-left: 10px;">Continue</button>`;
+    } else {
+      buttonsHTML = `<button class="validation-continue-btn">Continue</button>`;
+    }
+
     result.innerHTML = `
       <div class="result-content ${statusClass}">
         <h2>${statusText}</h2>
         <p>Average error: ${((averageAccuracyNorm || 0) * 100).toFixed(1)}% (tolerance: ${((tolerance || 0) * 100).toFixed(0)}%)</p>
         ${feedbackHTML}
-        <button class="${success ? 'validation-continue-btn' : 'validation-retry-btn'}">${success ? 'Continue' : 'Retry'}</button>
+        ${buttonsHTML}
       </div>
     `;
 
     this.container.appendChild(result);
 
     return new Promise((resolve) => {
-      const button = result.querySelector('button');
-      button?.addEventListener('click', () => {
+      const retryBtn = result.querySelector('.validation-retry-btn');
+      const continueBtn = result.querySelector('.validation-continue-btn');
+
+      retryBtn?.addEventListener('click', () => {
         result.remove();
-        resolve();
+        resolve('retry');
+      });
+
+      continueBtn?.addEventListener('click', () => {
+        result.remove();
+        resolve('continue');
       });
     });
+  }
+
+  /**
+   * Reset display state for a retry attempt
+   */
+  resetForRetry(): void {
+    this.container.innerHTML = '';
+    this.currentPoint = null;
+    this.currentX = 0.5;
+    this.currentY = 0.5;
   }
 
   private createVisualFeedback(pointData: PointValidationData[], tolerance?: number): string {

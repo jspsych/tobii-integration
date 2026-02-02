@@ -57,13 +57,6 @@ calibration_points: {
 
 **Recommendation:** Add validation or support more grid sizes.
 
-#### 3. No Retry Mechanism for Failed Calibration (MEDIUM)
-**File:** `packages/plugin-tobii-calibration/src/index.ts`
-
-After computing calibration, results are displayed but there's no automatic retry option for failed points.
-
-**Recommendation:** Consider adding a retry workflow for points with high error.
-
 ---
 
 ## Plugin: plugin-tobii-validation
@@ -219,6 +212,7 @@ The following critical and important issues have been addressed:
 - ~~No validation of server response types~~ -- `validateCalibrationResult`/`validateValidationResult` type guards added
 - ~~Hard-coded success threshold~~ -- `tolerance` parameter already existed
 - ~~Magic numbers for position thresholds~~ -- configurable via `position_threshold_good/fair` and `distance_threshold_good/fair` parameters
+- ~~No retry mechanism for failed calibration~~ -- `max_retries` parameter with in-plugin retry loop for both calibration and validation
 
 ### Remaining Nice-to-Have Enhancements
 1. Improve error messages and standardize format

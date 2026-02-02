@@ -70,6 +70,11 @@ describe('TobiiCalibrationPlugin', () => {
       expect(params.background_color).toBeDefined();
       expect(params.background_color.default).toBe('#808080');
     });
+
+    it('should have max_retries parameter with default 1', () => {
+      expect(params.max_retries).toBeDefined();
+      expect(params.max_retries.default).toBe(1);
+    });
   });
 
   describe('data specification', () => {
@@ -93,6 +98,10 @@ describe('TobiiCalibrationPlugin', () => {
 
     it('should have calibration_data data field', () => {
       expect(data.calibration_data).toBeDefined();
+    });
+
+    it('should have num_attempts data field', () => {
+      expect(data.num_attempts).toBeDefined();
     });
   });
 

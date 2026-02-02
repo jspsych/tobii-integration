@@ -111,6 +111,11 @@ const info = <const>{
       type: ParameterType.FLOAT,
       default: 0.05,
     },
+    /** Maximum number of retry attempts allowed on validation failure */
+    max_retries: {
+      type: ParameterType.INT,
+      default: 1,
+    },
   },
   data: {
     /** Validation success status */
@@ -132,6 +137,10 @@ const info = <const>{
     /** Full validation result data */
     validation_data: {
       type: ParameterType.COMPLEX,
+    },
+    /** Number of validation attempts made */
+    num_attempts: {
+      type: ParameterType.INT,
     },
   },
 };
@@ -510,86 +519,105 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
       trial as any as ValidationParameters
     );
 
-    // Show instructions
+    // Show instructions (only once, before retry loop)
     await validationDisplay.showInstructions();
 
     // Get validation points and validate custom points
     let points: ValidationPoint[];
     if (trial.custom_points) {
-      // Validate custom points
       points = this.validateCustomPoints(trial.custom_points);
     } else {
       points = this.getValidationPoints(trial.validation_points as 5 | 9);
     }
 
-    // Start validation on server
-    await tobiiExt.startValidation();
+    const maxAttempts = 1 + (trial.max_retries as number);
+    let attempt = 0;
+    let validationPassed = false;
+    let avgAccuracyNorm = 0;
+    let avgPrecisionNorm = 0;
+    let validationResult: any;
 
-    // Start tracking to collect gaze data
-    await tobiiExt.startTracking();
+    // Retry loop
+    while (attempt < maxAttempts) {
+      attempt++;
+      const retriesRemaining = maxAttempts - attempt;
 
-    // Initialize point at screen center (with brief pause)
-    await validationDisplay.initializePoint();
+      // Start validation on server (resets server-side state on each call)
+      await tobiiExt.startValidation();
 
-    // Show each point and collect validation data with smooth path animation
-    for (let i = 0; i < points.length; i++) {
-      const point = points[i];
+      // Start tracking to collect gaze data
+      await tobiiExt.startTracking();
 
-      // Travel to the point location (smooth animation from current position)
-      await validationDisplay.travelToPoint(point, i, points.length);
+      // Initialize point at screen center (with brief pause)
+      await validationDisplay.initializePoint();
 
-      // Zoom out (point grows larger to attract attention)
-      await validationDisplay.playZoomOut();
+      // Show each point and collect validation data with smooth path animation
+      for (let i = 0; i < points.length; i++) {
+        const point = points[i];
 
-      // Zoom in (point shrinks to fixation size)
-      await validationDisplay.playZoomIn();
+        // Travel to the point location (smooth animation from current position)
+        await validationDisplay.travelToPoint(point, i, points.length);
 
-      // Capture start time before collection period for precise time-range query
-      const collectionStartTime = performance.now();
+        // Zoom out (point grows larger to attract attention)
+        await validationDisplay.playZoomOut();
 
-      // Wait for data collection
-      await this.delay(trial.collection_duration);
+        // Zoom in (point shrinks to fixation size)
+        await validationDisplay.playZoomIn();
 
-      // Capture end time after collection period
-      const collectionEndTime = performance.now();
+        // Capture start time before collection period for precise time-range query
+        const collectionStartTime = performance.now();
 
-      // Get gaze samples collected during exactly this point's display period
-      // Use time-range query for precise alignment instead of duration-based retrieval
-      const gazeSamples = await tobiiExt.getGazeData(collectionStartTime, collectionEndTime);
+        // Wait for data collection
+        await this.delay(trial.collection_duration);
 
-      // Collect validation data for this point with the gaze samples
-      await tobiiExt.collectValidationPoint(point.x, point.y, gazeSamples);
+        // Capture end time after collection period
+        const collectionEndTime = performance.now();
 
-      // Reset point for next travel (don't remove element)
-      if (i < points.length - 1) {
-        await validationDisplay.resetPointForTravel();
+        // Get gaze samples collected during exactly this point's display period
+        const gazeSamples = await tobiiExt.getGazeData(collectionStartTime, collectionEndTime);
+
+        // Collect validation data for this point with the gaze samples
+        await tobiiExt.collectValidationPoint(point.x, point.y, gazeSamples);
+
+        // Reset point for next travel (don't remove element)
+        if (i < points.length - 1) {
+          await validationDisplay.resetPointForTravel();
+        }
       }
+
+      // Hide point after final data collection
+      await validationDisplay.hidePoint();
+
+      // Stop tracking
+      await tobiiExt.stopTracking();
+
+      // Compute validation on server
+      validationResult = await tobiiExt.computeValidation();
+
+      // Get normalized accuracy values from server
+      avgAccuracyNorm = validationResult.averageAccuracyNorm || 0;
+      avgPrecisionNorm = validationResult.averagePrecisionNorm || 0;
+
+      // Determine if validation passes based on normalized tolerance
+      validationPassed = validationResult.success && avgAccuracyNorm <= trial.tolerance;
+
+      // Show result with retry option if retries remain
+      const userChoice = await validationDisplay.showResult(
+        validationPassed,
+        avgAccuracyNorm,
+        avgPrecisionNorm,
+        validationResult.pointData || [],
+        trial.tolerance,
+        retriesRemaining > 0
+      );
+
+      if (userChoice === 'continue') {
+        break;
+      }
+
+      // User chose retry — reset display for next attempt
+      validationDisplay.resetForRetry();
     }
-
-    // Hide point after final data collection
-    await validationDisplay.hidePoint();
-
-    // Stop tracking
-    await tobiiExt.stopTracking();
-
-    // Compute validation on server
-    const validationResult = await tobiiExt.computeValidation();
-
-    // Get normalized accuracy values from server
-    const avgAccuracyNorm = validationResult.averageAccuracyNorm || 0;
-    const avgPrecisionNorm = validationResult.averagePrecisionNorm || 0;
-
-    // Determine if validation passes based on normalized tolerance
-    const validationPassed = validationResult.success && avgAccuracyNorm <= trial.tolerance;
-
-    // Show result
-    await validationDisplay.showResult(
-      validationPassed,
-      avgAccuracyNorm,
-      avgPrecisionNorm,
-      validationResult.pointData || [],
-      trial.tolerance
-    );
 
     // Clear display
     validationDisplay.clear();
@@ -603,6 +631,7 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
       tolerance: trial.tolerance,
       num_points: points.length,
       validation_data: validationResult,
+      num_attempts: attempt,
     };
 
     this.jsPsych.finishTrial(trial_data);

@@ -283,8 +283,16 @@ export class CalibrationDisplay {
 
   /**
    * Show calibration result
+   * @param success Whether calibration succeeded
+   * @param averageError Average error in degrees
+   * @param canRetry Whether a retry button should be shown on failure
+   * @returns 'retry' if user chose to retry, 'continue' otherwise
    */
-  async showResult(success: boolean, averageError?: number): Promise<void> {
+  async showResult(
+    success: boolean,
+    averageError?: number,
+    canRetry: boolean = false
+  ): Promise<'retry' | 'continue'> {
     const result = document.createElement('div');
     result.className = 'tobii-calibration-result';
 
@@ -296,20 +304,56 @@ export class CalibrationDisplay {
           <p>Continuing automatically...</p>
         </div>
       `;
-    } else {
-      result.innerHTML = `
-        <div class="result-content error">
-          <h2>Calibration Failed</h2>
-          <p>Please try again.</p>
-        </div>
-      `;
+
+      this.container.appendChild(result);
+
+      // Auto-advance after showing result
+      await this.delay(2000);
+      result.remove();
+      return 'continue';
     }
+
+    // Failure case: show buttons
+    const buttonsHTML = canRetry
+      ? `<button class="calibration-retry-btn">Retry</button>
+         <button class="calibration-continue-btn" style="margin-left: 10px;">Continue</button>`
+      : `<button class="calibration-continue-btn">Continue</button>`;
+
+    result.innerHTML = `
+      <div class="result-content error">
+        <h2>Calibration Failed</h2>
+        ${averageError != null ? `<p>Average error: ${averageError.toFixed(2)}°</p>` : ''}
+        <p>Please try again or continue.</p>
+        ${buttonsHTML}
+      </div>
+    `;
 
     this.container.appendChild(result);
 
-    // Auto-advance after showing result
-    await this.delay(2000);
-    result.remove();
+    return new Promise((resolve) => {
+      const retryBtn = result.querySelector('.calibration-retry-btn');
+      const continueBtn = result.querySelector('.calibration-continue-btn');
+
+      retryBtn?.addEventListener('click', () => {
+        result.remove();
+        resolve('retry');
+      });
+
+      continueBtn?.addEventListener('click', () => {
+        result.remove();
+        resolve('continue');
+      });
+    });
+  }
+
+  /**
+   * Reset display state for a retry attempt
+   */
+  resetForRetry(): void {
+    this.container.innerHTML = '';
+    this.currentPoint = null;
+    this.currentX = 0.5;
+    this.currentY = 0.5;
   }
 
   /**

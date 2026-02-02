@@ -66,6 +66,11 @@ describe('TobiiValidationPlugin', () => {
       expect(params.accuracy_fair_color).toBeDefined();
       expect(params.accuracy_poor_color).toBeDefined();
     });
+
+    it('should have max_retries parameter with default 1', () => {
+      expect(params.max_retries).toBeDefined();
+      expect(params.max_retries.default).toBe(1);
+    });
   });
 
   describe('data specification', () => {
@@ -89,6 +94,10 @@ describe('TobiiValidationPlugin', () => {
 
     it('should have validation_data data field', () => {
       expect(data.validation_data).toBeDefined();
+    });
+
+    it('should have num_attempts data field', () => {
+      expect(data.num_attempts).toBeDefined();
     });
   });
 
