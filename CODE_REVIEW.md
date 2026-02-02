@@ -36,20 +36,6 @@ const requestId = `req_${Date.now()}_${Math.random()}`;
 
 ### Remaining Issues
 
-#### 1. calibration_points Type Not Properly Constrained (LOW)
-**File:** `packages/plugin-tobii-calibration/src/index.ts`
-
-```typescript
-calibration_points: {
-  type: ParameterType.INT,
-  default: 9,
-},
-```
-
-**Problem:** Accepts any integer but `getCalibrationPoints` only handles 5 or 9. Value like 7 would silently use 5-point.
-
-**Recommendation:** Add validation or support more grid sizes.
-
 ---
 
 ## Plugin: plugin-tobii-validation
@@ -207,6 +193,7 @@ The following critical and important issues have been addressed:
 - ~~Magic numbers for position thresholds~~ -- configurable via `position_threshold_good/fair` and `distance_threshold_good/fair` parameters
 - ~~No retry mechanism for failed calibration~~ -- `max_retries` parameter with in-plugin retry loop for both calibration and validation
 - ~~Styles persist after plugin unload~~ -- `removeStyles()` cleans up injected `<style>` elements and resets static flag at trial end for all three plugins
+- ~~calibration_points type not properly constrained~~ -- supports 5, 9, 13, 15, 19, 25 with explicit error on unsupported values; same grids for validation
 
 ### Remaining Nice-to-Have Enhancements
 1. Improve error messages and standardize format

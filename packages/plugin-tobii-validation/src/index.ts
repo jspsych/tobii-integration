@@ -535,7 +535,7 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
     if (trial.custom_points) {
       points = this.validateCustomPoints(trial.custom_points);
     } else {
-      points = this.getValidationPoints(trial.validation_points as 5 | 9);
+      points = this.getValidationPoints(trial.validation_points);
     }
 
     const maxAttempts = 1 + (trial.max_retries as number);
@@ -677,29 +677,122 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
   }
 
   /**
-   * Get standard validation points (5 or 9 point grid)
+   * Get standard validation points for the given grid size
    */
-  private getValidationPoints(count: 5 | 9): ValidationPoint[] {
-    if (count === 9) {
-      return [
-        { x: 0.1, y: 0.1 },
-        { x: 0.5, y: 0.1 },
-        { x: 0.9, y: 0.1 },
-        { x: 0.1, y: 0.5 },
-        { x: 0.5, y: 0.5 },
-        { x: 0.9, y: 0.5 },
-        { x: 0.1, y: 0.9 },
-        { x: 0.5, y: 0.9 },
-        { x: 0.9, y: 0.9 },
-      ];
-    } else {
-      return [
-        { x: 0.1, y: 0.1 },
-        { x: 0.9, y: 0.1 },
-        { x: 0.5, y: 0.5 },
-        { x: 0.1, y: 0.9 },
-        { x: 0.9, y: 0.9 },
-      ];
+  private getValidationPoints(count: number): ValidationPoint[] {
+    switch (count) {
+      case 5:
+        return [
+          { x: 0.1, y: 0.1 },
+          { x: 0.9, y: 0.1 },
+          { x: 0.5, y: 0.5 },
+          { x: 0.1, y: 0.9 },
+          { x: 0.9, y: 0.9 },
+        ];
+      case 9:
+        return [
+          { x: 0.1, y: 0.1 },
+          { x: 0.5, y: 0.1 },
+          { x: 0.9, y: 0.1 },
+          { x: 0.1, y: 0.5 },
+          { x: 0.5, y: 0.5 },
+          { x: 0.9, y: 0.5 },
+          { x: 0.1, y: 0.9 },
+          { x: 0.5, y: 0.9 },
+          { x: 0.9, y: 0.9 },
+        ];
+      case 13:
+        // 3x3 outer grid + 4 diagonal midpoints
+        return [
+          { x: 0.1, y: 0.1 },
+          { x: 0.5, y: 0.1 },
+          { x: 0.9, y: 0.1 },
+          { x: 0.3, y: 0.3 },
+          { x: 0.7, y: 0.3 },
+          { x: 0.1, y: 0.5 },
+          { x: 0.5, y: 0.5 },
+          { x: 0.9, y: 0.5 },
+          { x: 0.3, y: 0.7 },
+          { x: 0.7, y: 0.7 },
+          { x: 0.1, y: 0.9 },
+          { x: 0.5, y: 0.9 },
+          { x: 0.9, y: 0.9 },
+        ];
+      case 15:
+        // 5 rows x 3 columns
+        return [
+          { x: 0.1, y: 0.1 },
+          { x: 0.5, y: 0.1 },
+          { x: 0.9, y: 0.1 },
+          { x: 0.1, y: 0.3 },
+          { x: 0.5, y: 0.3 },
+          { x: 0.9, y: 0.3 },
+          { x: 0.1, y: 0.5 },
+          { x: 0.5, y: 0.5 },
+          { x: 0.9, y: 0.5 },
+          { x: 0.1, y: 0.7 },
+          { x: 0.5, y: 0.7 },
+          { x: 0.9, y: 0.7 },
+          { x: 0.1, y: 0.9 },
+          { x: 0.5, y: 0.9 },
+          { x: 0.9, y: 0.9 },
+        ];
+      case 19:
+        // Symmetric 3-5-3-5-3 pattern
+        return [
+          { x: 0.1, y: 0.1 },
+          { x: 0.5, y: 0.1 },
+          { x: 0.9, y: 0.1 },
+          { x: 0.1, y: 0.3 },
+          { x: 0.3, y: 0.3 },
+          { x: 0.5, y: 0.3 },
+          { x: 0.7, y: 0.3 },
+          { x: 0.9, y: 0.3 },
+          { x: 0.1, y: 0.5 },
+          { x: 0.5, y: 0.5 },
+          { x: 0.9, y: 0.5 },
+          { x: 0.1, y: 0.7 },
+          { x: 0.3, y: 0.7 },
+          { x: 0.5, y: 0.7 },
+          { x: 0.7, y: 0.7 },
+          { x: 0.9, y: 0.7 },
+          { x: 0.1, y: 0.9 },
+          { x: 0.5, y: 0.9 },
+          { x: 0.9, y: 0.9 },
+        ];
+      case 25:
+        // 5x5 full grid
+        return [
+          { x: 0.1, y: 0.1 },
+          { x: 0.3, y: 0.1 },
+          { x: 0.5, y: 0.1 },
+          { x: 0.7, y: 0.1 },
+          { x: 0.9, y: 0.1 },
+          { x: 0.1, y: 0.3 },
+          { x: 0.3, y: 0.3 },
+          { x: 0.5, y: 0.3 },
+          { x: 0.7, y: 0.3 },
+          { x: 0.9, y: 0.3 },
+          { x: 0.1, y: 0.5 },
+          { x: 0.3, y: 0.5 },
+          { x: 0.5, y: 0.5 },
+          { x: 0.7, y: 0.5 },
+          { x: 0.9, y: 0.5 },
+          { x: 0.1, y: 0.7 },
+          { x: 0.3, y: 0.7 },
+          { x: 0.5, y: 0.7 },
+          { x: 0.7, y: 0.7 },
+          { x: 0.9, y: 0.7 },
+          { x: 0.1, y: 0.9 },
+          { x: 0.3, y: 0.9 },
+          { x: 0.5, y: 0.9 },
+          { x: 0.7, y: 0.9 },
+          { x: 0.9, y: 0.9 },
+        ];
+      default:
+        throw new Error(
+          `Unsupported validation_points value: ${count}. Use 5, 9, 13, 15, 19, or 25, or provide custom_points.`
+        );
     }
   }
 
