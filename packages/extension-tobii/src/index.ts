@@ -274,7 +274,10 @@ class TobiiExtension implements JsPsychExtension {
     const response = await this.ws.sendAndWait({
       type: 'calibration_compute',
     });
-    return response as CalibrationResult;
+    if (!Validation.validateCalibrationResult(response)) {
+      return { success: false, error: 'Invalid server response' };
+    }
+    return response;
   }
 
   /**
@@ -284,7 +287,10 @@ class TobiiExtension implements JsPsychExtension {
     const response = await this.ws.sendAndWait({
       type: 'get_calibration_data',
     });
-    return response as CalibrationResult;
+    if (!Validation.validateCalibrationResult(response)) {
+      return { success: false, error: 'Invalid server response' };
+    }
+    return response;
   }
 
   /**
@@ -328,7 +334,10 @@ class TobiiExtension implements JsPsychExtension {
     const response = await this.ws.sendAndWait({
       type: 'validation_compute',
     });
-    return response as ValidationResult;
+    if (!Validation.validateValidationResult(response)) {
+      return { success: false, error: 'Invalid server response' };
+    }
+    return response;
   }
 
   /**

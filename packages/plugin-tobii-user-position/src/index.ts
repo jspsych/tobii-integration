@@ -86,6 +86,26 @@ const info = <const>{
       type: ParameterType.STRING,
       default: '18px',
     },
+    /** Position offset threshold for "good" status (normalized, default 0.15) */
+    position_threshold_good: {
+      type: ParameterType.FLOAT,
+      default: 0.15,
+    },
+    /** Position offset threshold for "fair" status (normalized, default 0.25) */
+    position_threshold_fair: {
+      type: ParameterType.FLOAT,
+      default: 0.25,
+    },
+    /** Distance offset threshold for "good" status (normalized, default 0.1) */
+    distance_threshold_good: {
+      type: ParameterType.FLOAT,
+      default: 0.1,
+    },
+    /** Distance offset threshold for "fair" status (normalized, default 0.2) */
+    distance_threshold_fair: {
+      type: ParameterType.FLOAT,
+      default: 0.2,
+    },
   },
   data: {
     /** Average X position during trial */
@@ -293,6 +313,10 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
         fairColor: trial.fair_color,
         poorColor: trial.poor_color,
         fontSize: trial.font_size,
+        positionThresholdGood: trial.position_threshold_good,
+        positionThresholdFair: trial.position_threshold_fair,
+        distanceThresholdGood: trial.distance_threshold_good,
+        distanceThresholdFair: trial.distance_threshold_fair,
       });
 
       // Add continue button if no duration specified

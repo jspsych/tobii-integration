@@ -58,6 +58,26 @@ describe('TobiiUserPositionPlugin', () => {
       expect(params.poor_color).toBeDefined();
       expect(params.button_color).toBeDefined();
     });
+
+    it('should have position_threshold_good parameter with default 0.15', () => {
+      expect(params.position_threshold_good).toBeDefined();
+      expect(params.position_threshold_good.default).toBe(0.15);
+    });
+
+    it('should have position_threshold_fair parameter with default 0.25', () => {
+      expect(params.position_threshold_fair).toBeDefined();
+      expect(params.position_threshold_fair.default).toBe(0.25);
+    });
+
+    it('should have distance_threshold_good parameter with default 0.1', () => {
+      expect(params.distance_threshold_good).toBeDefined();
+      expect(params.distance_threshold_good.default).toBe(0.1);
+    });
+
+    it('should have distance_threshold_fair parameter with default 0.2', () => {
+      expect(params.distance_threshold_fair).toBeDefined();
+      expect(params.distance_threshold_fair.default).toBe(0.2);
+    });
   });
 
   describe('data specification', () => {

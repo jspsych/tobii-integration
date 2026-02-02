@@ -2,7 +2,7 @@
  * Data validation utilities
  */
 
-import type { GazeData, CalibrationPoint } from './types';
+import type { GazeData, CalibrationPoint, CalibrationResult, ValidationResult } from './types';
 
 /**
  * Validate gaze data point
@@ -41,6 +41,20 @@ export function validateCalibrationPoint(point: any): point is CalibrationPoint 
  */
 export function filterValidGaze(data: GazeData[]): GazeData[] {
   return data.filter(validateGazeData);
+}
+
+/**
+ * Validate that a server response conforms to CalibrationResult
+ */
+export function validateCalibrationResult(data: any): data is CalibrationResult {
+  return typeof data === 'object' && data !== null && typeof data.success === 'boolean';
+}
+
+/**
+ * Validate that a server response conforms to ValidationResult
+ */
+export function validateValidationResult(data: any): data is ValidationResult {
+  return typeof data === 'object' && data !== null && typeof data.success === 'boolean';
 }
 
 /**

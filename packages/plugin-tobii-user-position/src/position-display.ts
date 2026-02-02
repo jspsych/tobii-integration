@@ -9,6 +9,10 @@ export interface PositionDisplayOptions {
   fairColor: string;
   poorColor: string;
   fontSize: string;
+  positionThresholdGood: number;
+  positionThresholdFair: number;
+  distanceThresholdGood: number;
+  distanceThresholdFair: number;
 }
 
 /**
@@ -337,11 +341,15 @@ export class PositionDisplay {
     const fillPercent = z * 100;
     this.distanceBarFill.style.height = `${fillPercent}%`;
 
-    // Color based on optimal range (0.4-0.6)
+    // Color based on optimal range derived from distance thresholds
+    const goodMin = 0.5 - this.options.distanceThresholdGood;
+    const goodMax = 0.5 + this.options.distanceThresholdGood;
+    const fairMin = 0.5 - this.options.distanceThresholdFair;
+    const fairMax = 0.5 + this.options.distanceThresholdFair;
     let color: string;
-    if (z >= 0.4 && z <= 0.6) {
+    if (z >= goodMin && z <= goodMax) {
       color = this.options.goodColor;
-    } else if (z >= 0.3 && z <= 0.7) {
+    } else if (z >= fairMin && z <= fairMax) {
       color = this.options.fairColor;
     } else {
       color = this.options.poorColor;
@@ -418,22 +426,22 @@ export class PositionDisplay {
     // Assess horizontal position (0.5 is center)
     const xOffset = Math.abs(x - 0.5);
     let horizontalStatus: 'good' | 'fair' | 'poor';
-    if (xOffset < 0.15) horizontalStatus = 'good';
-    else if (xOffset < 0.25) horizontalStatus = 'fair';
+    if (xOffset < this.options.positionThresholdGood) horizontalStatus = 'good';
+    else if (xOffset < this.options.positionThresholdFair) horizontalStatus = 'fair';
     else horizontalStatus = 'poor';
 
     // Assess vertical position (0.5 is center)
     const yOffset = Math.abs(y - 0.5);
     let verticalStatus: 'good' | 'fair' | 'poor';
-    if (yOffset < 0.15) verticalStatus = 'good';
-    else if (yOffset < 0.25) verticalStatus = 'fair';
+    if (yOffset < this.options.positionThresholdGood) verticalStatus = 'good';
+    else if (yOffset < this.options.positionThresholdFair) verticalStatus = 'fair';
     else verticalStatus = 'poor';
 
     // Assess distance (0.5 is optimal)
     const zOffset = Math.abs(z - 0.5);
     let distanceStatus: 'good' | 'fair' | 'poor';
-    if (zOffset < 0.1) distanceStatus = 'good';
-    else if (zOffset < 0.2) distanceStatus = 'fair';
+    if (zOffset < this.options.distanceThresholdGood) distanceStatus = 'good';
+    else if (zOffset < this.options.distanceThresholdFair) distanceStatus = 'fair';
     else distanceStatus = 'poor';
 
     const isGoodPosition =
