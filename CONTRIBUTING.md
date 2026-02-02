@@ -113,6 +113,25 @@ Follow the prompts to select which packages changed, choose the semver bump type
 
 When changesets are merged to `main`, the GitHub Actions workflow will create a "Version Packages" PR that aggregates all changesets and updates versions and CHANGELOGs. Merging that PR publishes the updated packages to npm.
 
+### Python Package (PyPI)
+
+The Python package uses a manual GitHub Actions workflow for releases:
+
+1. Go to Actions → Release Python Package
+2. Click "Run workflow"
+3. Enter the version number (e.g., `0.1.1`, `0.2.0`)
+4. Optionally mark as pre-release
+5. Click "Run workflow"
+
+The workflow will:
+- Update version in `python/pyproject.toml`
+- Build and validate the package
+- Create a git tag (`python-v{version}`)
+- Create a GitHub release
+- Publish to PyPI
+
+**Note:** PyPI publishing requires trusted publishing to be configured in PyPI for this repository.
+
 ## Project Structure
 
 - `packages/extension-tobii` — Core jsPsych extension
