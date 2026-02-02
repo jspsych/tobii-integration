@@ -52,8 +52,6 @@ class TobiiServer:
             tracker_address=config.tracker_address,
             sdk_type=sdk_type_enum,
             use_mock=config.use_mock,
-            screen_distance_cm=config.screen_distance_cm,
-            screen_width_cm=config.screen_width_cm,
         )
         self.data_buffer = DataBuffer(config.buffer_size, config.buffer_duration)
         self.time_sync = TimeSync()

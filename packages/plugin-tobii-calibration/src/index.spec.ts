@@ -84,10 +84,6 @@ describe('TobiiCalibrationPlugin', () => {
       expect(data.calibration_success).toBeDefined();
     });
 
-    it('should have average_error data field', () => {
-      expect(data.average_error).toBeDefined();
-    });
-
     it('should have num_points data field', () => {
       expect(data.num_points).toBeDefined();
     });

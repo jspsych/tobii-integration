@@ -114,9 +114,7 @@ Compute calibration from collected points.
 ```javascript
 const result = await jsPsych.extensions.tobii.computeCalibration();
 // {
-//   success: true,
-//   averageError: 0.87,
-//   pointQuality: [...]
+//   success: true
 // }
 ```
 

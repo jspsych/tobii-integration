@@ -381,30 +381,16 @@ class TobiiXSeriesAdapter(TobiiTrackerAdapter):
             # Compute calibration (legacy SDK)
             calib_state = self._tracker.ComputeCalibration()
 
-            # Check calibration state
-            # In Analytics SDK 3.0, we get a State object back
-            # We need to check state_flag and get_error_approximation
-            try:
-                # Try to get error approximation
-                error = calib_state.get_error_approximation()
-                # Convert from degrees to a simple average
-                avg_error = error if error is not None else None
-            except:
-                avg_error = None
-
             # Apply calibration by calling SetCalibration with the computed state
             try:
                 self._tracker.SetCalibration(calib_state)
                 success = True
-                self.logger.info(f"Calibration computed and applied (error: {avg_error})")
+                self.logger.info("Calibration computed and applied")
             except Exception as e:
                 self.logger.warning(f"Calibration computed but not applied: {e}")
                 success = False
 
-            return CalibrationResult(
-                success=success,
-                average_error=avg_error,
-            )
+            return CalibrationResult(success=success)
 
         except Exception as e:
             self.logger.error(f"Error computing calibration: {e}")

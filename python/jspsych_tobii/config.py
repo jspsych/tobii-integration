@@ -29,10 +29,6 @@ class ServerConfig:
     log_level: str = "INFO"
     log_file: Optional[str] = None
 
-    # Screen geometry (used for degree-of-visual-angle calculations)
-    screen_distance_cm: float = 65.0  # Viewing distance from screen in cm
-    screen_width_cm: float = 50.0  # Physical screen width in cm
-
     # Feature flags
     enable_time_sync: bool = True
     enable_calibration: bool = True

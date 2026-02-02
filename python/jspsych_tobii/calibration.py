@@ -196,31 +196,13 @@ class CalibrationManager:
             result = self.tobii_manager.adapter.compute_calibration()
 
             if result.success:
-                self.logger.info(
-                    f"Calibration computed successfully (avg error: {result.average_error:.3f}°)"
-                    if result.average_error
-                    else "Calibration computed successfully"
-                )
-
-                # Build point quality data if available
-                point_quality = []
-                if result.point_errors and len(result.point_errors) == len(session.calibration_points):
-                    point_quality = [
-                        {
-                            "point": session.calibration_points[i],
-                            "error": result.point_errors[i],
-                        }
-                        for i in range(len(session.calibration_points))
-                    ]
+                self.logger.info("Calibration computed successfully")
             else:
                 self.logger.error("Calibration computation failed")
-                point_quality = []
 
             return {
                 "type": "calibration_compute",
                 "success": result.success,
-                "averageError": result.average_error if result.average_error else None,
-                "pointQuality": point_quality,
             }
 
         except Exception as e:

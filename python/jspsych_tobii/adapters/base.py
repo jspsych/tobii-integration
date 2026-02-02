@@ -53,8 +53,6 @@ class CalibrationResult:
     """Calibration result"""
 
     success: bool
-    average_error: Optional[float] = None  # In degrees
-    point_errors: Optional[List[float]] = None  # Per-point errors in degrees
 
 
 @dataclass
@@ -89,11 +87,6 @@ class TobiiTrackerAdapter(ABC):
     This provides a common interface for different Tobii SDKs
     (tobii-research for Pro series, legacy SDK for X-series, etc.)
     """
-
-    # Configurable screen geometry for degree-of-visual-angle calculations.
-    # These defaults match typical lab setups; override via ServerConfig.
-    screen_distance_cm: float = 65.0
-    screen_width_cm: float = 50.0
 
     @abstractmethod
     def find_trackers(self) -> List[Any]:

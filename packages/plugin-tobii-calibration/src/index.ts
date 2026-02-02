@@ -123,10 +123,6 @@ const info = <const>{
     calibration_success: {
       type: ParameterType.BOOL,
     },
-    /** Average calibration error */
-    average_error: {
-      type: ParameterType.FLOAT,
-    },
     /** Number of calibration points used */
     num_points: {
       type: ParameterType.INT,
@@ -459,7 +455,6 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
       // Show result with retry option if retries remain
       const userChoice = await calibrationDisplay.showResult(
         calibrationResult.success,
-        calibrationResult.averageError,
         retriesRemaining > 0
       );
 
@@ -479,7 +474,6 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
     // Finish trial
     const trial_data = {
       calibration_success: calibrationResult.success,
-      average_error: calibrationResult.averageError || null,
       num_points: points.length,
       mode: trial.calibration_mode,
       calibration_data: calibrationResult,

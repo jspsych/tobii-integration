@@ -284,15 +284,10 @@ export class CalibrationDisplay {
   /**
    * Show calibration result
    * @param success Whether calibration succeeded
-   * @param averageError Average error in degrees
    * @param canRetry Whether a retry button should be shown on failure
    * @returns 'retry' if user chose to retry, 'continue' otherwise
    */
-  async showResult(
-    success: boolean,
-    averageError?: number,
-    canRetry: boolean = false
-  ): Promise<'retry' | 'continue'> {
+  async showResult(success: boolean, canRetry: boolean = false): Promise<'retry' | 'continue'> {
     const result = document.createElement('div');
     result.className = 'tobii-calibration-result';
 
@@ -300,7 +295,6 @@ export class CalibrationDisplay {
       result.innerHTML = `
         <div class="result-content success">
           <h2>Calibration Successful!</h2>
-          ${averageError != null ? `<p>Average error: ${averageError.toFixed(2)}°</p>` : ''}
           <p>Continuing automatically...</p>
         </div>
       `;
@@ -322,7 +316,6 @@ export class CalibrationDisplay {
     result.innerHTML = `
       <div class="result-content error">
         <h2>Calibration Failed</h2>
-        ${averageError != null ? `<p>Average error: ${averageError.toFixed(2)}°</p>` : ''}
         <p>Please try again or continue.</p>
         ${buttonsHTML}
       </div>

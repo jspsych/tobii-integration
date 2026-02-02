@@ -151,7 +151,7 @@ The following critical and important issues have been addressed:
 - ~~No retry mechanism for failed calibration~~ -- `max_retries` parameter with in-plugin retry loop for both calibration and validation
 - ~~Styles persist after plugin unload~~ -- `removeStyles()` cleans up injected `<style>` elements and resets static flag at trial end for all three plugins
 - ~~calibration_points type not properly constrained~~ -- supports 5, 9, 13, 15, 19, 25 with explicit error on unsupported values; same grids for validation
-- ~~Degrees approximation in validation is crude~~ -- `screen_distance_cm` and `screen_width_cm` configurable via `ServerConfig`, propagated through `TobiiManager` to adapter
+- ~~Degrees approximation in validation is crude~~ -- removed degree calculation entirely; calibration reports success/fail only, validation reports normalized accuracy/precision
 - ~~Signal handlers not removed on shutdown~~ -- `shutdown()` now calls `remove_signal_handler()` for SIGTERM/SIGINT
 - ~~SDK type map incomplete~~ -- added `"mock": SDKType.MOCK` to `sdk_map` in `server.py`
 - ~~Potential division by zero in validation~~ -- explicit `if not distances or not valid_samples: continue` guard

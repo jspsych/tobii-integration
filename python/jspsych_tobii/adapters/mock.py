@@ -208,23 +208,13 @@ class MockTrackerAdapter(TobiiTrackerAdapter):
         if not self._in_calibration_mode:
             return CalibrationResult(success=False)
 
-        # Simulate calibration quality (better with more points)
+        # Require at least 3 points for calibration
         num_points = len(self._calibration_points)
         if num_points < 3:
             return CalibrationResult(success=False)
 
-        # Mock average error (decreases with more points)
-        base_error = 1.5
-        error_reduction = 0.1 * (num_points - 5)
-        avg_error = max(0.3, base_error - error_reduction)
-
-        # Generate per-point errors
-        point_errors = [random.gauss(avg_error, 0.2) for _ in self._calibration_points]
-
-        self.logger.info(f"Mock calibration computed: {avg_error:.2f}° average error")
-        return CalibrationResult(
-            success=True, average_error=avg_error, point_errors=point_errors
-        )
+        self.logger.info(f"Mock calibration computed with {num_points} points")
+        return CalibrationResult(success=True)
 
     def discard_calibration_data(self, point: Optional[CalibrationPoint] = None) -> bool:
         """Discard mock calibration data"""

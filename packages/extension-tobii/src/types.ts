@@ -104,13 +104,6 @@ export interface CalibrationPoint {
 export interface CalibrationResult {
   /** Success status */
   success: boolean;
-  /** Average error in degrees */
-  averageError?: number;
-  /** Per-point calibration quality */
-  pointQuality?: Array<{
-    point: CalibrationPoint;
-    error: number;
-  }>;
   /** Error message if failed */
   error?: string;
 }

@@ -254,47 +254,11 @@ class TobiiProAdapter(TobiiTrackerAdapter):
             if result.status != tr.CALIBRATION_STATUS_SUCCESS:
                 return CalibrationResult(success=False)
 
-            # Calculate average error from calibration points
-            errors = []
-            for point in result.calibration_points:
-                for sample in point.calibration_samples:
-                    if sample.left_eye.validity == 1:
-                        errors.append(self._calculate_error_degrees(sample.left_eye))
-                    if sample.right_eye.validity == 1:
-                        errors.append(self._calculate_error_degrees(sample.right_eye))
-
-            avg_error = sum(errors) / len(errors) if errors else None
-
-            return CalibrationResult(
-                success=True,
-                average_error=avg_error,
-                point_errors=errors if errors else None,
-            )
+            return CalibrationResult(success=True)
 
         except Exception as e:
             self.logger.error(f"Error computing calibration: {e}")
             return CalibrationResult(success=False)
-
-    def _calculate_error_degrees(self, eye_data: Any) -> float:
-        """Calculate calibration error in degrees for an eye.
-
-        Uses screen_distance_cm and screen_width_cm from the adapter's
-        configurable properties (set via ServerConfig).
-        """
-        import math
-
-        # Get the position on screen (normalized)
-        pos = eye_data.position_on_display_area
-
-        # Convert normalized screen offset to cm using configurable geometry
-        error_x = abs(pos[0] - 0.5) * self.screen_width_cm
-        error_y = abs(pos[1] - 0.5) * self.screen_width_cm
-        error_distance = math.sqrt(error_x**2 + error_y**2)
-
-        # Convert to degrees of visual angle
-        error_degrees = math.degrees(math.atan(error_distance / self.screen_distance_cm))
-
-        return error_degrees
 
     def discard_calibration_data(self, point: Optional[CalibrationPoint] = None) -> bool:
         """Discard calibration data"""
