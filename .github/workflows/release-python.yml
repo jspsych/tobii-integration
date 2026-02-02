@@ -99,7 +99,7 @@ jobs:
             pip install jspsych-tobii==${{ inputs.version }}
             ```
 
-            See the [changelog](../CHANGELOG.md) for details.
+            For more details, see the repository documentation.
           draft: false
           prerelease: ${{ inputs.prerelease }}
 

@@ -49,7 +49,8 @@ jobs:
             pytest --cov=jspsych_tobii \
               --cov-report=xml --cov-report=term
           else
-            echo "No tests directory found, skipping tests"
+            echo "::warning::No tests directory found - tests are skipped"
+            echo "Consider adding tests to improve code quality"
           fi
 
       - name: Upload coverage
