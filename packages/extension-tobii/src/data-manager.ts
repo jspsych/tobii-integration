@@ -2,7 +2,7 @@
  * Data manager for storing and retrieving gaze data
  */
 
-import type { GazeData } from "./types";
+import type { GazeData } from './types';
 
 export class DataManager {
   private gazeBuffer: GazeData[] = [];
@@ -43,7 +43,7 @@ export class DataManager {
     return this.gazeBuffer.filter((data) => {
       // Use clientTimestamp for filtering (set by extension when gaze data arrives)
       // This is in the same time domain as performance.now() used by startTrial/endTrial
-      const ts = (data as any).clientTimestamp ?? data.timestamp;
+      const ts = data.clientTimestamp ?? data.timestamp;
       return ts >= this.trialStartTime! && ts <= endTime;
     });
   }
@@ -55,7 +55,7 @@ export class DataManager {
     return this.gazeBuffer.filter((data) => {
       // Use clientTimestamp for filtering (set by extension when gaze data arrives)
       // Fall back to timestamp if clientTimestamp not available
-      const ts = (data as any).clientTimestamp ?? data.timestamp;
+      const ts = data.clientTimestamp ?? data.timestamp;
       return ts >= startTime && ts <= endTime;
     });
   }
@@ -85,7 +85,7 @@ export class DataManager {
   clearOldData(keepDuration: number = 60000): void {
     const cutoffTime = performance.now() - keepDuration;
     this.gazeBuffer = this.gazeBuffer.filter((data) => {
-      const ts = (data as any).clientTimestamp ?? data.timestamp;
+      const ts = data.clientTimestamp ?? data.timestamp;
       return ts >= cutoffTime;
     });
   }
@@ -104,7 +104,7 @@ export class DataManager {
     const now = performance.now();
     const startTime = now - durationMs;
     return this.gazeBuffer.filter((data) => {
-      const ts = (data as any).clientTimestamp ?? data.timestamp;
+      const ts = data.clientTimestamp ?? data.timestamp;
       return ts >= startTime;
     });
   }
