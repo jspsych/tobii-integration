@@ -30,6 +30,8 @@ class TobiiManager:
         tracker_address: Optional[str] = None,
         sdk_type: Optional[SDKType] = None,
         use_mock: bool = False,
+        screen_distance_cm: float = 65.0,
+        screen_width_cm: float = 50.0,
     ) -> None:
         """
         Initialize Tobii manager
@@ -39,6 +41,8 @@ class TobiiManager:
             sdk_type: Specific SDK to use (SDKType.TOBII_PRO or SDKType.TOBII_X_SERIES),
                      or None for auto-detection
             use_mock: If True, use mock tracker for testing
+            screen_distance_cm: Viewing distance from screen in cm (for degree calculations)
+            screen_width_cm: Physical screen width in cm (for degree calculations)
         """
         self.logger = logging.getLogger(__name__)
         self.tracker_address = tracker_address
@@ -49,6 +53,9 @@ class TobiiManager:
             self.adapter: TobiiTrackerAdapter = create_tracker_adapter(
                 sdk_type=sdk_type, use_mock=use_mock
             )
+            # Configure screen geometry for degree-of-visual-angle calculations
+            self.adapter.screen_distance_cm = screen_distance_cm
+            self.adapter.screen_width_cm = screen_width_cm
             self.logger.info(f"Created adapter: {self.adapter.sdk_name} v{self.adapter.sdk_version}")
         except ImportError as e:
             self.logger.error(f"Failed to create tracker adapter: {e}")

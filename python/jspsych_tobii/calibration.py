@@ -404,7 +404,7 @@ class CalibrationManager:
                         distances.append(distance)
                         valid_samples.append(sample)
 
-                if not distances:
+                if not distances or not valid_samples:
                     continue
 
                 # Accuracy: mean distance from target (in normalized coordinates)

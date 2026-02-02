@@ -276,27 +276,23 @@ class TobiiProAdapter(TobiiTrackerAdapter):
             return CalibrationResult(success=False)
 
     def _calculate_error_degrees(self, eye_data: Any) -> float:
-        """Calculate calibration error in degrees for an eye"""
-        # This is a simplified calculation
-        # In practice, you'd use the actual geometry and position data
+        """Calculate calibration error in degrees for an eye.
+
+        Uses screen_distance_cm and screen_width_cm from the adapter's
+        configurable properties (set via ServerConfig).
+        """
         import math
 
         # Get the position on screen (normalized)
         pos = eye_data.position_on_display_area
 
-        # Simple approximation: convert normalized screen distance to degrees
-        # Assumes typical viewing geometry (this should be calibrated for your setup)
-        screen_distance_cm = 65.0
-        screen_width_cm = 50.0
-        pixels_per_cm = 1920 / screen_width_cm
-
-        # Calculate angular error (simplified)
-        error_x = abs(pos[0] - 0.5) * screen_width_cm
-        error_y = abs(pos[1] - 0.5) * screen_width_cm
+        # Convert normalized screen offset to cm using configurable geometry
+        error_x = abs(pos[0] - 0.5) * self.screen_width_cm
+        error_y = abs(pos[1] - 0.5) * self.screen_width_cm
         error_distance = math.sqrt(error_x**2 + error_y**2)
 
-        # Convert to degrees
-        error_degrees = math.degrees(math.atan(error_distance / screen_distance_cm))
+        # Convert to degrees of visual angle
+        error_degrees = math.degrees(math.atan(error_distance / self.screen_distance_cm))
 
         return error_degrees
 

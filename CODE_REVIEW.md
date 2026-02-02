@@ -89,50 +89,7 @@ Position updates at 100ms intervals could cause UI jitter.
 
 ## Python Server: jspsych-tobii
 
-### Remaining Issues
-
-#### 1. Degrees Approximation in Validation Is Crude (MEDIUM)
-**File:** `python/jspsych_tobii/calibration.py`
-
-```python
-accuracy_degrees = accuracy_norm * 50 * 57.3 / 50  # ≈ normalized * 57.3
-```
-
-**Problem:** Hard-coded screen and viewing distance assumptions. Doesn't account for actual monitor dimensions.
-
-**Recommendation:** Make screen geometry configurable, or retrieve from tracker's display area settings.
-
-#### 2. Signal Handlers Not Removed on Shutdown (LOW)
-**File:** `python/jspsych_tobii/server.py`
-
-Signal handlers are added but never removed.
-
-**Problem:** Could cause issues if server is restarted within the same process.
-
-#### 3. SDK Type Map Incomplete (LOW)
-**File:** `python/jspsych_tobii/server.py`
-
-```python
-sdk_map = {
-    "tobii-pro": SDKType.TOBII_PRO,
-    "tobii-x-series": SDKType.TOBII_X_SERIES,
-}
-```
-
-**Problem:** Missing "mock" option despite `use_mock` existing.
-
-**Recommendation:** Add consistency or document the difference.
-
-#### 4. Potential Division by Zero (LOW)
-**File:** `python/jspsych_tobii/calibration.py`
-
-```python
-mean_x = sum(s["x"] for s in gaze_samples if ...) / len(distances)
-```
-
-**Problem:** If `distances` is empty from filtering, this would divide by zero.
-
-**Recommendation:** Add guard: `if len(distances) > 0:`.
+*All previously identified issues have been resolved. See the summary below.*
 
 ---
 
@@ -194,6 +151,10 @@ The following critical and important issues have been addressed:
 - ~~No retry mechanism for failed calibration~~ -- `max_retries` parameter with in-plugin retry loop for both calibration and validation
 - ~~Styles persist after plugin unload~~ -- `removeStyles()` cleans up injected `<style>` elements and resets static flag at trial end for all three plugins
 - ~~calibration_points type not properly constrained~~ -- supports 5, 9, 13, 15, 19, 25 with explicit error on unsupported values; same grids for validation
+- ~~Degrees approximation in validation is crude~~ -- `screen_distance_cm` and `screen_width_cm` configurable via `ServerConfig`, propagated through `TobiiManager` to adapter
+- ~~Signal handlers not removed on shutdown~~ -- `shutdown()` now calls `remove_signal_handler()` for SIGTERM/SIGINT
+- ~~SDK type map incomplete~~ -- added `"mock": SDKType.MOCK` to `sdk_map` in `server.py`
+- ~~Potential division by zero in validation~~ -- explicit `if not distances or not valid_samples: continue` guard
 
 ### Remaining Nice-to-Have Enhancements
 1. Improve error messages and standardize format
@@ -202,4 +163,3 @@ The following critical and important issues have been addressed:
 4. Add more comprehensive tests for edge cases
 5. Use monotonic counter for request IDs
 6. Prefix CSS class names to avoid cross-plugin conflicts
-7. Make screen geometry configurable for degree calculations

@@ -44,6 +44,7 @@ class TobiiServer:
             sdk_map = {
                 "tobii-pro": SDKType.TOBII_PRO,
                 "tobii-x-series": SDKType.TOBII_X_SERIES,
+                "mock": SDKType.MOCK,
             }
             sdk_type_enum = sdk_map.get(config.sdk_type)
 
@@ -51,6 +52,8 @@ class TobiiServer:
             tracker_address=config.tracker_address,
             sdk_type=sdk_type_enum,
             use_mock=config.use_mock,
+            screen_distance_cm=config.screen_distance_cm,
+            screen_width_cm=config.screen_width_cm,
         )
         self.data_buffer = DataBuffer(config.buffer_size, config.buffer_duration)
         self.time_sync = TimeSync()
@@ -125,6 +128,12 @@ class TobiiServer:
         """Shutdown server gracefully"""
         self.logger.info("Shutting down server...")
         self.running = False
+
+        # Remove signal handlers to avoid issues if server restarts in same process
+        if sys.platform != "win32":
+            loop = asyncio.get_event_loop()
+            for sig in (signal.SIGTERM, signal.SIGINT):
+                loop.remove_signal_handler(sig)
 
         # Stop tracking
         if self.tobii_manager.is_tracking():
