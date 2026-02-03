@@ -2,24 +2,15 @@
 
 WebSocket server for integrating Tobii eye trackers with jsPsych experiments.
 
-**Multi-SDK Support**: Works with both modern Tobii Pro series trackers and legacy X-series trackers (including X3-120)!
-
 ## Installation
 
-### For Tobii Pro Series Trackers
 ```bash
-# Recommended: Install with Tobii Pro SDK
-pip install jspsych-tobii[tobii-pro]
-```
+# Install with Tobii SDK support
+pip install jspsych-tobii[tobii]
 
-### For Tobii X-Series Trackers (X3-120, X2-60, etc.)
-```bash
-# 1. Install jspsych-tobii
+# Or install SDK separately
 pip install jspsych-tobii
-
-# 2. Install legacy Tobii Analytics SDK
-# Contact Tobii support for SDK installer
-# The server will auto-detect the legacy SDK
+pip install tobii-research
 ```
 
 ### For Testing Without Hardware
@@ -31,9 +22,13 @@ jspsych-tobii-server --mock
 
 ## Supported Hardware
 
-- ✅ **Tobii Pro Series**: Spectrum, Fusion, Nano, TX300 (via `tobii-research` SDK)
-- ✅ **Tobii X-Series**: X3-120, X2-60, X2-30, X1 Light (via legacy Analytics SDK)
-- ✅ **Mock Tracker**: For testing and development without hardware
+All trackers are supported via the `tobii-research` package:
+
+- **Modern Pro series** (via `tobii-research` 2.x): Spectrum, Fusion, Nano, Spark
+- **Older models** (via `tobii-research` 1.x): X3-120, TX300, X2-60, T120, etc.
+- **Mock Tracker**: For testing and development without hardware
+
+> **Note:** If you have an older tracker like the X3-120, install `tobii-research<2` (version 1.x supports these models; version 2.x dropped them).
 
 See [ADAPTER_GUIDE.md](ADAPTER_GUIDE.md) for detailed SDK information.
 
@@ -106,23 +101,13 @@ asyncio.run(server.start())
 - **Marker Support**: Inject custom markers into data stream
 - **Logging**: Comprehensive logging for debugging
 
-## Supported Tobii Trackers
-
-This server supports all Tobii Pro eye trackers that work with the Tobii Pro SDK, including:
-
-- Tobii Pro Spectrum
-- Tobii Pro Fusion
-- Tobii Pro Nano
-- Tobii Pro Spark
-- Tobii 4C (limited support)
-
 ## WebSocket Protocol
 
 The server communicates via WebSocket using JSON messages.
 
 ### Message Types
 
-**Client → Server:**
+**Client -> Server:**
 - `start_tracking`: Start eye tracking data collection
 - `stop_tracking`: Stop eye tracking
 - `calibration_start`: Begin calibration
@@ -136,7 +121,7 @@ The server communicates via WebSocket using JSON messages.
 - `marker`: Send marker
 - `time_sync`: Synchronize time
 
-**Server → Client:**
+**Server -> Client:**
 - `gaze_data`: Real-time gaze data stream
 - Response messages for each request type
 

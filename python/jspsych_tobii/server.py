@@ -43,7 +43,6 @@ class TobiiServer:
             from .adapters import SDKType
             sdk_map = {
                 "tobii-pro": SDKType.TOBII_PRO,
-                "tobii-x-series": SDKType.TOBII_X_SERIES,
                 "mock": SDKType.MOCK,
             }
             sdk_type_enum = sdk_map.get(config.sdk_type)

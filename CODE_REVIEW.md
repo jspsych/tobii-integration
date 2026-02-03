@@ -89,7 +89,9 @@ Position updates at 100ms intervals could cause UI jitter.
 
 ## Python Server: jspsych-tobii
 
-*All previously identified issues have been resolved. See the summary below.*
+### Remaining Issues
+
+*(No remaining issues)*
 
 ---
 
@@ -153,6 +155,7 @@ The following critical and important issues have been addressed:
 - ~~calibration_points type not properly constrained~~ -- supports 5, 9, 13, 15, 19, 25 with explicit error on unsupported values; same grids for validation
 - ~~Degrees approximation in validation is crude~~ -- removed degree calculation entirely; calibration reports success/fail only, validation reports normalized accuracy/precision
 - ~~Signal handlers not removed on shutdown~~ -- `shutdown()` now calls `remove_signal_handler()` for SIGTERM/SIGINT
+- ~~X-Series adapter is dead code~~ -- removed `TobiiXSeriesAdapter` and `SDKType.TOBII_X_SERIES`; all hardware supported via single `TobiiProAdapter` using `tobii-research` (1.x for older models, 2.x for modern Pro series)
 - ~~SDK type map incomplete~~ -- added `"mock": SDKType.MOCK` to `sdk_map` in `server.py`
 - ~~Potential division by zero in validation~~ -- explicit `if not distances or not valid_samples: continue` guard
 

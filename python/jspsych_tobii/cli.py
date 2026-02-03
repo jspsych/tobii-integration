@@ -22,10 +22,7 @@ Examples:
   # Start server with mock tracker (no hardware needed)
   jspsych-tobii --mock
 
-  # Force X-series SDK for X3-120 tracker
-  jspsych-tobii --sdk tobii-x-series
-
-  # Force Pro SDK for Tobii Pro series
+  # Force Tobii Pro SDK
   jspsych-tobii --sdk tobii-pro
 
   # Start server with debug logging
@@ -59,8 +56,8 @@ Examples:
 
     parser.add_argument(
         "--sdk",
-        choices=["tobii-pro", "tobii-x-series"],
-        help="Force specific SDK: 'tobii-pro' for Pro series, 'tobii-x-series' for X3-120/X-series (auto-detect if not specified)",
+        choices=["tobii-pro"],
+        help="Force specific SDK: 'tobii-pro' for tobii-research (auto-detect if not specified)",
     )
 
     parser.add_argument(

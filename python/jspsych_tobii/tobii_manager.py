@@ -19,9 +19,9 @@ class TobiiManager:
     """
     Manages Tobii eye tracker connection and data collection.
 
-    Uses adapter pattern to support multiple Tobii SDKs:
-    - tobii-research (Tobii Pro series)
-    - Legacy Analytics SDK (Tobii X-series including X3-120)
+    Uses adapter pattern to support Tobii trackers:
+    - tobii-research 2.x for modern Pro series (Spectrum, Fusion, Nano, Spark)
+    - tobii-research 1.x for older models (X3-120, TX300, etc.)
     - Mock adapter for testing
     """
 
@@ -36,8 +36,7 @@ class TobiiManager:
 
         Args:
             tracker_address: Specific tracker address, or None to auto-detect
-            sdk_type: Specific SDK to use (SDKType.TOBII_PRO or SDKType.TOBII_X_SERIES),
-                     or None for auto-detection
+            sdk_type: Specific SDK to use (SDKType.TOBII_PRO), or None for auto-detection
             use_mock: If True, use mock tracker for testing
         """
         self.logger = logging.getLogger(__name__)

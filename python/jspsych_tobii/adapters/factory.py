@@ -13,7 +13,6 @@ class SDKType(Enum):
     """Available SDK types"""
 
     TOBII_PRO = "tobii-research"
-    TOBII_X_SERIES = "tobii-analytics-sdk"
     MOCK = "mock"
 
 
@@ -28,7 +27,7 @@ def get_available_sdks() -> List[Dict[str, Any]]:
     logger = logging.getLogger(__name__)
     available = []
 
-    # Check for tobii-research (Tobii Pro)
+    # Check for tobii-research (supports both modern Pro series and older X-series trackers)
     try:
         import tobii_research as tr
 
@@ -45,39 +44,6 @@ def get_available_sdks() -> List[Dict[str, Any]]:
             {
                 "type": SDKType.TOBII_PRO,
                 "name": "Tobii Pro (tobii-research)",
-                "version": None,
-                "available": False,
-            }
-        )
-
-    # Check for legacy Tobii SDK (X-series)
-    legacy_available = False
-    try:
-        import tobii.sdk.mainloop
-
-        legacy_available = True
-    except ImportError:
-        try:
-            import tobiigazesdk
-
-            legacy_available = True
-        except ImportError:
-            pass
-
-    if legacy_available:
-        available.append(
-            {
-                "type": SDKType.TOBII_X_SERIES,
-                "name": "Tobii X-Series (Analytics SDK)",
-                "version": "unknown",
-                "available": True,
-            }
-        )
-    else:
-        available.append(
-            {
-                "type": SDKType.TOBII_X_SERIES,
-                "name": "Tobii X-Series (Analytics SDK)",
                 "version": None,
                 "available": False,
             }
@@ -129,30 +95,17 @@ def create_tracker_adapter(
             logger.info("Using Tobii Pro adapter (tobii-research SDK)")
             return TobiiProAdapter()
 
-        elif sdk_type == SDKType.TOBII_X_SERIES:
-            from .tobii_x_series import TobiiXSeriesAdapter
-
-            logger.info("Using Tobii X-Series adapter (legacy SDK)")
-            return TobiiXSeriesAdapter()
-
-    # Auto-detection: prefer modern SDK over legacy
+    # Auto-detection
     if SDKType.TOBII_PRO in available_types:
         from .tobii_pro import TobiiProAdapter
 
         logger.info("Auto-detected: Using Tobii Pro adapter (tobii-research SDK)")
         return TobiiProAdapter()
 
-    if SDKType.TOBII_X_SERIES in available_types:
-        from .tobii_x_series import TobiiXSeriesAdapter
-
-        logger.info("Auto-detected: Using Tobii X-Series adapter (legacy SDK)")
-        return TobiiXSeriesAdapter()
-
     # No SDK available - suggest mock mode or installation
     raise ImportError(
-        "No Tobii SDK found. Install one of:\n"
-        "  - Tobii Pro: pip install tobii-research\n"
-        "  - Tobii X-Series: Install legacy Analytics SDK from Tobii\n"
+        "No Tobii SDK found. Install the tobii-research package:\n"
+        "  pip install tobii-research\n"
         "Or use mock mode: create_tracker_adapter(use_mock=True)"
     )
 
@@ -178,9 +131,6 @@ def print_sdk_status() -> None:
     if not available:
         print("⚠ No Tobii SDKs installed!")
         print("\nTo install:")
-        print("  • Tobii Pro series: pip install tobii-research")
-        print("  • Tobii X-series: Contact Tobii support for legacy SDK")
+        print("  pip install tobii-research")
     else:
         print(f"✓ {len(available)} SDK(s) available")
-        if len(available) > 1:
-            print("  Note: Tobii Pro SDK will be preferred for auto-detection")

@@ -31,16 +31,8 @@ dependencies = [
 requires-python = ">=3.9"
 
 [project.optional-dependencies]
-# Tobii Pro series (modern trackers)
-tobii-pro = [
-    "tobii-research>=1.11.0",
-]
-# Legacy Tobii SDK for X-series trackers (X3-120, X2-60, etc.)
-# Note: Legacy SDK must be installed manually from Tobii
-# This is just a placeholder for documentation
-tobii-x-series = []
-# All tracker support (only includes installable SDKs)
-all-trackers = [
+# Tobii eye tracker support (tobii-research 1.x for older models, 2.x for modern Pro series)
+tobii = [
     "tobii-research>=1.11.0",
 ]
 # Development dependencies
