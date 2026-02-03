@@ -167,7 +167,9 @@ export class WebSocketClient {
    */
   private handleMessage(event: MessageEvent): void {
     try {
+      const receiveTime = performance.now();
       const data = JSON.parse(event.data);
+      data._clientReceiveTime = receiveTime;
 
       // Check for request ID (response to sendAndWait)
       if (data.requestId && this.messageHandlers.has(data.requestId)) {

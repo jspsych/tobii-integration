@@ -88,7 +88,7 @@ class TobiiExtension implements JsPsychExtension {
           ...rawGaze,
           serverTimestamp: (rawGaze as unknown as Record<string, unknown>)
             .server_timestamp as number | undefined,
-          clientTimestamp: performance.now(),
+          clientTimestamp: (data._clientReceiveTime as number) ?? performance.now(),
         };
         this.dataManager.addGazeData(gazeWithTimestamps);
 
