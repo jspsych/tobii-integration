@@ -27,7 +27,7 @@ export class TimeSync {
 
       const t1 = performance.now();
       const roundTripTime = t1 - t0;
-      const serverTime = response.serverTime;
+      const serverTime = response.serverTime as number;
 
       // Estimate one-way latency
       const latency = roundTripTime / 2;

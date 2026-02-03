@@ -53,7 +53,7 @@ export interface OnStartParameters {
   /** Trial ID or index */
   trialId?: string | number;
   /** Additional metadata */
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -118,11 +118,21 @@ export interface ValidationResult {
   averageAccuracy?: number;
   /** Average precision in degrees */
   averagePrecision?: number;
+  /** Average accuracy in normalized (0-1) coordinates */
+  averageAccuracyNorm?: number;
+  /** Average precision in normalized (0-1) coordinates */
+  averagePrecisionNorm?: number;
   /** Per-point validation data */
   pointData?: Array<{
     point: CalibrationPoint;
     accuracy: number;
     precision: number;
+    accuracyNorm: number;
+    precisionNorm: number;
+    meanGaze?: { x: number; y: number };
+    numSamples?: number;
+    numSamplesTotal?: number;
+    numSamplesSkipped?: number;
   }>;
   /** Error message if failed */
   error?: string;
@@ -158,7 +168,7 @@ export interface WebSocketMessage {
   /** Message type */
   type: MessageType;
   /** Message payload */
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -184,7 +194,7 @@ export interface MarkerData {
   /** Timestamp in milliseconds */
   timestamp?: number;
   /** Additional marker data */
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**

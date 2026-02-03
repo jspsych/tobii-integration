@@ -46,11 +46,11 @@ export class DeviceTimeSync {
         return false;
       }
 
-      this.offsetBC = response.offset;
-      this.bcSampleCount = response.sample_count;
-      this.bcStdDev = response.std_dev;
-      this.bcMin = response.min;
-      this.bcMax = response.max;
+      this.offsetBC = response.offset as number;
+      this.bcSampleCount = response.sample_count as number;
+      this.bcStdDev = response.std_dev as number | null;
+      this.bcMin = response.min as number | null;
+      this.bcMax = response.max as number | null;
 
       return true;
     } catch {

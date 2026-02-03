@@ -9,8 +9,9 @@
 
 import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from 'jspsych';
 import { version } from '../package.json';
+import type TobiiExtension from '@jspsych/extension-tobii';
 import { PositionDisplay } from './position-display';
-import type { UserPositionData, PositionQuality } from './types';
+import type { PositionQuality } from './types';
 
 const info = <const>{
   name: 'tobii-user-position',
@@ -297,7 +298,7 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
       this.injectStyles(trial);
 
       // Check for Tobii extension
-      const tobiiExtension = this.jsPsych.extensions.tobii as any;
+      const tobiiExtension = this.jsPsych.extensions.tobii as unknown as TobiiExtension;
       if (!tobiiExtension) {
         throw new Error('Tobii extension not loaded');
       }

@@ -9,6 +9,8 @@
 
 import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from 'jspsych';
 import { version } from '../package.json';
+import type TobiiExtension from '@jspsych/extension-tobii';
+import type { CalibrationResult } from '@jspsych/extension-tobii';
 import { CalibrationDisplay } from './calibration-display';
 import type { CalibrationParameters, CalibrationPoint } from './types';
 
@@ -370,7 +372,7 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
     // Inject styles
     this.injectStyles(trial);
     // Get extension instance
-    const tobiiExt = this.jsPsych.extensions.tobii as any;
+    const tobiiExt = this.jsPsych.extensions.tobii as unknown as TobiiExtension;
 
     if (!tobiiExt) {
       throw new Error('Tobii extension not initialized');
@@ -384,7 +386,7 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
     // Create calibration display
     const calibrationDisplay = new CalibrationDisplay(
       display_element,
-      trial as any as CalibrationParameters
+      trial as unknown as CalibrationParameters
     );
 
     // Show instructions (only once, before retry loop)
@@ -400,7 +402,7 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
 
     const maxAttempts = 1 + (trial.max_retries as number);
     let attempt = 0;
-    let calibrationResult: any;
+    let calibrationResult: CalibrationResult = { success: false };
 
     // Retry loop
     while (attempt < maxAttempts) {
@@ -486,7 +488,7 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
   /**
    * Validate custom calibration points
    */
-  private validateCustomPoints(points: any[]): CalibrationPoint[] {
+  private validateCustomPoints(points: unknown[]): CalibrationPoint[] {
     if (!Array.isArray(points) || points.length === 0) {
       throw new Error('custom_points must be a non-empty array');
     }
@@ -494,20 +496,19 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
     const validated: CalibrationPoint[] = [];
     for (let i = 0; i < points.length; i++) {
       const point = points[i];
-      if (
-        typeof point !== 'object' ||
-        point === null ||
-        typeof point.x !== 'number' ||
-        typeof point.y !== 'number'
-      ) {
+      if (typeof point !== 'object' || point === null) {
         throw new Error(`Invalid calibration point at index ${i}: must have numeric x and y`);
       }
-      if (point.x < 0 || point.x > 1 || point.y < 0 || point.y > 1) {
+      const p = point as Record<string, unknown>;
+      if (typeof p.x !== 'number' || typeof p.y !== 'number') {
+        throw new Error(`Invalid calibration point at index ${i}: must have numeric x and y`);
+      }
+      if (p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1) {
         throw new Error(
           `Calibration point at index ${i} out of range: x and y must be between 0 and 1`
         );
       }
-      validated.push({ x: point.x, y: point.y });
+      validated.push({ x: p.x, y: p.y });
     }
 
     return validated;

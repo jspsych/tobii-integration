@@ -7,7 +7,7 @@ import type { GazeData, CalibrationPoint, CalibrationResult, ValidationResult } 
 /**
  * Validate gaze data point
  */
-export function validateGazeData(data: any): data is GazeData {
+export function validateGazeData(data: unknown): data is GazeData {
   return (
     typeof data === 'object' &&
     data !== null &&
@@ -23,7 +23,7 @@ export function validateGazeData(data: any): data is GazeData {
 /**
  * Validate calibration point
  */
-export function validateCalibrationPoint(point: any): point is CalibrationPoint {
+export function validateCalibrationPoint(point: unknown): point is CalibrationPoint {
   return (
     typeof point === 'object' &&
     point !== null &&
@@ -46,14 +46,14 @@ export function filterValidGaze(data: GazeData[]): GazeData[] {
 /**
  * Validate that a server response conforms to CalibrationResult
  */
-export function validateCalibrationResult(data: any): data is CalibrationResult {
+export function validateCalibrationResult(data: unknown): data is CalibrationResult {
   return typeof data === 'object' && data !== null && typeof data.success === 'boolean';
 }
 
 /**
  * Validate that a server response conforms to ValidationResult
  */
-export function validateValidationResult(data: any): data is ValidationResult {
+export function validateValidationResult(data: unknown): data is ValidationResult {
   return typeof data === 'object' && data !== null && typeof data.success === 'boolean';
 }
 

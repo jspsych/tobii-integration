@@ -5,7 +5,7 @@
 /**
  * Convert data to CSV format and download
  */
-export function toCSV(data: any[], filename: string): void {
+export function toCSV(data: Record<string, unknown>[], filename: string): void {
   if (data.length === 0) {
     console.warn('No data to export');
     return;
@@ -42,7 +42,7 @@ export function toCSV(data: any[], filename: string): void {
 /**
  * Convert data to JSON format and download
  */
-export function toJSON(data: any[], filename: string): void {
+export function toJSON(data: Record<string, unknown>[], filename: string): void {
   const json = JSON.stringify(data, null, 2);
   downloadFile(json, filename, 'application/json');
 }
@@ -50,14 +50,14 @@ export function toJSON(data: any[], filename: string): void {
 /**
  * Flatten nested object for CSV export
  */
-function flattenObject(obj: any, prefix: string = ''): Record<string, any> {
-  const flattened: Record<string, any> = {};
+function flattenObject(obj: Record<string, unknown>, prefix: string = ''): Record<string, unknown> {
+  const flattened: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(obj)) {
     const newKey = prefix ? `${prefix}.${key}` : key;
 
     if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-      Object.assign(flattened, flattenObject(value, newKey));
+      Object.assign(flattened, flattenObject(value as Record<string, unknown>, newKey));
     } else if (Array.isArray(value)) {
       flattened[newKey] = JSON.stringify(value);
     } else {

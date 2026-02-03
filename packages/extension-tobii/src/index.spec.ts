@@ -44,7 +44,7 @@ class MockWebSocket {
 }
 
 // Setup global mock
-(global as any).WebSocket = MockWebSocket;
+(global as unknown as Record<string, unknown>).WebSocket = MockWebSocket;
 
 describe('TobiiExtension', () => {
   describe('static info', () => {

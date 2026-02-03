@@ -81,11 +81,13 @@ class TobiiExtension implements JsPsychExtension {
 
     // Set up gaze data handler
     this.ws.on('gaze_data', (data) => {
-      if (data.gaze && Validation.validateGazeData(data.gaze)) {
+      const rawGaze = data.gaze;
+      if (rawGaze && Validation.validateGazeData(rawGaze)) {
         // Map server_timestamp to camelCase and add client timestamp
         const gazeWithTimestamps: GazeData = {
-          ...data.gaze,
-          serverTimestamp: data.gaze.server_timestamp,
+          ...rawGaze,
+          serverTimestamp: (rawGaze as unknown as Record<string, unknown>)
+            .server_timestamp as number | undefined,
           clientTimestamp: performance.now(),
         };
         this.dataManager.addGazeData(gazeWithTimestamps);
@@ -141,11 +143,11 @@ class TobiiExtension implements JsPsychExtension {
     }
   };
 
-  on_load = async (params: OnStartParameters = {}): Promise<void> => {
+  on_load = async (_params: OnStartParameters = {}): Promise<void> => {
     // Optional: additional setup when trial loads
   };
 
-  on_finish = async (params: OnFinishParameters = {}): Promise<{ tobii_data: GazeData[] }> => {
+  on_finish = async (_params: OnFinishParameters = {}): Promise<{ tobii_data: GazeData[] }> => {
     // Mark trial end
     this.dataManager.endTrial();
 
@@ -354,7 +356,7 @@ class TobiiExtension implements JsPsychExtension {
     const response = await this.ws.sendAndWait({
       type: 'get_current_gaze',
     });
-    return response.gaze || null;
+    return (response.gaze as GazeData) || null;
   }
 
   /**
@@ -367,7 +369,7 @@ class TobiiExtension implements JsPsychExtension {
     const response = await this.ws.sendAndWait({
       type: 'get_user_position',
     });
-    return response.position || null;
+    return (response.position as UserPositionData) || null;
   }
 
   /**
@@ -461,14 +463,14 @@ class TobiiExtension implements JsPsychExtension {
   /**
    * Export gaze data to CSV
    */
-  exportToCSV(data: any[], filename: string): void {
+  exportToCSV(data: Record<string, unknown>[], filename: string): void {
     DataExport.toCSV(data, filename);
   }
 
   /**
    * Export gaze data to JSON
    */
-  exportToJSON(data: any[], filename: string): void {
+  exportToJSON(data: Record<string, unknown>[], filename: string): void {
     DataExport.toJSON(data, filename);
   }
 

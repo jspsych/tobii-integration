@@ -9,6 +9,8 @@
 
 import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from 'jspsych';
 import { version } from '../package.json';
+import type TobiiExtension from '@jspsych/extension-tobii';
+import type { ValidationResult } from '@jspsych/extension-tobii';
 import { ValidationDisplay } from './validation-display';
 import type { ValidationParameters, ValidationPoint } from './types';
 
@@ -510,7 +512,7 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
     // Inject styles
     this.injectStyles(trial);
     // Get extension instance
-    const tobiiExt = this.jsPsych.extensions.tobii as any;
+    const tobiiExt = this.jsPsych.extensions.tobii as unknown as TobiiExtension;
 
     if (!tobiiExt) {
       throw new Error('Tobii extension not initialized');
@@ -524,7 +526,7 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
     // Create validation display
     const validationDisplay = new ValidationDisplay(
       display_element,
-      trial as any as ValidationParameters
+      trial as unknown as ValidationParameters
     );
 
     // Show instructions (only once, before retry loop)
@@ -543,7 +545,7 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
     let validationPassed = false;
     let avgAccuracyNorm = 0;
     let avgPrecisionNorm = 0;
-    let validationResult: any;
+    let validationResult: ValidationResult = { success: false };
 
     // Retry loop
     while (attempt < maxAttempts) {
@@ -649,14 +651,14 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
   /**
    * Validate custom validation points
    */
-  private validateCustomPoints(points: any[]): ValidationPoint[] {
+  private validateCustomPoints(points: unknown[]): ValidationPoint[] {
     if (!Array.isArray(points) || points.length === 0) {
       throw new Error('custom_points must be a non-empty array');
     }
 
     const validated: ValidationPoint[] = [];
     for (let i = 0; i < points.length; i++) {
-      const point = points[i];
+      const point = points[i] as Record<string, unknown>;
       if (
         typeof point !== 'object' ||
         point === null ||

@@ -305,7 +305,7 @@ export class PositionDisplay {
     x: number | null,
     y: number | null,
     z: number | null,
-    positionData: UserPositionData
+    _positionData: UserPositionData
   ): void {
     if (x === null || y === null) {
       this.faceOutlineElement.style.opacity = '0.3';

@@ -8,7 +8,7 @@ export class WebSocketClient {
   private ws: WebSocket | null = null;
   private config: Required<ConnectionConfig>;
   private status: ConnectionStatus;
-  private messageHandlers: Map<string, (data: any) => void>;
+  private messageHandlers: Map<string, (data: Record<string, unknown>) => void>;
   private reconnectTimeout: number | null = null;
   private currentReconnectAttempt: number = 0;
 
@@ -120,7 +120,7 @@ export class WebSocketClient {
   /**
    * Send message and wait for response
    */
-  async sendAndWait(message: WebSocketMessage, timeout: number = 5000): Promise<any> {
+  async sendAndWait(message: WebSocketMessage, timeout: number = 5000): Promise<Record<string, unknown>> {
     if (!this.isConnected()) {
       throw new Error('Not connected to server');
     }
@@ -150,7 +150,7 @@ export class WebSocketClient {
   /**
    * Register message handler
    */
-  on(messageType: string, handler: (data: any) => void): void {
+  on(messageType: string, handler: (data: Record<string, unknown>) => void): void {
     this.messageHandlers.set(messageType, handler);
   }
 
