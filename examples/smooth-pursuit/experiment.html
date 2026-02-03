@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smooth Pursuit Eye Tracking Experiment</title>
+    <script src="https://unpkg.com/jspsych@latest"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@latest"></script>
+    <script src="../../packages/extension-tobii/dist/index.browser.min.js?v=4"></script>
+    <script src="../../packages/plugin-tobii-user-position/dist/index.browser.js?v=4"></script>
+    <script src="../../packages/plugin-tobii-calibration/dist/index.browser.min.js?v=4"></script>
+    <script src="../../packages/plugin-tobii-validation/dist/index.browser.min.js?v=4"></script>
+
+    <link href="https://unpkg.com/jspsych@latest/css/jspsych.css" rel="stylesheet" type="text/css" />
+    <style>
+        .pursuit-dot {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            background-color: #e74c3c;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+        }
+        .fixation {
+            font-size: 48px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+</body>
+<script>
+    // ========================================================================
+    // CONFIGURATION
+    // ========================================================================
+
+    const CONFIG = {
+        // Trial timing
+        trialDuration: 5000,       // ms per pursuit trial
+        fixationDuration: 1000,    // ms fixation cross before each trial
+
+        // Motion parameters
+        motionTypes: ['horizontal_sine', 'circular', 'horizontal_linear'],
+        repetitions: 2,
+
+        // Horizontal sinusoidal
+        sine: {
+            frequency: 0.2,        // Hz
+            amplitudeFraction: 0.7, // fraction of screen width
+        },
+
+        // Circular
+        circle: {
+            frequency: 0.2,        // Hz (revolutions per second)
+            radiusFraction: 0.25,  // fraction of min(screen width, screen height)
+        },
+
+        // Horizontal linear
+        linear: {
+            speedFraction: 0.3,    // fraction of screen width per second
+        },
+
+        // Dot appearance
+        dotSize: 20,               // px diameter
+    };
+
+    // ========================================================================
+    // JSPSYCH INITIALIZATION
+    // ========================================================================
+
+    const jsPsych = initJsPsych({
+        extensions: [
+            {
+                type: jsPsychExtensionTobii,
+                params: {
+                    connection: {
+                        url: 'ws://localhost:8080',
+                        autoConnect: true,
+                    },
+                    data: {
+                        includeRawSamples: true,
+                        coordinateSystem: 'normalized',
+                    },
+                },
+            },
+        ],
+        on_finish: function () {
+            const allData = jsPsych.data.get().values();
+            jsPsych.extensions.tobii.exportToCSV(allData, 'smooth_pursuit_data.csv');
+            jsPsych.data.displayData();
+        },
+    });
+
+    // ========================================================================
+    // SHARED STATE
+    // ========================================================================
+
+    // Module-level variables for passing data from on_load to on_finish
+    let currentDotPositions = [];
+    let currentAnimationId = null;
+
+    // ========================================================================
+    // MOTION FUNCTIONS
+    // ========================================================================
+
+    function computePosition(motionType, elapsed, screenW, screenH) {
+        const t = elapsed / 1000; // seconds
+
+        switch (motionType) {
+            case 'horizontal_sine': {
+                const amplitude = (screenW * CONFIG.sine.amplitudeFraction) / 2;
+                const x = screenW / 2 + amplitude * Math.sin(2 * Math.PI * CONFIG.sine.frequency * t);
+                const y = screenH / 2;
+                return { x, y };
+            }
+            case 'circular': {
+                const radius = Math.min(screenW, screenH) * CONFIG.circle.radiusFraction;
+                const angle = 2 * Math.PI * CONFIG.circle.frequency * t;
+                const x = screenW / 2 + radius * Math.cos(angle);
+                const y = screenH / 2 + radius * Math.sin(angle);
+                return { x, y };
+            }
+            case 'horizontal_linear': {
+                const speed = screenW * CONFIG.linear.speedFraction; // px per second
+                const totalDist = screenW * 0.7;
+                const leftEdge = (screenW - totalDist) / 2;
+                // Ping-pong: move right then left
+                const distTraveled = speed * t;
+                const leg = totalDist; // one-way distance
+                const fullCycles = Math.floor(distTraveled / leg);
+                const remainder = distTraveled - fullCycles * leg;
+                const x = fullCycles % 2 === 0
+                    ? leftEdge + remainder
+                    : leftEdge + leg - remainder;
+                const y = screenH / 2;
+                return { x, y };
+            }
+            default:
+                return { x: screenW / 2, y: screenH / 2 };
+        }
+    }
+
+    // ========================================================================
+    // TIMELINE
+    // ========================================================================
+
+    const timeline = [];
+
+    // Welcome
+    timeline.push({
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: `
+            <h1>Smooth Pursuit Experiment</h1>
+            <p>This experiment measures how well your eyes follow a moving dot.</p>
+            <p>A red dot will move across the screen in different patterns.
+               Follow it with your eyes as smoothly as possible.</p>
+            <p>Press any key to begin.</p>
+        `,
+    });
+
+    // User position guide
+    timeline.push({
+        type: jsPsychTobiiUserPosition,
+    });
+
+    // Calibration
+    timeline.push({
+        type: jsPsychTobiiCalibration,
+        calibration_points: 9,
+        point_size: 25,
+        animation: 'shrink',
+    });
+
+    // Validation
+    timeline.push({
+        type: jsPsychTobiiValidation,
+        validation_points: 9,
+        show_feedback: true,
+    });
+
+    // Task instructions
+    timeline.push({
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: `
+            <h2>Instructions</h2>
+            <p>You will see a red dot moving on the screen.</p>
+            <p>Follow the dot with your eyes as smoothly and accurately as possible.</p>
+            <p>Keep your head still and only move your eyes.</p>
+            <p>There will be ${CONFIG.motionTypes.length * CONFIG.repetitions} short trials.</p>
+            <p>Press any key to start.</p>
+        `,
+    });
+
+    // Generate trial conditions: each motion type repeated, randomized
+    const trialConditions = [];
+    for (let rep = 0; rep < CONFIG.repetitions; rep++) {
+        for (const motionType of CONFIG.motionTypes) {
+            trialConditions.push({ motionType, rep });
+        }
+    }
+
+    // Pursuit trial procedure
+    const pursuitProcedure = {
+        timeline: [
+            // Fixation cross
+            {
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: '<div class="fixation">+</div>',
+                choices: 'NO_KEYS',
+                trial_duration: CONFIG.fixationDuration,
+            },
+            // Pursuit trial
+            {
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: '',
+                choices: 'NO_KEYS',
+                trial_duration: CONFIG.trialDuration,
+                extensions: [
+                    {
+                        type: jsPsychExtensionTobii,
+                    },
+                ],
+                data: function () {
+                    const condition = jsPsych.evaluateTimelineVariable('condition');
+                    return {
+                        task: 'smooth_pursuit',
+                        motion_type: condition.motionType,
+                        repetition: condition.rep,
+                        trial_duration_ms: CONFIG.trialDuration,
+                        motion_params: {
+                            sine: CONFIG.sine,
+                            circle: CONFIG.circle,
+                            linear: CONFIG.linear,
+                        },
+                    };
+                },
+                on_load: function () {
+                    const condition = jsPsych.evaluateTimelineVariable('condition');
+                    const screenW = window.innerWidth;
+                    const screenH = window.innerHeight;
+
+                    // Reset shared state
+                    currentDotPositions = [];
+
+                    // Create the pursuit dot
+                    const dot = document.createElement('div');
+                    dot.className = 'pursuit-dot';
+                    dot.id = 'pursuit-dot';
+                    document.body.appendChild(dot);
+
+                    // Place dot at starting position
+                    const startPos = computePosition(condition.motionType, 0, screenW, screenH);
+                    dot.style.left = startPos.x + 'px';
+                    dot.style.top = startPos.y + 'px';
+
+                    // Send marker at animation start
+                    jsPsych.extensions.tobii.sendMarker({
+                        label: 'pursuit_start',
+                        motion_type: condition.motionType,
+                        screen_width: screenW,
+                        screen_height: screenH,
+                    });
+
+                    // Start animation loop
+                    const startTime = performance.now();
+
+                    function animate() {
+                        const now = performance.now();
+                        const elapsed = now - startTime;
+
+                        const pos = computePosition(condition.motionType, elapsed, screenW, screenH);
+
+                        // Update dot position
+                        dot.style.left = pos.x + 'px';
+                        dot.style.top = pos.y + 'px';
+
+                        // Log position with timestamps
+                        currentDotPositions.push({
+                            x_px: Math.round(pos.x * 100) / 100,
+                            y_px: Math.round(pos.y * 100) / 100,
+                            x_norm: Math.round((pos.x / screenW) * 10000) / 10000,
+                            y_norm: Math.round((pos.y / screenH) * 10000) / 10000,
+                            t: Math.round(now * 100) / 100,
+                            elapsed: Math.round(elapsed * 100) / 100,
+                        });
+
+                        currentAnimationId = requestAnimationFrame(animate);
+                    }
+
+                    currentAnimationId = requestAnimationFrame(animate);
+                },
+                on_finish: function (data) {
+                    // Cancel animation
+                    if (currentAnimationId !== null) {
+                        cancelAnimationFrame(currentAnimationId);
+                        currentAnimationId = null;
+                    }
+
+                    // Remove dot
+                    const dot = document.getElementById('pursuit-dot');
+                    if (dot) {
+                        dot.remove();
+                    }
+
+                    // Store dot trajectory in trial data
+                    data.dot_positions = currentDotPositions;
+
+                    // Send end marker
+                    jsPsych.extensions.tobii.sendMarker({
+                        label: 'pursuit_end',
+                        motion_type: data.motion_type,
+                        num_dot_samples: currentDotPositions.length,
+                    });
+                },
+            },
+        ],
+        timeline_variables: trialConditions.map(function (c) {
+            return { condition: c };
+        }),
+        randomize_order: true,
+    };
+
+    timeline.push(pursuitProcedure);
+
+    // Thank you
+    timeline.push({
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: `
+            <h2>Thank you!</h2>
+            <p>The experiment is complete.</p>
+            <p>Press any key to finish and download your data.</p>
+        `,
+    });
+
+    // Run
+    jsPsych.run(timeline);
+</script>
+</html>
