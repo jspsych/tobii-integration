@@ -36,6 +36,7 @@ This is a monorepo containing:
 - **packages/extension-tobii**: Core extension
 - **packages/plugin-tobii-calibration**: Calibration plugin
 - **packages/plugin-tobii-validation**: Validation plugin
+- **packages/plugin-tobii-user-position**: User position guide plugin
 - **python**: Python WebSocket server
 
 ## Development Workflow
@@ -118,7 +119,7 @@ npm run lint
    ```
 7. Commit with clear message:
    ```bash
-   git commit -m "Add feature: description"
+   git commit -m "feat: description"
    ```
 8. Push to your fork:
    ```bash
@@ -154,20 +155,16 @@ Python:
 
 ## Release Process
 
-Releases are handled by maintainers:
+Releases are handled by maintainers using [changesets](https://github.com/changesets/changesets):
 
-1. Update version in all package.json and pyproject.toml
-2. Update CHANGELOG.md
-3. Create git tag
-4. Publish to npm:
+1. Create a changeset describing your changes:
    ```bash
-   npm publish --workspaces
+   npm run changeset
    ```
-5. Publish to PyPI:
+2. Maintainers version and release:
    ```bash
-   cd python
-   python -m build
-   twine upload dist/*
+   npm run version
+   npm run release
    ```
 
 ## Questions?
