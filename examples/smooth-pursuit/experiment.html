@@ -36,29 +36,16 @@
 
     const CONFIG = {
         // Trial timing
-        trialDuration: 5000,       // ms per pursuit trial
+        trialDuration: 30000,      // ms per pursuit trial
         fixationDuration: 1000,    // ms fixation cross before each trial
 
-        // Motion parameters
-        motionTypes: ['horizontal_sine', 'circular', 'horizontal_linear'],
-        repetitions: 2,
+        // Trial structure
+        numTrials: 20,
+        trialsPerBlock: 5,         // break after every N trials
 
-        // Horizontal sinusoidal
-        sine: {
-            frequency: 0.2,        // Hz
-            amplitudeFraction: 0.7, // fraction of screen width
-        },
-
-        // Circular
-        circle: {
-            frequency: 0.2,        // Hz (revolutions per second)
-            radiusFraction: 0.25,  // fraction of min(screen width, screen height)
-        },
-
-        // Horizontal linear
-        linear: {
-            speedFraction: 0.3,    // fraction of screen width per second
-        },
+        // Horizontal sinusoidal motion
+        frequency: 0.4,            // Hz
+        amplitudeFraction: 0.7,    // fraction of screen width
 
         // Dot appearance
         dotSize: 20,               // px diameter
@@ -103,41 +90,12 @@
     // MOTION FUNCTIONS
     // ========================================================================
 
-    function computePosition(motionType, elapsed, screenW, screenH) {
+    function computePosition(elapsed, screenW, screenH) {
         const t = elapsed / 1000; // seconds
-
-        switch (motionType) {
-            case 'horizontal_sine': {
-                const amplitude = (screenW * CONFIG.sine.amplitudeFraction) / 2;
-                const x = screenW / 2 + amplitude * Math.sin(2 * Math.PI * CONFIG.sine.frequency * t);
-                const y = screenH / 2;
-                return { x, y };
-            }
-            case 'circular': {
-                const radius = Math.min(screenW, screenH) * CONFIG.circle.radiusFraction;
-                const angle = 2 * Math.PI * CONFIG.circle.frequency * t;
-                const x = screenW / 2 + radius * Math.cos(angle);
-                const y = screenH / 2 + radius * Math.sin(angle);
-                return { x, y };
-            }
-            case 'horizontal_linear': {
-                const speed = screenW * CONFIG.linear.speedFraction; // px per second
-                const totalDist = screenW * 0.7;
-                const leftEdge = (screenW - totalDist) / 2;
-                // Ping-pong: move right then left
-                const distTraveled = speed * t;
-                const leg = totalDist; // one-way distance
-                const fullCycles = Math.floor(distTraveled / leg);
-                const remainder = distTraveled - fullCycles * leg;
-                const x = fullCycles % 2 === 0
-                    ? leftEdge + remainder
-                    : leftEdge + leg - remainder;
-                const y = screenH / 2;
-                return { x, y };
-            }
-            default:
-                return { x: screenW / 2, y: screenH / 2 };
-        }
+        const amplitude = (screenW * CONFIG.amplitudeFraction) / 2;
+        const x = screenW / 2 + amplitude * Math.sin(2 * Math.PI * CONFIG.frequency * t);
+        const y = screenH / 2;
+        return { x, y };
     }
 
     // ========================================================================
@@ -152,7 +110,7 @@
         stimulus: `
             <h1>Smooth Pursuit Experiment</h1>
             <p>This experiment measures how well your eyes follow a moving dot.</p>
-            <p>A red dot will move across the screen in different patterns.
+            <p>A red dot will oscillate horizontally across the screen.
                Follow it with your eyes as smoothly as possible.</p>
             <p>Press any key to begin.</p>
         `,
@@ -183,24 +141,16 @@
         type: jsPsychHtmlKeyboardResponse,
         stimulus: `
             <h2>Instructions</h2>
-            <p>You will see a red dot moving on the screen.</p>
+            <p>You will see a red dot oscillating horizontally on the screen.</p>
             <p>Follow the dot with your eyes as smoothly and accurately as possible.</p>
             <p>Keep your head still and only move your eyes.</p>
-            <p>There will be ${CONFIG.motionTypes.length * CONFIG.repetitions} short trials.</p>
+            <p>There will be ${CONFIG.numTrials} trials with breaks every ${CONFIG.trialsPerBlock} trials.</p>
             <p>Press any key to start.</p>
         `,
     });
 
-    // Generate trial conditions: each motion type repeated, randomized
-    const trialConditions = [];
-    for (let rep = 0; rep < CONFIG.repetitions; rep++) {
-        for (const motionType of CONFIG.motionTypes) {
-            trialConditions.push({ motionType, rep });
-        }
-    }
-
-    // Pursuit trial procedure
-    const pursuitProcedure = {
+    // Build pursuit trials in blocks with breaks
+    const pursuitTrial = {
         timeline: [
             // Fixation cross
             {
@@ -221,21 +171,17 @@
                     },
                 ],
                 data: function () {
-                    const condition = jsPsych.evaluateTimelineVariable('condition');
                     return {
                         task: 'smooth_pursuit',
-                        motion_type: condition.motionType,
-                        repetition: condition.rep,
+                        motion_type: 'horizontal_sine',
                         trial_duration_ms: CONFIG.trialDuration,
                         motion_params: {
-                            sine: CONFIG.sine,
-                            circle: CONFIG.circle,
-                            linear: CONFIG.linear,
+                            frequency: CONFIG.frequency,
+                            amplitudeFraction: CONFIG.amplitudeFraction,
                         },
                     };
                 },
                 on_load: function () {
-                    const condition = jsPsych.evaluateTimelineVariable('condition');
                     const screenW = window.innerWidth;
                     const screenH = window.innerHeight;
 
@@ -249,14 +195,14 @@
                     document.body.appendChild(dot);
 
                     // Place dot at starting position
-                    const startPos = computePosition(condition.motionType, 0, screenW, screenH);
+                    const startPos = computePosition(0, screenW, screenH);
                     dot.style.left = startPos.x + 'px';
                     dot.style.top = startPos.y + 'px';
 
                     // Send marker at animation start
                     jsPsych.extensions.tobii.sendMarker({
                         label: 'pursuit_start',
-                        motion_type: condition.motionType,
+                        motion_type: 'horizontal_sine',
                         screen_width: screenW,
                         screen_height: screenH,
                     });
@@ -268,7 +214,7 @@
                         const now = performance.now();
                         const elapsed = now - startTime;
 
-                        const pos = computePosition(condition.motionType, elapsed, screenW, screenH);
+                        const pos = computePosition(elapsed, screenW, screenH);
 
                         // Update dot position
                         dot.style.left = pos.x + 'px';
@@ -314,13 +260,41 @@
                 },
             },
         ],
-        timeline_variables: trialConditions.map(function (c) {
-            return { condition: c };
-        }),
-        randomize_order: true,
     };
 
-    timeline.push(pursuitProcedure);
+    const numBlocks = Math.ceil(CONFIG.numTrials / CONFIG.trialsPerBlock);
+
+    for (let block = 0; block < numBlocks; block++) {
+        // Break screen between blocks (not before the first)
+        if (block > 0) {
+            timeline.push({
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: `
+                    <h2>Break</h2>
+                    <p>You have completed ${block * CONFIG.trialsPerBlock} of ${CONFIG.numTrials} trials.</p>
+                    <p>Take a moment to rest your eyes.</p>
+                    <p>Press any key when you are ready to continue.</p>
+                `,
+            });
+        }
+
+        const trialsInBlock = Math.min(
+            CONFIG.trialsPerBlock,
+            CONFIG.numTrials - block * CONFIG.trialsPerBlock
+        );
+
+        timeline.push({
+            ...pursuitTrial,
+            repetitions: trialsInBlock,
+        });
+    }
+
+    // Post-task validation
+    timeline.push({
+        type: jsPsychTobiiValidation,
+        validation_points: 9,
+        show_feedback: true,
+    });
 
     // Thank you
     timeline.push({
