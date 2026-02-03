@@ -50,8 +50,8 @@ Tobii Pro eye tracker integration for jsPsych experiments.
 
 - Modern web browser (Chrome, Firefox, Edge, Safari)
 - Python 3.9 or higher
-- Node.js 18.0 or higher
 - Tobii Pro eye tracker (connected via USB or network)
+- Node.js 18.0 or higher (optional — only needed if using npm)
 
 ### Installation
 
@@ -63,12 +63,31 @@ pip install jspsych-tobii
 
 #### 2. Install JavaScript Packages
 
+Add script tags to your HTML file. No build tools or Node.js installation needed.
+
+```html
+<script src="https://unpkg.com/jspsych"></script>
+<script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response"></script>
+<script src="https://unpkg.com/@jspsych/extension-tobii"></script>
+<script src="https://unpkg.com/@jspsych/plugin-tobii-calibration"></script>
+<script src="https://unpkg.com/@jspsych/plugin-tobii-validation"></script>
+<script src="https://unpkg.com/@jspsych/plugin-tobii-user-position"></script>
+<link rel="stylesheet" href="https://unpkg.com/jspsych/css/jspsych.css" />
+```
+
+<details>
+<summary>Alternative: Using npm</summary>
+
+If you prefer a Node.js build workflow:
+
 ```bash
 npm install @jspsych/extension-tobii \
             @jspsych/plugin-tobii-calibration \
             @jspsych/plugin-tobii-validation \
             @jspsych/plugin-tobii-user-position
 ```
+
+</details>
 
 ### Quick Start
 
@@ -90,43 +109,52 @@ Server started successfully
 
 #### 2. Create Your Experiment
 
-```javascript
-import { initJsPsych } from 'jspsych';
-import TobiiExtension from '@jspsych/extension-tobii';
-import TobiiCalibrationPlugin from '@jspsych/plugin-tobii-calibration';
-import HtmlKeyboardResponsePlugin from '@jspsych/plugin-html-keyboard-response';
-
-const jsPsych = initJsPsych({
-  extensions: [
-    {
-      type: TobiiExtension,
-      params: {
-        connection: {
-          url: 'ws://localhost:8080',
-          autoConnect: true,
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://unpkg.com/jspsych"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response"></script>
+  <script src="https://unpkg.com/@jspsych/extension-tobii"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-tobii-calibration"></script>
+  <link rel="stylesheet" href="https://unpkg.com/jspsych/css/jspsych.css" />
+</head>
+<body>
+<script>
+  const jsPsych = initJsPsych({
+    extensions: [
+      {
+        type: jsPsychExtensionTobii,
+        params: {
+          connection: {
+            url: 'ws://localhost:8080',
+            autoConnect: true,
+          },
         },
       },
-    },
-  ],
-});
+    ],
+  });
 
-const timeline = [];
+  const timeline = [];
 
-// Add calibration
-timeline.push({
-  type: TobiiCalibrationPlugin,
-  calibration_points: 9,
-  calibration_mode: 'view',
-});
+  // Add calibration
+  timeline.push({
+    type: jsPsychTobiiCalibration,
+    calibration_points: 9,
+    calibration_mode: 'view',
+  });
 
-// Add your experimental trials with eye tracking enabled
-timeline.push({
-  type: HtmlKeyboardResponsePlugin,
-  stimulus: '<p>Look at this text</p>',
-  extensions: [{ type: TobiiExtension }],
-});
+  // Add your experimental trials with eye tracking enabled
+  timeline.push({
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: '<p>Look at this text</p>',
+    extensions: [{ type: jsPsychExtensionTobii }],
+  });
 
-jsPsych.run(timeline);
+  jsPsych.run(timeline);
+</script>
+</body>
+</html>
 ```
 
 #### 3. Run Your Experiment
@@ -204,18 +232,17 @@ The jsPsych-Tobii integration consists of four JavaScript packages and one Pytho
 
 ## Tutorial
 
+> **Note:** If you're using npm with ES module imports, replace the global variable references (e.g., `jsPsychExtensionTobii`) with the corresponding imports (e.g., `import TobiiExtension from '@jspsych/extension-tobii'`). See the [npm installation instructions](#installation) for details.
+
 ### Basic Workflow
 
 #### Step 1: Initialize jsPsych with the Tobii Extension
 
 ```javascript
-import { initJsPsych } from 'jspsych';
-import TobiiExtension from '@jspsych/extension-tobii';
-
 const jsPsych = initJsPsych({
   extensions: [
     {
-      type: TobiiExtension,
+      type: jsPsychExtensionTobii,
       params: {
         connection: {
           url: 'ws://localhost:8080',
@@ -230,29 +257,25 @@ const jsPsych = initJsPsych({
 #### Step 2: Set Up the Calibration Workflow
 
 ```javascript
-import TobiiCalibrationPlugin from '@jspsych/plugin-tobii-calibration';
-import TobiiValidationPlugin from '@jspsych/plugin-tobii-validation';
-import TobiiUserPositionPlugin from '@jspsych/plugin-tobii-user-position';
-
 const timeline = [];
 
 // Position guide (optional but recommended)
 timeline.push({
-  type: TobiiUserPositionPlugin,
+  type: jsPsychTobiiUserPosition,
   message: 'Please adjust your position until both indicators are green',
   require_good_position: true,
 });
 
 // Calibration
 timeline.push({
-  type: TobiiCalibrationPlugin,
+  type: jsPsychTobiiCalibration,
   calibration_points: 9,
   calibration_mode: 'view',
 });
 
 // Validation (recommended)
 timeline.push({
-  type: TobiiValidationPlugin,
+  type: jsPsychTobiiValidation,
   validation_points: 9,
   tolerance: 0.05,
 });
@@ -261,12 +284,10 @@ timeline.push({
 #### Step 3: Add Experimental Trials with Eye Tracking
 
 ```javascript
-import HtmlKeyboardResponsePlugin from '@jspsych/plugin-html-keyboard-response';
-
 timeline.push({
-  type: HtmlKeyboardResponsePlugin,
+  type: jsPsychHtmlKeyboardResponse,
   stimulus: '<img src="stimulus.png" />',
-  extensions: [{ type: TobiiExtension }],
+  extensions: [{ type: jsPsychExtensionTobii }],
 });
 ```
 
@@ -281,17 +302,10 @@ jsPsych.run(timeline);
 A complete visual search experiment with eye tracking:
 
 ```javascript
-import { initJsPsych } from 'jspsych';
-import TobiiExtension from '@jspsych/extension-tobii';
-import TobiiCalibrationPlugin from '@jspsych/plugin-tobii-calibration';
-import TobiiValidationPlugin from '@jspsych/plugin-tobii-validation';
-import TobiiUserPositionPlugin from '@jspsych/plugin-tobii-user-position';
-import HtmlKeyboardResponsePlugin from '@jspsych/plugin-html-keyboard-response';
-
 const jsPsych = initJsPsych({
   extensions: [
     {
-      type: TobiiExtension,
+      type: jsPsychExtensionTobii,
       params: {
         connection: { url: 'ws://localhost:8080', autoConnect: true },
       },
@@ -307,7 +321,7 @@ const timeline = [];
 
 // Welcome screen
 timeline.push({
-  type: HtmlKeyboardResponsePlugin,
+  type: jsPsychHtmlKeyboardResponse,
   stimulus: `
     <h1>Visual Search Experiment</h1>
     <p>Press any key to begin the eye tracking setup.</p>
@@ -316,21 +330,21 @@ timeline.push({
 
 // Position guide
 timeline.push({
-  type: TobiiUserPositionPlugin,
+  type: jsPsychTobiiUserPosition,
   message: 'Adjust your position until both eye indicators are green, then click Continue.',
   require_good_position: true,
 });
 
 // Calibration
 timeline.push({
-  type: TobiiCalibrationPlugin,
+  type: jsPsychTobiiCalibration,
   calibration_points: 9,
   calibration_mode: 'view',
 });
 
 // Validation
 timeline.push({
-  type: TobiiValidationPlugin,
+  type: jsPsychTobiiValidation,
   validation_points: 9,
   tolerance: 0.05,
 });
@@ -345,14 +359,14 @@ const stimuli = [
 
 for (const stim of stimuli) {
   timeline.push({
-    type: HtmlKeyboardResponsePlugin,
+    type: jsPsychHtmlKeyboardResponse,
     stimulus: generateSearchDisplay(stim),
     choices: ['f', 'j'],
     data: {
       target_present: stim.target_present,
       set_size: stim.set_size,
     },
-    extensions: [{ type: TobiiExtension }],
+    extensions: [{ type: jsPsychExtensionTobii }],
   });
 }
 
@@ -405,13 +419,13 @@ const containerCoords = jsPsych.extensions.tobii.windowToContainer(gaze.x, gaze.
 
 ```javascript
 const validationTrial = {
-  type: TobiiValidationPlugin,
+  type: jsPsychTobiiValidation,
   validation_points: 9,
   tolerance: 0.05,
   on_finish: (data) => {
     if (!data.validation_success) {
       jsPsych.addNodeToEndOfTimeline({
-        type: TobiiCalibrationPlugin,
+        type: jsPsychTobiiCalibration,
         calibration_points: 9,
       });
       jsPsych.addNodeToEndOfTimeline(validationTrial);
@@ -431,10 +445,8 @@ Eye tracker calibration maps the physical characteristics of a participant's eye
 Always use the position guide before calibration:
 
 ```javascript
-import TobiiUserPositionPlugin from '@jspsych/plugin-tobii-user-position';
-
 const positionTrial = {
-  type: TobiiUserPositionPlugin,
+  type: jsPsychTobiiUserPosition,
   message: 'Adjust your position until both eye indicators are green',
   require_good_position: true,
   show_distance_feedback: true,
@@ -459,7 +471,7 @@ You can also provide custom points:
 
 ```javascript
 const calibrationTrial = {
-  type: TobiiCalibrationPlugin,
+  type: jsPsychTobiiCalibration,
   custom_points: [
     { x: 0.2, y: 0.2 },
     { x: 0.8, y: 0.2 },
@@ -487,7 +499,7 @@ const calibrationTrial = {
 
 ```javascript
 const calibrationTrial = {
-  type: TobiiCalibrationPlugin,
+  type: jsPsychTobiiCalibration,
   calibration_mode: 'click',
   button_text: 'Start Calibration',
 };
@@ -498,10 +510,8 @@ const calibrationTrial = {
 Always validate after calibration:
 
 ```javascript
-import TobiiValidationPlugin from '@jspsych/plugin-tobii-validation';
-
 const validationTrial = {
-  type: TobiiValidationPlugin,
+  type: jsPsychTobiiValidation,
   validation_points: 9,
   tolerance: 0.05,
   show_feedback: true,
@@ -533,17 +543,17 @@ const createCalibrationSequence = () => {
   const sequence = [];
 
   sequence.push({
-    type: TobiiUserPositionPlugin,
+    type: jsPsychTobiiUserPosition,
     require_good_position: true,
   });
 
   sequence.push({
-    type: TobiiCalibrationPlugin,
+    type: jsPsychTobiiCalibration,
     calibration_points: 9,
   });
 
   sequence.push({
-    type: TobiiValidationPlugin,
+    type: jsPsychTobiiValidation,
     validation_points: 9,
     tolerance: 0.05,
     on_finish: (data) => {
@@ -1172,7 +1182,7 @@ const config = jsPsych.extensions.tobii.getConfig();
 
 1. Verify extension is added to trials:
    ```javascript
-   extensions: [{ type: TobiiExtension }]  // Don't forget this!
+   extensions: [{ type: jsPsychExtensionTobii }]  // Don't forget this!
    ```
 2. Check tracking state: `jsPsych.extensions.tobii.isTracking()`
 3. Ensure calibration completed successfully first
