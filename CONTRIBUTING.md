@@ -18,9 +18,10 @@ Thank you for your interest in contributing! This document provides guidelines f
    cd jspsych-tobii
    ```
 
-2. Run the setup script:
+2. Install dependencies:
    ```bash
-   ./scripts/setup-dev.sh
+   npm install
+   cd python && pip install -e ".[dev]" && cd ..
    ```
 
 3. Build all packages:
