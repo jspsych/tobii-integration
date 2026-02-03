@@ -1,19 +1,21 @@
 /**
- * **plugin-tobii-calibration**
- *
- * jsPsych plugin for Tobii eye tracker calibration
- *
+ * @title Tobii Calibration
+ * @description jsPsych plugin for Tobii eye tracker calibration. Provides a visual
+ * calibration procedure with animated points and real-time feedback.
+ * @version 1.0.0
  * @author jsPsych Team
- * @see {@link https://github.com/jspsych/jspsych-tobii/tree/main/packages/plugin-tobii-calibration#readme}
+ * @see {@link https://github.com/jspsych/jspsych-tobii/tree/main/packages/plugin-tobii-calibration#readme Documentation}
  */
 
-import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from "jspsych";
-import { version } from "../package.json";
-import { CalibrationDisplay } from "./calibration-display";
-import type { CalibrationParameters, CalibrationPoint } from "./types";
+import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from 'jspsych';
+import { version } from '../package.json';
+import type TobiiExtension from '@jspsych/extension-tobii';
+import type { CalibrationResult } from '@jspsych/extension-tobii';
+import { CalibrationDisplay } from './calibration-display';
+import type { CalibrationParameters, CalibrationPoint } from './types';
 
 const info = <const>{
-  name: "plugin-tobii-calibration",
+  name: 'tobii-calibration',
   version: version,
   parameters: {
     /** Number of calibration points (5 or 9) */
@@ -24,7 +26,7 @@ const info = <const>{
     /** Calibration mode: click or view */
     calibration_mode: {
       type: ParameterType.STRING,
-      default: "view",
+      default: 'view',
     },
     /** Size of calibration points in pixels */
     point_size: {
@@ -34,7 +36,7 @@ const info = <const>{
     /** Color of calibration points */
     point_color: {
       type: ParameterType.STRING,
-      default: "#ff0000",
+      default: '#ff0000',
     },
     /** Duration to show each point before data collection (ms) - allows user to fixate */
     point_duration: {
@@ -64,63 +66,64 @@ const info = <const>{
     /** Animation style */
     animation: {
       type: ParameterType.STRING,
-      default: "shrink",
+      default: 'shrink',
     },
     /** Instructions text */
     instructions: {
       type: ParameterType.STRING,
       default:
-        "Look at each point as it appears on the screen. Keep your gaze fixed on each point until it disappears.",
+        'Look at each point as it appears on the screen. Keep your gaze fixed on each point until it disappears.',
     },
     /** Button text for click mode */
     button_text: {
       type: ParameterType.STRING,
-      default: "Start Calibration",
+      default: 'Start Calibration',
     },
     /** Background color of the calibration container */
     background_color: {
       type: ParameterType.STRING,
-      default: "#808080",
+      default: '#808080',
     },
     /** Primary button color */
     button_color: {
       type: ParameterType.STRING,
-      default: "#007bff",
+      default: '#007bff',
     },
     /** Primary button hover color */
     button_hover_color: {
       type: ParameterType.STRING,
-      default: "#0056b3",
+      default: '#0056b3',
     },
     /** Retry button color */
     retry_button_color: {
       type: ParameterType.STRING,
-      default: "#dc3545",
+      default: '#dc3545',
     },
     /** Retry button hover color */
     retry_button_hover_color: {
       type: ParameterType.STRING,
-      default: "#c82333",
+      default: '#c82333',
     },
     /** Success message color */
     success_color: {
       type: ParameterType.STRING,
-      default: "#28a745",
+      default: '#28a745',
     },
     /** Error message color */
     error_color: {
       type: ParameterType.STRING,
-      default: "#dc3545",
+      default: '#dc3545',
+    },
+    /** Maximum number of retry attempts allowed on calibration failure */
+    max_retries: {
+      type: ParameterType.INT,
+      default: 1,
     },
   },
   data: {
     /** Calibration success status */
     calibration_success: {
       type: ParameterType.BOOL,
-    },
-    /** Average calibration error */
-    average_error: {
-      type: ParameterType.FLOAT,
     },
     /** Number of calibration points used */
     num_points: {
@@ -134,20 +137,32 @@ const info = <const>{
     calibration_data: {
       type: ParameterType.COMPLEX,
     },
+    /** Number of calibration attempts made */
+    num_attempts: {
+      type: ParameterType.INT,
+    },
   },
 };
 
 type Info = typeof info;
 
-class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
+class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
   static info = info;
   private static styleInjected = false;
 
   constructor(private jsPsych: JsPsych) {}
 
+  private static removeStyles(): void {
+    const el = document.getElementById('tobii-calibration-styles');
+    if (el) {
+      el.remove();
+    }
+    TobiiCalibrationPlugin.styleInjected = false;
+  }
+
   private injectStyles(trial: TrialType<Info>): void {
     // Only inject once per page
-    if (PluginTobiiCalibrationPlugin.styleInjected) {
+    if (TobiiCalibrationPlugin.styleInjected) {
       return;
     }
 
@@ -324,127 +339,147 @@ class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
         text-align: center;
       }
 
-      .result-content h2 {
+      .tobii-calibration-result-content h2 {
         margin-top: 0;
         margin-bottom: 20px;
         font-size: 24px;
       }
 
-      .result-content.success h2 {
+      .tobii-calibration-result-content.success h2 {
         color: ${trial.success_color};
       }
 
-      .result-content.error h2 {
+      .tobii-calibration-result-content.error h2 {
         color: ${trial.error_color};
       }
 
-      .result-content p {
+      .tobii-calibration-result-content p {
         margin-bottom: 20px;
         font-size: 16px;
         color: #666;
       }
     `;
 
-    const styleElement = document.createElement("style");
-    styleElement.id = "tobii-calibration-styles";
+    const styleElement = document.createElement('style');
+    styleElement.id = 'tobii-calibration-styles';
     styleElement.textContent = css;
     document.head.appendChild(styleElement);
 
-    PluginTobiiCalibrationPlugin.styleInjected = true;
+    TobiiCalibrationPlugin.styleInjected = true;
   }
 
   async trial(display_element: HTMLElement, trial: TrialType<Info>): Promise<void> {
     // Inject styles
     this.injectStyles(trial);
     // Get extension instance
-    const tobiiExt = this.jsPsych.extensions.tobii as any;
+    const tobiiExt = this.jsPsych.extensions.tobii as unknown as TobiiExtension;
 
     if (!tobiiExt) {
-      throw new Error("Tobii extension not initialized");
+      throw new Error('Tobii extension not initialized');
     }
 
     // Check connection
     if (!tobiiExt.isConnected()) {
-      throw new Error("Not connected to Tobii server");
+      throw new Error('Not connected to Tobii server');
     }
 
     // Create calibration display
-    const calibrationDisplay = new CalibrationDisplay(display_element, trial as any as CalibrationParameters);
+    const calibrationDisplay = new CalibrationDisplay(
+      display_element,
+      trial as unknown as CalibrationParameters
+    );
 
-    // Show instructions
+    // Show instructions (only once, before retry loop)
     await calibrationDisplay.showInstructions();
 
     // Get calibration points and validate custom points
     let points: CalibrationPoint[];
     if (trial.custom_points) {
-      // Validate custom points
       points = this.validateCustomPoints(trial.custom_points);
     } else {
-      points = this.getCalibrationPoints(trial.calibration_points as 5 | 9);
+      points = this.getCalibrationPoints(trial.calibration_points);
     }
 
-    // Start calibration on server
-    await tobiiExt.startCalibration();
+    const maxAttempts = 1 + (trial.max_retries as number);
+    let attempt = 0;
+    let calibrationResult: CalibrationResult = { success: false };
 
-    // Initialize point at screen center (with brief pause)
-    await calibrationDisplay.initializePoint();
+    // Retry loop
+    while (attempt < maxAttempts) {
+      attempt++;
+      const retriesRemaining = maxAttempts - attempt;
 
-    // Show each point and collect calibration data with smooth path animation
-    for (let i = 0; i < points.length; i++) {
-      const point = points[i];
+      // Start calibration on server (resets server-side state on each call)
+      await tobiiExt.startCalibration();
 
-      // Travel to the point location (smooth animation from current position)
-      await calibrationDisplay.travelToPoint(point, i, points.length);
+      // Initialize point at screen center (with brief pause)
+      await calibrationDisplay.initializePoint();
 
-      // Zoom out (point grows larger to attract attention)
-      await calibrationDisplay.playZoomOut();
+      // Show each point and collect calibration data with smooth path animation
+      for (let i = 0; i < points.length; i++) {
+        const point = points[i];
 
-      // Zoom in (point shrinks to fixation size)
-      await calibrationDisplay.playZoomIn();
+        // Travel to the point location (smooth animation from current position)
+        await calibrationDisplay.travelToPoint(point, i, points.length);
 
-      if (trial.calibration_mode === "click") {
-        // Wait for user to click
-        await calibrationDisplay.waitForClick();
-      } else {
-        // Wait for user to fixate on the point
-        await this.delay(trial.point_duration);
+        // Zoom out (point grows larger to attract attention)
+        await calibrationDisplay.playZoomOut();
+
+        // Zoom in (point shrinks to fixation size)
+        await calibrationDisplay.playZoomIn();
+
+        if (trial.calibration_mode === 'click') {
+          // Wait for user to click
+          await calibrationDisplay.waitForClick();
+        } else {
+          // Wait for user to fixate on the point
+          await this.delay(trial.point_duration);
+        }
+
+        // Collect calibration data for this point (blocks until SDK finishes)
+        const result = await tobiiExt.collectCalibrationPoint(point.x, point.y);
+
+        // Play explosion animation based on result
+        await calibrationDisplay.playExplosion(result.success);
+
+        // Reset point for next travel (don't remove element)
+        if (i < points.length - 1) {
+          await calibrationDisplay.resetPointAfterExplosion();
+        }
       }
 
-      // Collect calibration data for this point (blocks until SDK finishes)
-      const result = await tobiiExt.collectCalibrationPoint(point.x, point.y);
+      // Hide point after final explosion
+      await calibrationDisplay.hidePoint();
 
-      // Play explosion animation based on result
-      await calibrationDisplay.playExplosion(result.success);
+      // Compute calibration on server
+      calibrationResult = await tobiiExt.computeCalibration();
 
-      // Reset point for next travel (don't remove element)
-      if (i < points.length - 1) {
-        await calibrationDisplay.resetPointAfterExplosion();
+      // Show result with retry option if retries remain
+      const userChoice = await calibrationDisplay.showResult(
+        calibrationResult.success,
+        retriesRemaining > 0
+      );
+
+      if (userChoice === 'continue') {
+        break;
       }
+
+      // User chose retry — reset display for next attempt
+      calibrationDisplay.resetForRetry();
     }
 
-    // Hide point after final explosion
-    await calibrationDisplay.hidePoint();
-
-    // Compute calibration on server
-    const calibrationResult = await tobiiExt.computeCalibration();
-
-    // Show result
-    await calibrationDisplay.showResult(
-      calibrationResult.success,
-      calibrationResult.averageError
-    );
-
-    // Clear display
+    // Clear display and remove injected styles
     calibrationDisplay.clear();
-    display_element.innerHTML = "";
+    display_element.innerHTML = '';
+    TobiiCalibrationPlugin.removeStyles();
 
     // Finish trial
     const trial_data = {
       calibration_success: calibrationResult.success,
-      average_error: calibrationResult.averageError || null,
       num_points: points.length,
       mode: trial.calibration_mode,
       calibration_data: calibrationResult,
+      num_attempts: attempt,
     };
 
     this.jsPsych.finishTrial(trial_data);
@@ -453,55 +488,149 @@ class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
   /**
    * Validate custom calibration points
    */
-  private validateCustomPoints(points: any[]): CalibrationPoint[] {
+  private validateCustomPoints(points: unknown[]): CalibrationPoint[] {
     if (!Array.isArray(points) || points.length === 0) {
-      throw new Error("custom_points must be a non-empty array");
+      throw new Error('custom_points must be a non-empty array');
     }
 
     const validated: CalibrationPoint[] = [];
     for (let i = 0; i < points.length; i++) {
       const point = points[i];
-      if (
-        typeof point !== "object" ||
-        point === null ||
-        typeof point.x !== "number" ||
-        typeof point.y !== "number"
-      ) {
+      if (typeof point !== 'object' || point === null) {
         throw new Error(`Invalid calibration point at index ${i}: must have numeric x and y`);
       }
-      if (point.x < 0 || point.x > 1 || point.y < 0 || point.y > 1) {
-        throw new Error(`Calibration point at index ${i} out of range: x and y must be between 0 and 1`);
+      const p = point as Record<string, unknown>;
+      if (typeof p.x !== 'number' || typeof p.y !== 'number') {
+        throw new Error(`Invalid calibration point at index ${i}: must have numeric x and y`);
       }
-      validated.push({ x: point.x, y: point.y });
+      if (p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1) {
+        throw new Error(
+          `Calibration point at index ${i} out of range: x and y must be between 0 and 1`
+        );
+      }
+      validated.push({ x: p.x, y: p.y });
     }
 
     return validated;
   }
 
   /**
-   * Get standard calibration points (5 or 9 point grid)
+   * Get standard calibration points for the given grid size
    */
-  private getCalibrationPoints(count: 5 | 9): CalibrationPoint[] {
-    if (count === 9) {
-      return [
-        { x: 0.1, y: 0.1 },
-        { x: 0.5, y: 0.1 },
-        { x: 0.9, y: 0.1 },
-        { x: 0.1, y: 0.5 },
-        { x: 0.5, y: 0.5 },
-        { x: 0.9, y: 0.5 },
-        { x: 0.1, y: 0.9 },
-        { x: 0.5, y: 0.9 },
-        { x: 0.9, y: 0.9 },
-      ];
-    } else {
-      return [
-        { x: 0.1, y: 0.1 },
-        { x: 0.9, y: 0.1 },
-        { x: 0.5, y: 0.5 },
-        { x: 0.1, y: 0.9 },
-        { x: 0.9, y: 0.9 },
-      ];
+  private getCalibrationPoints(count: number): CalibrationPoint[] {
+    switch (count) {
+      case 5:
+        return [
+          { x: 0.1, y: 0.1 },
+          { x: 0.9, y: 0.1 },
+          { x: 0.5, y: 0.5 },
+          { x: 0.1, y: 0.9 },
+          { x: 0.9, y: 0.9 },
+        ];
+      case 9:
+        return [
+          { x: 0.1, y: 0.1 },
+          { x: 0.5, y: 0.1 },
+          { x: 0.9, y: 0.1 },
+          { x: 0.1, y: 0.5 },
+          { x: 0.5, y: 0.5 },
+          { x: 0.9, y: 0.5 },
+          { x: 0.1, y: 0.9 },
+          { x: 0.5, y: 0.9 },
+          { x: 0.9, y: 0.9 },
+        ];
+      case 13:
+        // 3x3 outer grid + 4 diagonal midpoints
+        return [
+          { x: 0.1, y: 0.1 },
+          { x: 0.5, y: 0.1 },
+          { x: 0.9, y: 0.1 },
+          { x: 0.3, y: 0.3 },
+          { x: 0.7, y: 0.3 },
+          { x: 0.1, y: 0.5 },
+          { x: 0.5, y: 0.5 },
+          { x: 0.9, y: 0.5 },
+          { x: 0.3, y: 0.7 },
+          { x: 0.7, y: 0.7 },
+          { x: 0.1, y: 0.9 },
+          { x: 0.5, y: 0.9 },
+          { x: 0.9, y: 0.9 },
+        ];
+      case 15:
+        // 5 rows x 3 columns
+        return [
+          { x: 0.1, y: 0.1 },
+          { x: 0.5, y: 0.1 },
+          { x: 0.9, y: 0.1 },
+          { x: 0.1, y: 0.3 },
+          { x: 0.5, y: 0.3 },
+          { x: 0.9, y: 0.3 },
+          { x: 0.1, y: 0.5 },
+          { x: 0.5, y: 0.5 },
+          { x: 0.9, y: 0.5 },
+          { x: 0.1, y: 0.7 },
+          { x: 0.5, y: 0.7 },
+          { x: 0.9, y: 0.7 },
+          { x: 0.1, y: 0.9 },
+          { x: 0.5, y: 0.9 },
+          { x: 0.9, y: 0.9 },
+        ];
+      case 19:
+        // Symmetric 3-5-3-5-3 pattern
+        return [
+          { x: 0.1, y: 0.1 },
+          { x: 0.5, y: 0.1 },
+          { x: 0.9, y: 0.1 },
+          { x: 0.1, y: 0.3 },
+          { x: 0.3, y: 0.3 },
+          { x: 0.5, y: 0.3 },
+          { x: 0.7, y: 0.3 },
+          { x: 0.9, y: 0.3 },
+          { x: 0.1, y: 0.5 },
+          { x: 0.5, y: 0.5 },
+          { x: 0.9, y: 0.5 },
+          { x: 0.1, y: 0.7 },
+          { x: 0.3, y: 0.7 },
+          { x: 0.5, y: 0.7 },
+          { x: 0.7, y: 0.7 },
+          { x: 0.9, y: 0.7 },
+          { x: 0.1, y: 0.9 },
+          { x: 0.5, y: 0.9 },
+          { x: 0.9, y: 0.9 },
+        ];
+      case 25:
+        // 5x5 full grid
+        return [
+          { x: 0.1, y: 0.1 },
+          { x: 0.3, y: 0.1 },
+          { x: 0.5, y: 0.1 },
+          { x: 0.7, y: 0.1 },
+          { x: 0.9, y: 0.1 },
+          { x: 0.1, y: 0.3 },
+          { x: 0.3, y: 0.3 },
+          { x: 0.5, y: 0.3 },
+          { x: 0.7, y: 0.3 },
+          { x: 0.9, y: 0.3 },
+          { x: 0.1, y: 0.5 },
+          { x: 0.3, y: 0.5 },
+          { x: 0.5, y: 0.5 },
+          { x: 0.7, y: 0.5 },
+          { x: 0.9, y: 0.5 },
+          { x: 0.1, y: 0.7 },
+          { x: 0.3, y: 0.7 },
+          { x: 0.5, y: 0.7 },
+          { x: 0.7, y: 0.7 },
+          { x: 0.9, y: 0.7 },
+          { x: 0.1, y: 0.9 },
+          { x: 0.3, y: 0.9 },
+          { x: 0.5, y: 0.9 },
+          { x: 0.7, y: 0.9 },
+          { x: 0.9, y: 0.9 },
+        ];
+      default:
+        throw new Error(
+          `Unsupported calibration_points value: ${count}. Use 5, 9, 13, 15, 19, or 25, or provide custom_points.`
+        );
     }
   }
 
@@ -513,4 +642,4 @@ class PluginTobiiCalibrationPlugin implements JsPsychPlugin<Info> {
   }
 }
 
-export default PluginTobiiCalibrationPlugin;
+export default TobiiCalibrationPlugin;

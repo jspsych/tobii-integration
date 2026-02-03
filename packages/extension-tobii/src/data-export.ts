@@ -5,9 +5,9 @@
 /**
  * Convert data to CSV format and download
  */
-export function toCSV(data: any[], filename: string): void {
+export function toCSV(data: Record<string, unknown>[], filename: string): void {
   if (data.length === 0) {
-    console.warn("No data to export");
+    console.warn('No data to export');
     return;
   }
 
@@ -15,7 +15,7 @@ export function toCSV(data: any[], filename: string): void {
   const keys = Array.from(new Set(data.flatMap((item) => Object.keys(flattenObject(item)))));
 
   // Create CSV header
-  const header = keys.join(",");
+  const header = keys.join(',');
 
   // Create CSV rows
   const rows = data.map((item) => {
@@ -24,40 +24,40 @@ export function toCSV(data: any[], filename: string): void {
       .map((key) => {
         const value = flattened[key];
         // Handle values that might contain commas
-        if (typeof value === "string" && value.includes(",")) {
+        if (typeof value === 'string' && value.includes(',')) {
           return `"${value}"`;
         }
-        return value ?? "";
+        return value ?? '';
       })
-      .join(",");
+      .join(',');
   });
 
   // Combine header and rows
-  const csv = [header, ...rows].join("\n");
+  const csv = [header, ...rows].join('\n');
 
   // Download
-  downloadFile(csv, filename, "text/csv");
+  downloadFile(csv, filename, 'text/csv');
 }
 
 /**
  * Convert data to JSON format and download
  */
-export function toJSON(data: any[], filename: string): void {
+export function toJSON(data: Record<string, unknown>[], filename: string): void {
   const json = JSON.stringify(data, null, 2);
-  downloadFile(json, filename, "application/json");
+  downloadFile(json, filename, 'application/json');
 }
 
 /**
  * Flatten nested object for CSV export
  */
-function flattenObject(obj: any, prefix: string = ""): Record<string, any> {
-  const flattened: Record<string, any> = {};
+function flattenObject(obj: Record<string, unknown>, prefix: string = ''): Record<string, unknown> {
+  const flattened: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(obj)) {
     const newKey = prefix ? `${prefix}.${key}` : key;
 
-    if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-      Object.assign(flattened, flattenObject(value, newKey));
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      Object.assign(flattened, flattenObject(value as Record<string, unknown>, newKey));
     } else if (Array.isArray(value)) {
       flattened[newKey] = JSON.stringify(value);
     } else {
@@ -74,7 +74,7 @@ function flattenObject(obj: any, prefix: string = ""): Record<string, any> {
 function downloadFile(content: string, filename: string, mimeType: string): void {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
+  const link = document.createElement('a');
   link.href = url;
   link.download = filename;
   document.body.appendChild(link);

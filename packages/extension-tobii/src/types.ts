@@ -31,7 +31,7 @@ export interface DataConfig {
   /** Include raw eye tracking samples in trial data */
   includeRawSamples?: boolean;
   /** Coordinate system for gaze data */
-  coordinateSystem?: "pixels" | "normalized";
+  coordinateSystem?: 'pixels' | 'normalized';
 }
 
 /**
@@ -53,7 +53,7 @@ export interface OnStartParameters {
   /** Trial ID or index */
   trialId?: string | number;
   /** Additional metadata */
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -72,8 +72,12 @@ export interface GazeData {
   x: number;
   /** Y coordinate (normalized 0-1 or pixels depending on config) */
   y: number;
-  /** Timestamp in milliseconds */
+  /** Timestamp in milliseconds (device clock) */
   timestamp: number;
+  /** Server timestamp in milliseconds (Python server clock) */
+  serverTimestamp?: number;
+  /** Client timestamp in milliseconds (performance.now() when sample was received) */
+  clientTimestamp?: number;
   /** Left eye validity */
   leftValid?: boolean;
   /** Right eye validity */
@@ -100,13 +104,6 @@ export interface CalibrationPoint {
 export interface CalibrationResult {
   /** Success status */
   success: boolean;
-  /** Average error in degrees */
-  averageError?: number;
-  /** Per-point calibration quality */
-  pointQuality?: Array<{
-    point: CalibrationPoint;
-    error: number;
-  }>;
   /** Error message if failed */
   error?: string;
 }
@@ -121,11 +118,21 @@ export interface ValidationResult {
   averageAccuracy?: number;
   /** Average precision in degrees */
   averagePrecision?: number;
+  /** Average accuracy in normalized (0-1) coordinates */
+  averageAccuracyNorm?: number;
+  /** Average precision in normalized (0-1) coordinates */
+  averagePrecisionNorm?: number;
   /** Per-point validation data */
   pointData?: Array<{
     point: CalibrationPoint;
     accuracy: number;
     precision: number;
+    accuracyNorm: number;
+    precisionNorm: number;
+    meanGaze?: { x: number; y: number };
+    numSamples?: number;
+    numSamplesTotal?: number;
+    numSamplesSkipped?: number;
   }>;
   /** Error message if failed */
   error?: string;
@@ -135,23 +142,24 @@ export interface ValidationResult {
  * WebSocket message types
  */
 export type MessageType =
-  | "connect"
-  | "disconnect"
-  | "start_tracking"
-  | "stop_tracking"
-  | "calibration_start"
-  | "calibration_point"
-  | "calibration_compute"
-  | "get_calibration_data"
-  | "validation_start"
-  | "validation_point"
-  | "validation_compute"
-  | "get_current_gaze"
-  | "get_data"
-  | "get_user_position"
-  | "marker"
-  | "time_sync"
-  | "error";
+  | 'connect'
+  | 'disconnect'
+  | 'start_tracking'
+  | 'stop_tracking'
+  | 'calibration_start'
+  | 'calibration_point'
+  | 'calibration_compute'
+  | 'get_calibration_data'
+  | 'validation_start'
+  | 'validation_point'
+  | 'validation_compute'
+  | 'get_current_gaze'
+  | 'get_data'
+  | 'get_user_position'
+  | 'get_device_clock_offset'
+  | 'marker'
+  | 'time_sync'
+  | 'error';
 
 /**
  * WebSocket message
@@ -160,7 +168,7 @@ export interface WebSocketMessage {
   /** Message type */
   type: MessageType;
   /** Message payload */
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -186,7 +194,7 @@ export interface MarkerData {
   /** Timestamp in milliseconds */
   timestamp?: number;
   /** Additional marker data */
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -207,6 +215,44 @@ export interface Coordinates {
   x: number;
   /** Y coordinate */
   y: number;
+}
+
+/**
+ * Device time synchronization status
+ */
+export interface DeviceTimeSyncStatus {
+  /** Whether device time sync is available */
+  synced: boolean;
+  /** Offset from browser (performance.now()) to server (A→B) in ms */
+  offsetAB: number;
+  /** Offset from server to device clock (B→C) in ms */
+  offsetBC: number | null;
+  /** Offset from browser to device clock (A→C) in ms */
+  offsetAC: number | null;
+  /** Number of B-C offset samples used */
+  bcSampleCount: number;
+  /** Standard deviation of B-C offset samples in ms */
+  bcStdDev: number | null;
+  /** Minimum B-C offset observed in ms */
+  bcMin: number | null;
+  /** Maximum B-C offset observed in ms */
+  bcMax: number | null;
+}
+
+/**
+ * Timestamp alignment validation result
+ */
+export interface TimestampAlignmentResult {
+  /** Number of samples analyzed */
+  sampleCount: number;
+  /** Mean residual in ms (approximates one-way WebSocket latency) */
+  meanResidual: number;
+  /** Standard deviation of residuals in ms (lower = better alignment) */
+  stdDev: number;
+  /** Minimum residual in ms */
+  min: number;
+  /** Maximum residual in ms */
+  max: number;
 }
 
 /**

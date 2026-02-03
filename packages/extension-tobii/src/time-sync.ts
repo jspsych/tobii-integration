@@ -2,7 +2,7 @@
  * Time synchronization between browser and server
  */
 
-import type { WebSocketClient } from "./websocket-client";
+import type { WebSocketClient } from './websocket-client';
 
 export class TimeSync {
   private offset: number = 0;
@@ -21,13 +21,13 @@ export class TimeSync {
       const t0 = performance.now();
 
       const response = await this.ws.sendAndWait({
-        type: "time_sync",
+        type: 'time_sync',
         clientTime: t0,
       });
 
       const t1 = performance.now();
       const roundTripTime = t1 - t0;
-      const serverTime = response.serverTime;
+      const serverTime = response.serverTime as number;
 
       // Estimate one-way latency
       const latency = roundTripTime / 2;

@@ -1,51 +1,32 @@
 # Tobii SDK Adapter System
 
-The jsPsych-Tobii Python server uses an **adapter pattern** to support multiple Tobii eye tracker models and SDKs. This allows seamless support for both modern Tobii Pro series trackers and legacy X-series trackers.
+The jsPsych-Tobii Python server uses an **adapter pattern** to support Tobii eye trackers. All real hardware is supported through a single SDK (`tobii-research`), with a mock adapter available for testing.
 
 ## Supported Hardware
 
-### Tobii Pro Series (via `tobii-research` SDK)
-- ✅ Tobii Pro Spectrum
-- ✅ Tobii Pro Fusion
-- ✅ Tobii Pro Nano
-- ✅ Tobii Pro TX300
-- ✅ Other Tobii Pro series trackers
+All Tobii trackers are supported via the `tobii-research` package:
 
-### Tobii X-Series (via Legacy Analytics SDK)
-- ✅ **Tobii X3-120**
-- ✅ Tobii X2-60
-- ✅ Tobii X2-30
-- ✅ Tobii X1 Light
+- **Modern Pro series** (via `tobii-research` 2.x): Spectrum, Fusion, Nano, Spark
+- **Older models** (via `tobii-research` 1.x): X3-120, TX300, X2-60, T120, etc.
+- **Mock Tracker**: Realistic simulated gaze data, no hardware required
 
-### Mock Tracker (for Testing)
-- ✅ Mock adapter with realistic simulated gaze data
-- No hardware required
+> **Note:** If you have an older tracker like the X3-120, install `tobii-research<2`. Version 1.x supports these models; version 2.x dropped them. The Python API is the same across both versions.
 
 ## Installation
 
-### For Tobii Pro Series Trackers
+### For Tobii Trackers
 
 ```bash
-# Install with Tobii Pro support
-pip install jspsych-tobii[tobii-pro]
+# Install with Tobii SDK support
+pip install jspsych-tobii[tobii]
 
 # Or install SDK separately
 pip install jspsych-tobii
 pip install tobii-research>=1.11.0
+
+# For older trackers (X3-120, TX300, etc.), pin to 1.x
+pip install "tobii-research>=1.11.0,<2"
 ```
-
-### For Tobii X-Series Trackers (X3-120, X2-60, etc.)
-
-The legacy Tobii Analytics SDK is **not available via pip**. You must:
-
-1. Contact [Tobii Support](https://www.tobii.com/support) to obtain the legacy SDK
-2. Install the SDK following Tobii's platform-specific instructions
-3. Install jspsych-tobii:
-   ```bash
-   pip install jspsych-tobii
-   ```
-
-The server will automatically detect the legacy SDK if installed.
 
 ### For Development/Testing (No Hardware)
 
@@ -73,13 +54,13 @@ pip install jspsych-tobii
 │   (Abstract Base)       │
 └───────────┬─────────────┘
             │
-      ┌─────┴─────┬─────────────┬──────────────┐
-      ▼           ▼             ▼              ▼
-┌──────────┐ ┌──────────┐ ┌───────────┐ ┌──────────┐
-│ Tobii    │ │ Tobii    │ │  Mock     │ │ Future   │
-│ Pro      │ │ X-Series │ │  Adapter  │ │ Adapters │
-│ Adapter  │ │ Adapter  │ │           │ │   ...    │
-└──────────┘ └──────────┘ └───────────┘ └──────────┘
+      ┌─────┴─────┬──────────────┐
+      ▼           ▼              ▼
+┌──────────┐ ┌───────────┐ ┌──────────┐
+│ Tobii    │ │  Mock     │ │ Future   │
+│ Pro      │ │  Adapter  │ │ Adapters │
+│ Adapter  │ │           │ │   ...    │
+└──────────┘ └───────────┘ └──────────┘
 ```
 
 ### Key Components
@@ -89,31 +70,27 @@ pip install jspsych-tobii
    - All adapters implement this interface
 
 2. **`TobiiProAdapter`** (tobii_pro.py)
-   - Implements Tobii Pro series support
-   - Uses `tobii-research` SDK
+   - Implements support for all Tobii trackers
+   - Uses `tobii-research` SDK (works with both 1.x and 2.x)
 
-3. **`TobiiXSeriesAdapter`** (tobii_x_series.py)
-   - Implements X-series tracker support
-   - Uses legacy Tobii Analytics SDK
-
-4. **`MockTrackerAdapter`** (mock.py)
+3. **`MockTrackerAdapter`** (mock.py)
    - Testing adapter with simulated gaze data
    - 120 Hz realistic eye movement simulation
 
-5. **Factory** (factory.py)
-   - Auto-detects available SDKs
+4. **Factory** (factory.py)
+   - Detects if `tobii-research` is installed
    - Creates appropriate adapter
 
 ## Usage
 
 ### Automatic SDK Detection
 
-The server automatically detects which SDKs are installed and uses the best available:
+The server automatically detects if `tobii-research` is installed:
 
 ```python
 from jspsych_tobii import TobiiManager
 
-# Auto-detect SDK (prefers Tobii Pro if both installed)
+# Auto-detect SDK
 manager = TobiiManager()
 manager.find_tracker()
 ```
@@ -129,9 +106,6 @@ from jspsych_tobii.adapters import SDKType
 # Force Tobii Pro SDK
 manager = TobiiManager(sdk_type=SDKType.TOBII_PRO)
 
-# Force legacy X-series SDK (for X3-120)
-manager = TobiiManager(sdk_type=SDKType.TOBII_X_SERIES)
-
 # Use mock tracker for testing
 manager = TobiiManager(use_mock=True)
 ```
@@ -144,7 +118,7 @@ from jspsych_tobii.adapters import get_available_sdks, print_sdk_status
 # Get SDK info programmatically
 sdks = get_available_sdks()
 for sdk in sdks:
-    print(f"{sdk['name']}: {'✓' if sdk['available'] else '✗'}")
+    print(f"{sdk['name']}: {'installed' if sdk['available'] else 'not installed'}")
 
 # Or use built-in pretty printer
 print_sdk_status()
@@ -154,28 +128,23 @@ Output example:
 ```
 === Tobii SDK Status ===
 
-✓ Available: Tobii Pro (tobii-research) (v1.11.0)
-✗ Not installed: Tobii X-Series (Analytics SDK)
+Available: Tobii Pro (tobii-research) (v1.11.0)
 
 ========================
 
-✓ 1 SDK(s) available
+1 SDK(s) available
 ```
 
-### Server CLI with SDK Selection
+### Server CLI
 
 When starting the server from command line:
 
 ```bash
 # Auto-detect SDK
-python -m jspsych_tobii.server
-
-# Use specific SDK
-python -m jspsych_tobii.server --sdk tobii-pro
-python -m jspsych_tobii.server --sdk tobii-x-series
+jspsych-tobii
 
 # Use mock tracker (no hardware)
-python -m jspsych_tobii.server --mock
+jspsych-tobii --mock
 ```
 
 ## Adapter Interface
@@ -230,7 +199,7 @@ class GazeDataPoint:
 
 ## Adding New Adapters
 
-To add support for a new Tobii SDK or tracker series:
+To add support for a new tracker SDK:
 
 1. Create a new adapter class in `jspsych_tobii/adapters/`
 2. Inherit from `TobiiTrackerAdapter`
@@ -259,42 +228,24 @@ class MyNewAdapter(TobiiTrackerAdapter):
 
 ### "No Tobii SDK found" Error
 
-**Cause**: Neither `tobii-research` nor legacy SDK is installed.
+**Cause**: `tobii-research` is not installed.
 
 **Solution**:
 ```bash
-# For Pro series trackers
 pip install tobii-research
 
-# For X-series trackers (X3-120)
-# Contact Tobii support for legacy SDK installer
-
 # Or use mock mode for testing
-python -m jspsych_tobii.server --mock
+jspsych-tobii --mock
 ```
 
-### SDK Auto-Detection Picks Wrong SDK
+### Older Tracker Not Detected
 
-**Cause**: Multiple SDKs installed; factory prefers Pro SDK.
+**Cause**: `tobii-research` 2.x dropped support for some older models.
 
-**Solution**: Force specific SDK:
-```python
-from jspsych_tobii.adapters import SDKType
-
-manager = TobiiManager(sdk_type=SDKType.TOBII_X_SERIES)
+**Solution**: Install version 1.x instead:
+```bash
+pip install "tobii-research>=1.11.0,<2"
 ```
-
-### Legacy SDK Import Errors
-
-**Cause**: Legacy SDK installed incorrectly or not in Python path.
-
-**Solution**:
-1. Verify SDK installation following Tobii's instructions
-2. Check Python can import SDK:
-   ```python
-   import tobii.sdk.mainloop  # Should not raise ImportError
-   ```
-3. Contact Tobii support if issues persist
 
 ## Testing
 
@@ -304,44 +255,14 @@ Run adapter tests:
 # Test with mock adapter (no hardware needed)
 pytest tests/test_adapters.py --mock
 
-# Test with real hardware (specify SDK)
+# Test with real hardware
 pytest tests/test_adapters.py --sdk tobii-pro
-pytest tests/test_adapters.py --sdk tobii-x-series
 ```
-
-## Migration Guide
-
-If you were using the old direct SDK implementation:
-
-**Before:**
-```python
-from jspsych_tobii import TobiiManager
-
-manager = TobiiManager()  # Always used mock
-```
-
-**After:**
-```python
-from jspsych_tobii import TobiiManager
-from jspsych_tobii.adapters import SDKType
-
-# Auto-detect real hardware
-manager = TobiiManager()
-
-# Or explicit mock
-manager = TobiiManager(use_mock=True)
-
-# Or specific SDK
-manager = TobiiManager(sdk_type=SDKType.TOBII_PRO)
-```
-
-The API remains the same - only initialization changes.
 
 ## Performance Notes
 
-- **Tobii Pro Adapter**: Full 3D gaze origin data, high precision
-- **Tobii X-Series Adapter**: 2D gaze point only (legacy SDK limitation)
-- **Mock Adapter**: 120 Hz simulation with realistic eye movement patterns
+- **TobiiProAdapter**: Full 3D gaze origin data, high precision
+- **MockAdapter**: 120 Hz simulation with realistic eye movement patterns
 
 ## License
 

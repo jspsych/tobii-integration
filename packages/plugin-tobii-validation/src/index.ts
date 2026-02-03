@@ -1,19 +1,21 @@
 /**
- * **plugin-tobii-validation**
- *
- * jsPsych plugin for Tobii eye tracker validation
- *
+ * @title Tobii Validation
+ * @description jsPsych plugin for Tobii eye tracker validation. Validates calibration
+ * accuracy by measuring gaze error at target points and provides detailed feedback.
+ * @version 1.0.0
  * @author jsPsych Team
- * @see {@link https://github.com/jspsych/jspsych-tobii/tree/main/packages/plugin-tobii-validation#readme}
+ * @see {@link https://github.com/jspsych/jspsych-tobii/tree/main/packages/plugin-tobii-validation#readme Documentation}
  */
 
-import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from "jspsych";
-import { version } from "../package.json";
-import { ValidationDisplay } from "./validation-display";
-import type { ValidationParameters, ValidationPoint } from "./types";
+import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from 'jspsych';
+import { version } from '../package.json';
+import type TobiiExtension from '@jspsych/extension-tobii';
+import type { ValidationResult } from '@jspsych/extension-tobii';
+import { ValidationDisplay } from './validation-display';
+import type { ValidationParameters, ValidationPoint } from './types';
 
 const info = <const>{
-  name: "plugin-tobii-validation",
+  name: 'tobii-validation',
   version: version,
   parameters: {
     /** Number of validation points (5 or 9) */
@@ -29,7 +31,7 @@ const info = <const>{
     /** Color of validation points */
     point_color: {
       type: ParameterType.STRING,
-      default: "#00ff00",
+      default: '#00ff00',
     },
     /** Duration to collect data at each point (ms) */
     collection_duration: {
@@ -54,62 +56,67 @@ const info = <const>{
     /** Instructions text */
     instructions: {
       type: ParameterType.STRING,
-      default: "Look at each point as it appears on the screen to validate calibration accuracy.",
+      default: 'Look at each point as it appears on the screen to validate calibration accuracy.',
     },
     /** Background color of the validation container */
     background_color: {
       type: ParameterType.STRING,
-      default: "#808080",
+      default: '#808080',
     },
     /** Primary button color */
     button_color: {
       type: ParameterType.STRING,
-      default: "#28a745",
+      default: '#28a745',
     },
     /** Primary button hover color */
     button_hover_color: {
       type: ParameterType.STRING,
-      default: "#218838",
+      default: '#218838',
     },
     /** Retry button color */
     retry_button_color: {
       type: ParameterType.STRING,
-      default: "#dc3545",
+      default: '#dc3545',
     },
     /** Retry button hover color */
     retry_button_hover_color: {
       type: ParameterType.STRING,
-      default: "#c82333",
+      default: '#c82333',
     },
     /** Success message color */
     success_color: {
       type: ParameterType.STRING,
-      default: "#28a745",
+      default: '#28a745',
     },
     /** Error message color */
     error_color: {
       type: ParameterType.STRING,
-      default: "#dc3545",
+      default: '#dc3545',
     },
     /** Good accuracy color */
     accuracy_good_color: {
       type: ParameterType.STRING,
-      default: "#00ff00",
+      default: '#00ff00',
     },
     /** Fair accuracy color */
     accuracy_fair_color: {
       type: ParameterType.STRING,
-      default: "#ffff00",
+      default: '#ffff00',
     },
     /** Poor accuracy color */
     accuracy_poor_color: {
       type: ParameterType.STRING,
-      default: "#ff0000",
+      default: '#ff0000',
     },
     /** Normalized tolerance for acceptable accuracy (0-1 scale, validation passes if average error <= this) */
     tolerance: {
       type: ParameterType.FLOAT,
       default: 0.05,
+    },
+    /** Maximum number of retry attempts allowed on validation failure */
+    max_retries: {
+      type: ParameterType.INT,
+      default: 1,
     },
   },
   data: {
@@ -133,20 +140,32 @@ const info = <const>{
     validation_data: {
       type: ParameterType.COMPLEX,
     },
+    /** Number of validation attempts made */
+    num_attempts: {
+      type: ParameterType.INT,
+    },
   },
 };
 
 type Info = typeof info;
 
-class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
+class TobiiValidationPlugin implements JsPsychPlugin<Info> {
   static info = info;
   private static styleInjected = false;
 
   constructor(private jsPsych: JsPsych) {}
 
+  private static removeStyles(): void {
+    const el = document.getElementById('tobii-validation-styles');
+    if (el) {
+      el.remove();
+    }
+    TobiiValidationPlugin.styleInjected = false;
+  }
+
   private injectStyles(trial: TrialType<Info>): void {
     // Only inject once per page
-    if (PluginTobiiValidationPlugin.styleInjected) {
+    if (TobiiValidationPlugin.styleInjected) {
       return;
     }
 
@@ -277,21 +296,21 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
         overflow-y: auto;
       }
 
-      .result-content h2 {
+      .tobii-validation-result-content h2 {
         margin-top: 0;
         margin-bottom: 20px;
         font-size: 24px;
       }
 
-      .result-content.success h2 {
+      .tobii-validation-result-content.success h2 {
         color: ${trial.success_color};
       }
 
-      .result-content.error h2 {
+      .tobii-validation-result-content.error h2 {
         color: ${trial.error_color};
       }
 
-      .result-content p {
+      .tobii-validation-result-content p {
         margin-bottom: 15px;
         font-size: 16px;
         color: #666;
@@ -481,116 +500,139 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
       }
     `;
 
-    const styleElement = document.createElement("style");
-    styleElement.id = "tobii-validation-styles";
+    const styleElement = document.createElement('style');
+    styleElement.id = 'tobii-validation-styles';
     styleElement.textContent = css;
     document.head.appendChild(styleElement);
 
-    PluginTobiiValidationPlugin.styleInjected = true;
+    TobiiValidationPlugin.styleInjected = true;
   }
 
   async trial(display_element: HTMLElement, trial: TrialType<Info>): Promise<void> {
     // Inject styles
     this.injectStyles(trial);
     // Get extension instance
-    const tobiiExt = this.jsPsych.extensions.tobii as any;
+    const tobiiExt = this.jsPsych.extensions.tobii as unknown as TobiiExtension;
 
     if (!tobiiExt) {
-      throw new Error("Tobii extension not initialized");
+      throw new Error('Tobii extension not initialized');
     }
 
     // Check connection
     if (!tobiiExt.isConnected()) {
-      throw new Error("Not connected to Tobii server");
+      throw new Error('Not connected to Tobii server');
     }
 
     // Create validation display
-    const validationDisplay = new ValidationDisplay(display_element, trial as any as ValidationParameters);
+    const validationDisplay = new ValidationDisplay(
+      display_element,
+      trial as unknown as ValidationParameters
+    );
 
-    // Show instructions
+    // Show instructions (only once, before retry loop)
     await validationDisplay.showInstructions();
 
     // Get validation points and validate custom points
     let points: ValidationPoint[];
     if (trial.custom_points) {
-      // Validate custom points
       points = this.validateCustomPoints(trial.custom_points);
     } else {
-      points = this.getValidationPoints(trial.validation_points as 5 | 9);
+      points = this.getValidationPoints(trial.validation_points);
     }
 
-    // Start validation on server
-    await tobiiExt.startValidation();
+    const maxAttempts = 1 + (trial.max_retries as number);
+    let attempt = 0;
+    let validationPassed = false;
+    let avgAccuracyNorm = 0;
+    let avgPrecisionNorm = 0;
+    let validationResult: ValidationResult = { success: false };
 
-    // Start tracking to collect gaze data
-    await tobiiExt.startTracking();
+    // Retry loop
+    while (attempt < maxAttempts) {
+      attempt++;
+      const retriesRemaining = maxAttempts - attempt;
 
-    // Initialize point at screen center (with brief pause)
-    await validationDisplay.initializePoint();
+      // Start validation on server (resets server-side state on each call)
+      await tobiiExt.startValidation();
 
-    // Show each point and collect validation data with smooth path animation
-    for (let i = 0; i < points.length; i++) {
-      const point = points[i];
+      // Start tracking to collect gaze data
+      await tobiiExt.startTracking();
 
-      // Travel to the point location (smooth animation from current position)
-      await validationDisplay.travelToPoint(point, i, points.length);
+      // Initialize point at screen center (with brief pause)
+      await validationDisplay.initializePoint();
 
-      // Zoom out (point grows larger to attract attention)
-      await validationDisplay.playZoomOut();
+      // Show each point and collect validation data with smooth path animation
+      for (let i = 0; i < points.length; i++) {
+        const point = points[i];
 
-      // Zoom in (point shrinks to fixation size)
-      await validationDisplay.playZoomIn();
+        // Travel to the point location (smooth animation from current position)
+        await validationDisplay.travelToPoint(point, i, points.length);
 
-      // Capture start time before collection period for precise time-range query
-      const collectionStartTime = performance.now();
+        // Zoom out (point grows larger to attract attention)
+        await validationDisplay.playZoomOut();
 
-      // Wait for data collection
-      await this.delay(trial.collection_duration);
+        // Zoom in (point shrinks to fixation size)
+        await validationDisplay.playZoomIn();
 
-      // Capture end time after collection period
-      const collectionEndTime = performance.now();
+        // Capture start time before collection period for precise time-range query
+        const collectionStartTime = performance.now();
 
-      // Get gaze samples collected during exactly this point's display period
-      // Use time-range query for precise alignment instead of duration-based retrieval
-      const gazeSamples = await tobiiExt.getGazeData(collectionStartTime, collectionEndTime);
+        // Wait for data collection
+        await this.delay(trial.collection_duration);
 
-      // Collect validation data for this point with the gaze samples
-      await tobiiExt.collectValidationPoint(point.x, point.y, gazeSamples);
+        // Capture end time after collection period
+        const collectionEndTime = performance.now();
 
-      // Reset point for next travel (don't remove element)
-      if (i < points.length - 1) {
-        await validationDisplay.resetPointForTravel();
+        // Get gaze samples collected during exactly this point's display period
+        const gazeSamples = await tobiiExt.getGazeData(collectionStartTime, collectionEndTime);
+
+        // Collect validation data for this point with the gaze samples
+        await tobiiExt.collectValidationPoint(point.x, point.y, gazeSamples);
+
+        // Reset point for next travel (don't remove element)
+        if (i < points.length - 1) {
+          await validationDisplay.resetPointForTravel();
+        }
       }
+
+      // Hide point after final data collection
+      await validationDisplay.hidePoint();
+
+      // Stop tracking
+      await tobiiExt.stopTracking();
+
+      // Compute validation on server
+      validationResult = await tobiiExt.computeValidation();
+
+      // Get normalized accuracy values from server
+      avgAccuracyNorm = validationResult.averageAccuracyNorm || 0;
+      avgPrecisionNorm = validationResult.averagePrecisionNorm || 0;
+
+      // Determine if validation passes based on normalized tolerance
+      validationPassed = validationResult.success && avgAccuracyNorm <= trial.tolerance;
+
+      // Show result with retry option if retries remain
+      const userChoice = await validationDisplay.showResult(
+        validationPassed,
+        avgAccuracyNorm,
+        avgPrecisionNorm,
+        validationResult.pointData || [],
+        trial.tolerance,
+        retriesRemaining > 0
+      );
+
+      if (userChoice === 'continue') {
+        break;
+      }
+
+      // User chose retry — reset display for next attempt
+      validationDisplay.resetForRetry();
     }
 
-    // Hide point after final data collection
-    await validationDisplay.hidePoint();
-
-    // Stop tracking
-    await tobiiExt.stopTracking();
-
-    // Compute validation on server
-    const validationResult = await tobiiExt.computeValidation();
-
-    // Get normalized accuracy values from server
-    const avgAccuracyNorm = validationResult.averageAccuracyNorm || 0;
-    const avgPrecisionNorm = validationResult.averagePrecisionNorm || 0;
-
-    // Determine if validation passes based on normalized tolerance
-    const validationPassed = validationResult.success && avgAccuracyNorm <= trial.tolerance;
-
-    // Show result
-    await validationDisplay.showResult(
-      validationPassed,
-      avgAccuracyNorm,
-      avgPrecisionNorm,
-      validationResult.pointData || [],
-      trial.tolerance
-    );
-
-    // Clear display
+    // Clear display and remove injected styles
     validationDisplay.clear();
-    display_element.innerHTML = "";
+    display_element.innerHTML = '';
+    TobiiValidationPlugin.removeStyles();
 
     // Finish trial
     const trial_data = {
@@ -600,6 +642,7 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
       tolerance: trial.tolerance,
       num_points: points.length,
       validation_data: validationResult,
+      num_attempts: attempt,
     };
 
     this.jsPsych.finishTrial(trial_data);
@@ -608,24 +651,26 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
   /**
    * Validate custom validation points
    */
-  private validateCustomPoints(points: any[]): ValidationPoint[] {
+  private validateCustomPoints(points: unknown[]): ValidationPoint[] {
     if (!Array.isArray(points) || points.length === 0) {
-      throw new Error("custom_points must be a non-empty array");
+      throw new Error('custom_points must be a non-empty array');
     }
 
     const validated: ValidationPoint[] = [];
     for (let i = 0; i < points.length; i++) {
-      const point = points[i];
+      const point = points[i] as Record<string, unknown>;
       if (
-        typeof point !== "object" ||
+        typeof point !== 'object' ||
         point === null ||
-        typeof point.x !== "number" ||
-        typeof point.y !== "number"
+        typeof point.x !== 'number' ||
+        typeof point.y !== 'number'
       ) {
         throw new Error(`Invalid validation point at index ${i}: must have numeric x and y`);
       }
       if (point.x < 0 || point.x > 1 || point.y < 0 || point.y > 1) {
-        throw new Error(`Validation point at index ${i} out of range: x and y must be between 0 and 1`);
+        throw new Error(
+          `Validation point at index ${i} out of range: x and y must be between 0 and 1`
+        );
       }
       validated.push({ x: point.x, y: point.y });
     }
@@ -634,29 +679,122 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
   }
 
   /**
-   * Get standard validation points (5 or 9 point grid)
+   * Get standard validation points for the given grid size
    */
-  private getValidationPoints(count: 5 | 9): ValidationPoint[] {
-    if (count === 9) {
-      return [
-        { x: 0.1, y: 0.1 },
-        { x: 0.5, y: 0.1 },
-        { x: 0.9, y: 0.1 },
-        { x: 0.1, y: 0.5 },
-        { x: 0.5, y: 0.5 },
-        { x: 0.9, y: 0.5 },
-        { x: 0.1, y: 0.9 },
-        { x: 0.5, y: 0.9 },
-        { x: 0.9, y: 0.9 },
-      ];
-    } else {
-      return [
-        { x: 0.1, y: 0.1 },
-        { x: 0.9, y: 0.1 },
-        { x: 0.5, y: 0.5 },
-        { x: 0.1, y: 0.9 },
-        { x: 0.9, y: 0.9 },
-      ];
+  private getValidationPoints(count: number): ValidationPoint[] {
+    switch (count) {
+      case 5:
+        return [
+          { x: 0.1, y: 0.1 },
+          { x: 0.9, y: 0.1 },
+          { x: 0.5, y: 0.5 },
+          { x: 0.1, y: 0.9 },
+          { x: 0.9, y: 0.9 },
+        ];
+      case 9:
+        return [
+          { x: 0.1, y: 0.1 },
+          { x: 0.5, y: 0.1 },
+          { x: 0.9, y: 0.1 },
+          { x: 0.1, y: 0.5 },
+          { x: 0.5, y: 0.5 },
+          { x: 0.9, y: 0.5 },
+          { x: 0.1, y: 0.9 },
+          { x: 0.5, y: 0.9 },
+          { x: 0.9, y: 0.9 },
+        ];
+      case 13:
+        // 3x3 outer grid + 4 diagonal midpoints
+        return [
+          { x: 0.1, y: 0.1 },
+          { x: 0.5, y: 0.1 },
+          { x: 0.9, y: 0.1 },
+          { x: 0.3, y: 0.3 },
+          { x: 0.7, y: 0.3 },
+          { x: 0.1, y: 0.5 },
+          { x: 0.5, y: 0.5 },
+          { x: 0.9, y: 0.5 },
+          { x: 0.3, y: 0.7 },
+          { x: 0.7, y: 0.7 },
+          { x: 0.1, y: 0.9 },
+          { x: 0.5, y: 0.9 },
+          { x: 0.9, y: 0.9 },
+        ];
+      case 15:
+        // 5 rows x 3 columns
+        return [
+          { x: 0.1, y: 0.1 },
+          { x: 0.5, y: 0.1 },
+          { x: 0.9, y: 0.1 },
+          { x: 0.1, y: 0.3 },
+          { x: 0.5, y: 0.3 },
+          { x: 0.9, y: 0.3 },
+          { x: 0.1, y: 0.5 },
+          { x: 0.5, y: 0.5 },
+          { x: 0.9, y: 0.5 },
+          { x: 0.1, y: 0.7 },
+          { x: 0.5, y: 0.7 },
+          { x: 0.9, y: 0.7 },
+          { x: 0.1, y: 0.9 },
+          { x: 0.5, y: 0.9 },
+          { x: 0.9, y: 0.9 },
+        ];
+      case 19:
+        // Symmetric 3-5-3-5-3 pattern
+        return [
+          { x: 0.1, y: 0.1 },
+          { x: 0.5, y: 0.1 },
+          { x: 0.9, y: 0.1 },
+          { x: 0.1, y: 0.3 },
+          { x: 0.3, y: 0.3 },
+          { x: 0.5, y: 0.3 },
+          { x: 0.7, y: 0.3 },
+          { x: 0.9, y: 0.3 },
+          { x: 0.1, y: 0.5 },
+          { x: 0.5, y: 0.5 },
+          { x: 0.9, y: 0.5 },
+          { x: 0.1, y: 0.7 },
+          { x: 0.3, y: 0.7 },
+          { x: 0.5, y: 0.7 },
+          { x: 0.7, y: 0.7 },
+          { x: 0.9, y: 0.7 },
+          { x: 0.1, y: 0.9 },
+          { x: 0.5, y: 0.9 },
+          { x: 0.9, y: 0.9 },
+        ];
+      case 25:
+        // 5x5 full grid
+        return [
+          { x: 0.1, y: 0.1 },
+          { x: 0.3, y: 0.1 },
+          { x: 0.5, y: 0.1 },
+          { x: 0.7, y: 0.1 },
+          { x: 0.9, y: 0.1 },
+          { x: 0.1, y: 0.3 },
+          { x: 0.3, y: 0.3 },
+          { x: 0.5, y: 0.3 },
+          { x: 0.7, y: 0.3 },
+          { x: 0.9, y: 0.3 },
+          { x: 0.1, y: 0.5 },
+          { x: 0.3, y: 0.5 },
+          { x: 0.5, y: 0.5 },
+          { x: 0.7, y: 0.5 },
+          { x: 0.9, y: 0.5 },
+          { x: 0.1, y: 0.7 },
+          { x: 0.3, y: 0.7 },
+          { x: 0.5, y: 0.7 },
+          { x: 0.7, y: 0.7 },
+          { x: 0.9, y: 0.7 },
+          { x: 0.1, y: 0.9 },
+          { x: 0.3, y: 0.9 },
+          { x: 0.5, y: 0.9 },
+          { x: 0.7, y: 0.9 },
+          { x: 0.9, y: 0.9 },
+        ];
+      default:
+        throw new Error(
+          `Unsupported validation_points value: ${count}. Use 5, 9, 13, 15, 19, or 25, or provide custom_points.`
+        );
     }
   }
 
@@ -668,4 +806,4 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
   }
 }
 
-export default PluginTobiiValidationPlugin;
+export default TobiiValidationPlugin;

@@ -53,8 +53,6 @@ class CalibrationResult:
     """Calibration result"""
 
     success: bool
-    average_error: Optional[float] = None  # In degrees
-    point_errors: Optional[List[float]] = None  # Per-point errors in degrees
 
 
 @dataclass
@@ -86,8 +84,8 @@ class TobiiTrackerAdapter(ABC):
     """
     Abstract base class for Tobii tracker adapters.
 
-    This provides a common interface for different Tobii SDKs
-    (tobii-research for Pro series, legacy SDK for X-series, etc.)
+    This provides a common interface for Tobii tracker adapters
+    (tobii-research for real hardware, mock adapter for testing).
     """
 
     @abstractmethod

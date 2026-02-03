@@ -1,19 +1,20 @@
 /**
- * **plugin-tobii-user-position**
- *
- * jsPsych plugin for Tobii eye tracker user position guide
- *
+ * @title Tobii User Position
+ * @description jsPsych plugin for Tobii eye tracker user position guide. Displays real-time
+ * head position feedback to help participants maintain optimal positioning for eye tracking.
+ * @version 1.0.0
  * @author jsPsych Team
- * @see {@link https://github.com/jspsych/jspsych-tobii/tree/main/packages/plugin-tobii-user-position#readme}
+ * @see {@link https://github.com/jspsych/jspsych-tobii/tree/main/packages/plugin-tobii-user-position#readme Documentation}
  */
 
-import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from "jspsych";
-import { version } from "../package.json";
-import { PositionDisplay } from "./position-display";
-import type { UserPositionData, PositionQuality } from "./types";
+import { JsPsych, JsPsychPlugin, ParameterType, TrialType } from 'jspsych';
+import { version } from '../package.json';
+import type TobiiExtension from '@jspsych/extension-tobii';
+import { PositionDisplay } from './position-display';
+import type { PositionQuality } from './types';
 
 const info = <const>{
-  name: "plugin-tobii-user-position",
+  name: 'tobii-user-position',
   version: version,
   parameters: {
     /** Duration to show the position guide (ms), null for manual */
@@ -24,7 +25,7 @@ const info = <const>{
     /** Message to display */
     message: {
       type: ParameterType.STRING,
-      default: "Please position yourself so the indicators are green",
+      default: 'Please position yourself so the indicators are green',
     },
     /** Update interval (ms) */
     update_interval: {
@@ -44,7 +45,7 @@ const info = <const>{
     /** Button text for manual continuation */
     button_text: {
       type: ParameterType.STRING,
-      default: "Continue",
+      default: 'Continue',
     },
     /** Only show button when position is good */
     require_good_position: {
@@ -54,37 +55,57 @@ const info = <const>{
     /** Background color */
     background_color: {
       type: ParameterType.STRING,
-      default: "#f0f0f0",
+      default: '#f0f0f0',
     },
     /** Good position color */
     good_color: {
       type: ParameterType.STRING,
-      default: "#28a745",
+      default: '#28a745',
     },
     /** Fair position color */
     fair_color: {
       type: ParameterType.STRING,
-      default: "#ffc107",
+      default: '#ffc107',
     },
     /** Poor position color */
     poor_color: {
       type: ParameterType.STRING,
-      default: "#dc3545",
+      default: '#dc3545',
     },
     /** Button color */
     button_color: {
       type: ParameterType.STRING,
-      default: "#007bff",
+      default: '#007bff',
     },
     /** Button hover color */
     button_hover_color: {
       type: ParameterType.STRING,
-      default: "#0056b3",
+      default: '#0056b3',
     },
     /** Font size */
     font_size: {
       type: ParameterType.STRING,
-      default: "18px",
+      default: '18px',
+    },
+    /** Position offset threshold for "good" status (normalized, default 0.15) */
+    position_threshold_good: {
+      type: ParameterType.FLOAT,
+      default: 0.15,
+    },
+    /** Position offset threshold for "fair" status (normalized, default 0.25) */
+    position_threshold_fair: {
+      type: ParameterType.FLOAT,
+      default: 0.25,
+    },
+    /** Distance offset threshold for "good" status (normalized, default 0.1) */
+    distance_threshold_good: {
+      type: ParameterType.FLOAT,
+      default: 0.1,
+    },
+    /** Distance offset threshold for "fair" status (normalized, default 0.2) */
+    distance_threshold_fair: {
+      type: ParameterType.FLOAT,
+      default: 0.2,
     },
   },
   data: {
@@ -125,14 +146,22 @@ const info = <const>{
 
 type Info = typeof info;
 
-class PluginTobiiUserPositionPlugin implements JsPsychPlugin<Info> {
+class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
   static info = info;
   private static styleInjected = false;
 
   constructor(private jsPsych: JsPsych) {}
 
+  private static removeStyles(): void {
+    const el = document.getElementById('tobii-user-position-styles');
+    if (el) {
+      el.remove();
+    }
+    TobiiUserPositionPlugin.styleInjected = false;
+  }
+
   private injectStyles(trial: TrialType<Info>): void {
-    if (PluginTobiiUserPositionPlugin.styleInjected) {
+    if (TobiiUserPositionPlugin.styleInjected) {
       return;
     }
 
@@ -255,11 +284,12 @@ class PluginTobiiUserPositionPlugin implements JsPsychPlugin<Info> {
       }
     `;
 
-    const styleElement = document.createElement("style");
+    const styleElement = document.createElement('style');
+    styleElement.id = 'tobii-user-position-styles';
     styleElement.textContent = css;
     document.head.appendChild(styleElement);
 
-    PluginTobiiUserPositionPlugin.styleInjected = true;
+    TobiiUserPositionPlugin.styleInjected = true;
   }
 
   trial(display_element: HTMLElement, trial: TrialType<Info>) {
@@ -268,9 +298,9 @@ class PluginTobiiUserPositionPlugin implements JsPsychPlugin<Info> {
       this.injectStyles(trial);
 
       // Check for Tobii extension
-      const tobiiExtension = this.jsPsych.extensions.tobii as any;
+      const tobiiExtension = this.jsPsych.extensions.tobii as unknown as TobiiExtension;
       if (!tobiiExtension) {
-        throw new Error("Tobii extension not loaded");
+        throw new Error('Tobii extension not loaded');
       }
 
       // Create container
@@ -279,7 +309,9 @@ class PluginTobiiUserPositionPlugin implements JsPsychPlugin<Info> {
         </div>
       `;
 
-      const container = display_element.querySelector(".tobii-user-position-container") as HTMLElement;
+      const container = display_element.querySelector(
+        '.tobii-user-position-container'
+      ) as HTMLElement;
 
       // Create position display
       const positionDisplay = new PositionDisplay(container, {
@@ -291,13 +323,17 @@ class PluginTobiiUserPositionPlugin implements JsPsychPlugin<Info> {
         fairColor: trial.fair_color,
         poorColor: trial.poor_color,
         fontSize: trial.font_size,
+        positionThresholdGood: trial.position_threshold_good,
+        positionThresholdFair: trial.position_threshold_fair,
+        distanceThresholdGood: trial.distance_threshold_good,
+        distanceThresholdFair: trial.distance_threshold_fair,
       });
 
       // Add continue button if no duration specified
       let continueButton: HTMLButtonElement | null = null;
       if (trial.duration === null) {
-        continueButton = document.createElement("button");
-        continueButton.className = "tobii-user-position-button";
+        continueButton = document.createElement('button');
+        continueButton.className = 'tobii-user-position-button';
         continueButton.textContent = trial.button_text;
         if (trial.require_good_position) {
           continueButton.disabled = true;
@@ -324,7 +360,7 @@ class PluginTobiiUserPositionPlugin implements JsPsychPlugin<Info> {
             continueButton.disabled = !quality.isGoodPosition;
           }
         } catch (error) {
-          console.error("Error updating user position:", error);
+          console.error('Error updating user position:', error);
         }
       }, trial.update_interval);
 
@@ -354,20 +390,21 @@ class PluginTobiiUserPositionPlugin implements JsPsychPlugin<Info> {
           average_y: averageY,
           average_z: averageZ,
           position_good: finalQuality?.isGoodPosition ?? false,
-          horizontal_status: finalQuality?.horizontalStatus ?? "poor",
-          vertical_status: finalQuality?.verticalStatus ?? "poor",
-          distance_status: finalQuality?.distanceStatus ?? "poor",
+          horizontal_status: finalQuality?.horizontalStatus ?? 'poor',
+          vertical_status: finalQuality?.verticalStatus ?? 'poor',
+          distance_status: finalQuality?.distanceStatus ?? 'poor',
           rt: Math.round(performance.now() - startTime),
         };
 
         positionDisplay.destroy();
+        TobiiUserPositionPlugin.removeStyles();
         this.jsPsych.finishTrial(trialData);
         resolve();
       };
 
       // Set up continue button
       if (continueButton) {
-        continueButton.addEventListener("click", endTrial);
+        continueButton.addEventListener('click', endTrial);
       }
 
       // Set up duration timeout
@@ -378,4 +415,4 @@ class PluginTobiiUserPositionPlugin implements JsPsychPlugin<Info> {
   }
 }
 
-export default PluginTobiiUserPositionPlugin;
+export default TobiiUserPositionPlugin;

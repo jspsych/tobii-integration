@@ -43,7 +43,7 @@ class TobiiServer:
             from .adapters import SDKType
             sdk_map = {
                 "tobii-pro": SDKType.TOBII_PRO,
-                "tobii-x-series": SDKType.TOBII_X_SERIES,
+                "mock": SDKType.MOCK,
             }
             sdk_type_enum = sdk_map.get(config.sdk_type)
 
@@ -125,6 +125,12 @@ class TobiiServer:
         """Shutdown server gracefully"""
         self.logger.info("Shutting down server...")
         self.running = False
+
+        # Remove signal handlers to avoid issues if server restarts in same process
+        if sys.platform != "win32":
+            loop = asyncio.get_event_loop()
+            for sig in (signal.SIGTERM, signal.SIGINT):
+                loop.remove_signal_handler(sig)
 
         # Stop tracking
         if self.tobii_manager.is_tracking():

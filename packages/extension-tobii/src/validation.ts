@@ -2,18 +2,18 @@
  * Data validation utilities
  */
 
-import type { GazeData, CalibrationPoint } from "./types";
+import type { GazeData, CalibrationPoint, CalibrationResult, ValidationResult } from './types';
 
 /**
  * Validate gaze data point
  */
-export function validateGazeData(data: any): data is GazeData {
+export function validateGazeData(data: unknown): data is GazeData {
   return (
-    typeof data === "object" &&
+    typeof data === 'object' &&
     data !== null &&
-    typeof data.x === "number" &&
-    typeof data.y === "number" &&
-    typeof data.timestamp === "number" &&
+    typeof data.x === 'number' &&
+    typeof data.y === 'number' &&
+    typeof data.timestamp === 'number' &&
     !isNaN(data.x) &&
     !isNaN(data.y) &&
     !isNaN(data.timestamp)
@@ -23,12 +23,12 @@ export function validateGazeData(data: any): data is GazeData {
 /**
  * Validate calibration point
  */
-export function validateCalibrationPoint(point: any): point is CalibrationPoint {
+export function validateCalibrationPoint(point: unknown): point is CalibrationPoint {
   return (
-    typeof point === "object" &&
+    typeof point === 'object' &&
     point !== null &&
-    typeof point.x === "number" &&
-    typeof point.y === "number" &&
+    typeof point.x === 'number' &&
+    typeof point.y === 'number' &&
     point.x >= 0 &&
     point.x <= 1 &&
     point.y >= 0 &&
@@ -41,6 +41,20 @@ export function validateCalibrationPoint(point: any): point is CalibrationPoint 
  */
 export function filterValidGaze(data: GazeData[]): GazeData[] {
   return data.filter(validateGazeData);
+}
+
+/**
+ * Validate that a server response conforms to CalibrationResult
+ */
+export function validateCalibrationResult(data: unknown): data is CalibrationResult {
+  return typeof data === 'object' && data !== null && typeof data.success === 'boolean';
+}
+
+/**
+ * Validate that a server response conforms to ValidationResult
+ */
+export function validateValidationResult(data: unknown): data is ValidationResult {
+  return typeof data === 'object' && data !== null && typeof data.success === 'boolean';
 }
 
 /**

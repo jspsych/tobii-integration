@@ -2,19 +2,20 @@
  * WebSocket client for Tobii server communication
  */
 
-import type { ConnectionConfig, WebSocketMessage, ConnectionStatus } from "./types";
+import type { ConnectionConfig, WebSocketMessage, ConnectionStatus } from './types';
 
 export class WebSocketClient {
   private ws: WebSocket | null = null;
   private config: Required<ConnectionConfig>;
   private status: ConnectionStatus;
-  private messageHandlers: Map<string, (data: any) => void>;
+  private messageHandlers: Map<string, (data: Record<string, unknown>) => void>;
   private reconnectTimeout: number | null = null;
   private currentReconnectAttempt: number = 0;
+  private nextRequestId: number = 0;
 
   constructor(config: ConnectionConfig = {}) {
     this.config = {
-      url: config.url || "ws://localhost:8080",
+      url: config.url || 'ws://localhost:8080',
       autoConnect: config.autoConnect ?? true,
       reconnectAttempts: config.reconnectAttempts ?? 5,
       reconnectDelay: config.reconnectDelay ?? 1000,
@@ -52,8 +53,8 @@ export class WebSocketClient {
         };
 
         this.ws.onerror = (error) => {
-          this.status.lastError = "WebSocket error";
-          console.error("WebSocket error:", error);
+          this.status.lastError = 'WebSocket error';
+          console.error('WebSocket error:', error);
         };
 
         this.ws.onclose = () => {
@@ -65,7 +66,7 @@ export class WebSocketClient {
         // Timeout for connection
         setTimeout(() => {
           if (this.ws?.readyState !== WebSocket.OPEN) {
-            reject(new Error("Connection timeout"));
+            reject(new Error('Connection timeout'));
           }
         }, 5000);
       } catch (error) {
@@ -111,7 +112,7 @@ export class WebSocketClient {
    */
   async send(message: WebSocketMessage): Promise<void> {
     if (!this.isConnected()) {
-      throw new Error("Not connected to server");
+      throw new Error('Not connected to server');
     }
 
     this.ws!.send(JSON.stringify(message));
@@ -120,20 +121,20 @@ export class WebSocketClient {
   /**
    * Send message and wait for response
    */
-  async sendAndWait(message: WebSocketMessage, timeout: number = 5000): Promise<any> {
+  async sendAndWait(message: WebSocketMessage, timeout: number = 5000): Promise<Record<string, unknown>> {
     if (!this.isConnected()) {
-      throw new Error("Not connected to server");
+      throw new Error('Not connected to server');
     }
 
     return new Promise((resolve, reject) => {
       // Generate unique ID for this request
-      const requestId = `req_${Date.now()}_${Math.random()}`;
+      const requestId = `req_${this.nextRequestId++}`;
       const messageWithId = { ...message, requestId };
 
       // Set up response handler
       const timeoutId = setTimeout(() => {
         this.messageHandlers.delete(requestId);
-        reject(new Error("Request timeout"));
+        reject(new Error('Request timeout'));
       }, timeout);
 
       this.messageHandlers.set(requestId, (data) => {
@@ -150,7 +151,7 @@ export class WebSocketClient {
   /**
    * Register message handler
    */
-  on(messageType: string, handler: (data: any) => void): void {
+  on(messageType: string, handler: (data: Record<string, unknown>) => void): void {
     this.messageHandlers.set(messageType, handler);
   }
 
@@ -181,7 +182,7 @@ export class WebSocketClient {
         handler!(data);
       }
     } catch (error) {
-      console.error("Error handling message:", error);
+      console.error('Error handling message:', error);
     }
   }
 
@@ -197,16 +198,16 @@ export class WebSocketClient {
         try {
           await this.connect();
           // Emit reconnected event so listeners can re-sync time
-          const reconnectedHandler = this.messageHandlers.get("reconnected");
+          const reconnectedHandler = this.messageHandlers.get('reconnected');
           if (reconnectedHandler) {
-            reconnectedHandler({ type: "reconnected" });
+            reconnectedHandler({ type: 'reconnected' });
           }
         } catch (error) {
           // Reconnection failed
         }
       }, delay);
     } else {
-      this.status.lastError = "Max reconnection attempts reached";
+      this.status.lastError = 'Max reconnection attempts reached';
     }
   }
 }

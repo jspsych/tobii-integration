@@ -195,59 +195,34 @@ class CalibrationManager:
             # Use adapter to compute and apply calibration
             result = self.tobii_manager.adapter.compute_calibration()
 
-            # Leave calibration mode on the tracker (required by Tobii SDK)
-            self.tobii_manager.adapter.leave_calibration_mode()
-
-            # Always clean up calibration state
-            session.calibration_active = False
-            with self._calibration_lock:
-                if self._active_calibration_client == client_id:
-                    self._active_calibration_client = None
-
             if result.success:
-                self.logger.info(
-                    f"Calibration computed successfully (avg error: {result.average_error:.3f}°)"
-                    if result.average_error
-                    else "Calibration computed successfully"
-                )
-
-                # Build point quality data if available
-                point_quality = []
-                if result.point_errors and len(result.point_errors) == len(session.calibration_points):
-                    point_quality = [
-                        {
-                            "point": session.calibration_points[i],
-                            "error": result.point_errors[i],
-                        }
-                        for i in range(len(session.calibration_points))
-                    ]
+                self.logger.info("Calibration computed successfully")
             else:
                 self.logger.error("Calibration computation failed")
-                point_quality = []
 
             return {
                 "type": "calibration_compute",
                 "success": result.success,
-                "averageError": result.average_error if result.average_error else None,
-                "pointQuality": point_quality,
             }
 
         except Exception as e:
-            # Clean up on error - leave calibration mode on adapter
-            session.calibration_active = False
-            with self._calibration_lock:
-                if self._active_calibration_client == client_id:
-                    self._active_calibration_client = None
-            try:
-                self.tobii_manager.adapter.leave_calibration_mode()
-            except Exception:
-                pass
             self.logger.error(f"Error computing calibration: {e}")
             return {
                 "type": "calibration_compute",
                 "success": False,
                 "error": str(e),
             }
+
+        finally:
+            # Always leave calibration mode and clean up state
+            try:
+                self.tobii_manager.adapter.leave_calibration_mode()
+            except Exception:
+                pass
+            session.calibration_active = False
+            with self._calibration_lock:
+                if self._active_calibration_client == client_id:
+                    self._active_calibration_client = None
 
     def start_validation(self, client_id: str = "default") -> Dict[str, Any]:
         """
@@ -411,7 +386,7 @@ class CalibrationManager:
                         distances.append(distance)
                         valid_samples.append(sample)
 
-                if not distances:
+                if not distances or not valid_samples:
                     continue
 
                 # Accuracy: mean distance from target (in normalized coordinates)

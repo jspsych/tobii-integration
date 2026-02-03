@@ -1,21 +1,23 @@
 /**
- * **extension-tobii**
- *
- * jsPsych extension for Tobii eye tracker integration via WebSocket
- *
+ * @title Tobii Extension
+ * @description jsPsych extension for Tobii eye tracker integration via WebSocket.
+ * Provides real-time gaze data streaming, calibration control, time synchronization,
+ * and coordinate utilities for eye tracking experiments.
+ * @version 1.0.0
  * @author jsPsych Team
- * @see {@link https://github.com/jspsych/jspsych-tobii/tree/main/packages/extension-tobii#readme}
+ * @see {@link https://github.com/jspsych/jspsych-tobii/tree/main/packages/extension-tobii#readme Documentation}
  */
 
-import { JsPsych, JsPsychExtension, JsPsychExtensionInfo, ParameterType } from "jspsych";
-import { version } from "../package.json";
+import { JsPsych, JsPsychExtension, JsPsychExtensionInfo, ParameterType } from 'jspsych';
+import { version } from '../package.json';
 
-import { WebSocketClient } from "./websocket-client";
-import { DataManager } from "./data-manager";
-import { TimeSync } from "./time-sync";
-import * as CoordinateUtils from "./coordinate-utils";
-import * as DataExport from "./data-export";
-import * as Validation from "./validation";
+import { WebSocketClient } from './websocket-client';
+import { DataManager } from './data-manager';
+import { TimeSync } from './time-sync';
+import { DeviceTimeSync } from './device-time-sync';
+import * as CoordinateUtils from './coordinate-utils';
+import * as DataExport from './data-export';
+import * as Validation from './validation';
 
 import type {
   InitializeParameters,
@@ -30,11 +32,13 @@ import type {
   ScreenDimensions,
   Coordinates,
   ConnectionStatus,
-} from "./types";
+  DeviceTimeSyncStatus,
+  TimestampAlignmentResult,
+} from './types';
 
-class ExtensionTobiiExtension implements JsPsychExtension {
+class TobiiExtension implements JsPsychExtension {
   static info: JsPsychExtensionInfo = {
-    name: "tobii",
+    name: 'tobii',
     version: version,
     data: {
       /** Eye tracking gaze data collected during the trial */
@@ -49,9 +53,12 @@ class ExtensionTobiiExtension implements JsPsychExtension {
   private ws!: WebSocketClient;
   private dataManager!: DataManager;
   private timeSync!: TimeSync;
+  private deviceTimeSync!: DeviceTimeSync;
   private initialized: boolean = false;
   private tracking: boolean = false;
   private config: InitializeParameters = {};
+  private gazeSampleCount: number = 0;
+  private deviceTimeSyncTriggered: boolean = false;
 
   constructor(jsPsych: JsPsych) {
     this.jsPsych = jsPsych;
@@ -69,25 +76,44 @@ class ExtensionTobiiExtension implements JsPsychExtension {
     // Initialize time synchronization
     this.timeSync = new TimeSync(this.ws);
 
+    // Initialize device time synchronization (browser ↔ device clock chain)
+    this.deviceTimeSync = new DeviceTimeSync(this.ws, this.timeSync);
+
     // Set up gaze data handler
-    this.ws.on("gaze_data", (data) => {
-      if (data.gaze && Validation.validateGazeData(data.gaze)) {
-        // Add client timestamp for time-range queries using performance.now()
-        const gazeWithClientTime = {
-          ...data.gaze,
+    this.ws.on('gaze_data', (data) => {
+      const rawGaze = data.gaze;
+      if (rawGaze && Validation.validateGazeData(rawGaze)) {
+        // Map server_timestamp to camelCase and add client timestamp
+        const gazeWithTimestamps: GazeData = {
+          ...rawGaze,
+          serverTimestamp: (rawGaze as unknown as Record<string, unknown>)
+            .server_timestamp as number | undefined,
           clientTimestamp: performance.now(),
         };
-        this.dataManager.addGazeData(gazeWithClientTime);
+        this.dataManager.addGazeData(gazeWithTimestamps);
+
+        // Auto-trigger device time sync after first 50 gaze samples
+        this.gazeSampleCount++;
+        if (!this.deviceTimeSyncTriggered && this.gazeSampleCount >= 50) {
+          this.deviceTimeSyncTriggered = true;
+          this.deviceTimeSync.synchronizeDeviceClock().catch(() => {
+            // Device time sync failed silently — can be retried manually
+          });
+        }
       }
     });
 
     // Set up reconnection handler to re-sync time
-    this.ws.on("reconnected", async () => {
+    this.ws.on('reconnected', async () => {
       try {
         await this.timeSync.synchronize();
       } catch (e) {
         // Time sync failed after reconnection
       }
+      // Reset device time sync so it re-triggers once new samples arrive
+      this.deviceTimeSync.reset();
+      this.gazeSampleCount = 0;
+      this.deviceTimeSyncTriggered = false;
     });
 
     // Auto-connect if configured
@@ -105,7 +131,7 @@ class ExtensionTobiiExtension implements JsPsychExtension {
     // Send trial start marker with synchronized timestamp
     const localTime = performance.now();
     await this.sendMarker({
-      label: "trial_start",
+      label: 'trial_start',
       timestamp: localTime,
       syncedTimestamp: this.timeSync.isSynced() ? this.timeSync.toServerTime(localTime) : localTime,
       ...params.metadata,
@@ -117,18 +143,18 @@ class ExtensionTobiiExtension implements JsPsychExtension {
     }
   };
 
-  on_load = async (params: OnStartParameters = {}): Promise<void> => {
+  on_load = async (_params: OnStartParameters = {}): Promise<void> => {
     // Optional: additional setup when trial loads
   };
 
-  on_finish = async (params: OnFinishParameters = {}): Promise<{ tobii_data: GazeData[] }> => {
+  on_finish = async (_params: OnFinishParameters = {}): Promise<{ tobii_data: GazeData[] }> => {
     // Mark trial end
     this.dataManager.endTrial();
 
     // Send trial end marker with synchronized timestamp
     const localTime = performance.now();
     await this.sendMarker({
-      label: "trial_end",
+      label: 'trial_end',
       timestamp: localTime,
       syncedTimestamp: this.timeSync.isSynced() ? this.timeSync.toServerTime(localTime) : localTime,
     });
@@ -186,15 +212,15 @@ class ExtensionTobiiExtension implements JsPsychExtension {
    */
   async startTracking(): Promise<void> {
     if (!this.isConnected()) {
-      throw new Error("Not connected to server. Call connect() first.");
+      throw new Error('Not connected to server. Call connect() first.');
     }
 
     // Wait for server confirmation before setting state
-    const response = await this.ws.sendAndWait({ type: "start_tracking" });
+    const response = await this.ws.sendAndWait({ type: 'start_tracking' });
     if (response.success) {
       this.tracking = true;
     } else {
-      throw new Error("Server failed to start tracking");
+      throw new Error('Server failed to start tracking');
     }
   }
 
@@ -203,7 +229,7 @@ class ExtensionTobiiExtension implements JsPsychExtension {
    */
   async stopTracking(): Promise<void> {
     // Wait for server confirmation before setting state
-    const response = await this.ws.sendAndWait({ type: "stop_tracking" });
+    const response = await this.ws.sendAndWait({ type: 'stop_tracking' });
     if (response.success) {
       this.tracking = false;
     }
@@ -222,7 +248,7 @@ class ExtensionTobiiExtension implements JsPsychExtension {
    * Start calibration procedure
    */
   async startCalibration(): Promise<void> {
-    await this.ws.send({ type: "calibration_start" });
+    await this.ws.send({ type: 'calibration_start' });
   }
 
   /**
@@ -231,11 +257,11 @@ class ExtensionTobiiExtension implements JsPsychExtension {
    */
   async collectCalibrationPoint(x: number, y: number): Promise<{ success: boolean }> {
     if (!Validation.validateCalibrationPoint({ x, y })) {
-      throw new Error("Invalid calibration point. Coordinates must be in range [0, 1].");
+      throw new Error('Invalid calibration point. Coordinates must be in range [0, 1].');
     }
 
     const response = await this.ws.sendAndWait({
-      type: "calibration_point",
+      type: 'calibration_point',
       point: { x, y },
       timestamp: performance.now(),
     });
@@ -248,9 +274,12 @@ class ExtensionTobiiExtension implements JsPsychExtension {
    */
   async computeCalibration(): Promise<CalibrationResult> {
     const response = await this.ws.sendAndWait({
-      type: "calibration_compute",
+      type: 'calibration_compute',
     });
-    return response as CalibrationResult;
+    if (!Validation.validateCalibrationResult(response)) {
+      return { success: false, error: 'Invalid server response' };
+    }
+    return response;
   }
 
   /**
@@ -258,16 +287,19 @@ class ExtensionTobiiExtension implements JsPsychExtension {
    */
   async getCalibrationData(): Promise<CalibrationResult> {
     const response = await this.ws.sendAndWait({
-      type: "get_calibration_data",
+      type: 'get_calibration_data',
     });
-    return response as CalibrationResult;
+    if (!Validation.validateCalibrationResult(response)) {
+      return { success: false, error: 'Invalid server response' };
+    }
+    return response;
   }
 
   /**
    * Start validation procedure
    */
   async startValidation(): Promise<void> {
-    await this.ws.send({ type: "validation_start" });
+    await this.ws.send({ type: 'validation_start' });
   }
 
   /**
@@ -278,11 +310,11 @@ class ExtensionTobiiExtension implements JsPsychExtension {
    */
   async collectValidationPoint(x: number, y: number, gazeSamples?: GazeData[]): Promise<void> {
     if (!Validation.validateCalibrationPoint({ x, y })) {
-      throw new Error("Invalid validation point. Coordinates must be in range [0, 1].");
+      throw new Error('Invalid validation point. Coordinates must be in range [0, 1].');
     }
 
     await this.ws.send({
-      type: "validation_point",
+      type: 'validation_point',
       point: { x, y },
       timestamp: performance.now(),
       gaze_samples: gazeSamples || [],
@@ -302,9 +334,12 @@ class ExtensionTobiiExtension implements JsPsychExtension {
    */
   async computeValidation(): Promise<ValidationResult> {
     const response = await this.ws.sendAndWait({
-      type: "validation_compute",
+      type: 'validation_compute',
     });
-    return response as ValidationResult;
+    if (!Validation.validateValidationResult(response)) {
+      return { success: false, error: 'Invalid server response' };
+    }
+    return response;
   }
 
   /**
@@ -319,9 +354,9 @@ class ExtensionTobiiExtension implements JsPsychExtension {
 
     // Otherwise request from server
     const response = await this.ws.sendAndWait({
-      type: "get_current_gaze",
+      type: 'get_current_gaze',
     });
-    return response.gaze || null;
+    return (response.gaze as GazeData) || null;
   }
 
   /**
@@ -332,9 +367,9 @@ class ExtensionTobiiExtension implements JsPsychExtension {
       return null;
     }
     const response = await this.ws.sendAndWait({
-      type: "get_user_position",
+      type: 'get_user_position',
     });
-    return response.position || null;
+    return (response.position as UserPositionData) || null;
   }
 
   /**
@@ -360,7 +395,7 @@ class ExtensionTobiiExtension implements JsPsychExtension {
    */
   async sendMarker(markerData: MarkerData): Promise<void> {
     await this.ws.send({
-      type: "marker",
+      type: 'marker',
       ...markerData,
       timestamp: markerData.timestamp || performance.now(),
     });
@@ -428,14 +463,14 @@ class ExtensionTobiiExtension implements JsPsychExtension {
   /**
    * Export gaze data to CSV
    */
-  exportToCSV(data: any[], filename: string): void {
+  exportToCSV(data: Record<string, unknown>[], filename: string): void {
     DataExport.toCSV(data, filename);
   }
 
   /**
    * Export gaze data to JSON
    */
-  exportToJSON(data: any[], filename: string): void {
+  exportToJSON(data: Record<string, unknown>[], filename: string): void {
     DataExport.toJSON(data, filename);
   }
 
@@ -466,9 +501,49 @@ class ExtensionTobiiExtension implements JsPsychExtension {
   isTimeSynced(): boolean {
     return this.timeSync.isSynced();
   }
+
+  /**
+   * Convert a performance.now() timestamp to Tobii device clock time.
+   * Requires that device time sync is established.
+   */
+  toDeviceTime(performanceNow: number): number {
+    return this.deviceTimeSync.toDeviceTime(performanceNow);
+  }
+
+  /**
+   * Convert a Tobii device clock timestamp to performance.now() domain.
+   * Requires that device time sync is established.
+   */
+  toLocalTime(deviceTime: number): number {
+    return this.deviceTimeSync.toLocalTime(deviceTime);
+  }
+
+  /**
+   * Check if the browser-to-device time sync chain is established
+   */
+  isDeviceTimeSynced(): boolean {
+    return this.deviceTimeSync.isSynced();
+  }
+
+  /**
+   * Get full device time synchronization status with all offsets and diagnostics
+   */
+  getTimeSyncStatus(): DeviceTimeSyncStatus {
+    return this.deviceTimeSync.getStatus();
+  }
+
+  /**
+   * Validate timestamp alignment across a set of gaze samples.
+   * Computes per-sample residuals to verify the A↔C offset is consistent.
+   * Low stdDev indicates well-aligned timestamps.
+   * @param samples - Gaze samples to validate (must have clientTimestamp set)
+   */
+  validateTimestampAlignment(samples: GazeData[]): TimestampAlignmentResult | null {
+    return this.deviceTimeSync.validateTimestampAlignment(samples);
+  }
 }
 
-export default ExtensionTobiiExtension;
+export default TobiiExtension;
 
 // Export types for use by plugins and experiments
 export type {
@@ -483,4 +558,6 @@ export type {
   ScreenDimensions,
   Coordinates,
   ConnectionStatus,
+  DeviceTimeSyncStatus,
+  TimestampAlignmentResult,
 };

@@ -176,6 +176,9 @@ class WebSocketHandler:
         elif message_type == "get_user_position":
             response = self.handle_get_user_position()
 
+        elif message_type == "get_device_clock_offset":
+            response = self.handle_get_device_clock_offset()
+
         else:
             self.logger.warning(f"Unknown message type: {message_type}")
             response = {"type": "error", "error": f"Unknown message type: {message_type}"}
@@ -230,6 +233,21 @@ class WebSocketHandler:
         return {
             "type": "get_user_position",
             "position": position,
+        }
+
+    def handle_get_device_clock_offset(self) -> Dict[str, Any]:
+        """Handle get device clock offset request"""
+        result = self.data_buffer.get_device_clock_offset()
+        if result is None:
+            return {
+                "type": "get_device_clock_offset",
+                "success": False,
+                "error": "No gaze samples available to compute offset",
+            }
+        return {
+            "type": "get_device_clock_offset",
+            "success": True,
+            **result,
         }
 
     def on_gaze_data(self, gaze_data: Dict[str, Any]) -> None:

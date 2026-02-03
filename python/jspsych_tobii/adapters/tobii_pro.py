@@ -254,51 +254,11 @@ class TobiiProAdapter(TobiiTrackerAdapter):
             if result.status != tr.CALIBRATION_STATUS_SUCCESS:
                 return CalibrationResult(success=False)
 
-            # Calculate average error from calibration points
-            errors = []
-            for point in result.calibration_points:
-                for sample in point.calibration_samples:
-                    if sample.left_eye.validity == 1:
-                        errors.append(self._calculate_error_degrees(sample.left_eye))
-                    if sample.right_eye.validity == 1:
-                        errors.append(self._calculate_error_degrees(sample.right_eye))
-
-            avg_error = sum(errors) / len(errors) if errors else None
-
-            return CalibrationResult(
-                success=True,
-                average_error=avg_error,
-                point_errors=errors if errors else None,
-            )
+            return CalibrationResult(success=True)
 
         except Exception as e:
             self.logger.error(f"Error computing calibration: {e}")
             return CalibrationResult(success=False)
-
-    def _calculate_error_degrees(self, eye_data: Any) -> float:
-        """Calculate calibration error in degrees for an eye"""
-        # This is a simplified calculation
-        # In practice, you'd use the actual geometry and position data
-        import math
-
-        # Get the position on screen (normalized)
-        pos = eye_data.position_on_display_area
-
-        # Simple approximation: convert normalized screen distance to degrees
-        # Assumes typical viewing geometry (this should be calibrated for your setup)
-        screen_distance_cm = 65.0
-        screen_width_cm = 50.0
-        pixels_per_cm = 1920 / screen_width_cm
-
-        # Calculate angular error (simplified)
-        error_x = abs(pos[0] - 0.5) * screen_width_cm
-        error_y = abs(pos[1] - 0.5) * screen_width_cm
-        error_distance = math.sqrt(error_x**2 + error_y**2)
-
-        # Convert to degrees
-        error_degrees = math.degrees(math.atan(error_distance / screen_distance_cm))
-
-        return error_degrees
 
     def discard_calibration_data(self, point: Optional[CalibrationPoint] = None) -> bool:
         """Discard calibration data"""

@@ -3,6 +3,7 @@ Data buffer for storing and retrieving gaze data
 """
 
 import time
+import math
 import threading
 from collections import deque
 from typing import List, Dict, Any, Optional
@@ -23,6 +24,7 @@ class DataBuffer:
         self.max_duration_ms = max_duration_ms
         self.buffer: deque = deque(maxlen=max_size)
         self.markers: List[Dict[str, Any]] = []
+        self._bc_offsets: deque = deque(maxlen=200)
         self._lock = threading.Lock()
 
     def add_sample(self, sample: Dict[str, Any]) -> None:
@@ -35,6 +37,10 @@ class DataBuffer:
         sample["server_timestamp"] = time.time() * 1000  # milliseconds
         with self._lock:
             self.buffer.append(sample)
+            # Compute B-C offset (server_timestamp - device_timestamp)
+            device_ts = sample.get("timestamp")
+            if device_ts is not None:
+                self._bc_offsets.append(sample["server_timestamp"] - device_ts)
 
     def add_marker(self, marker: Dict[str, Any]) -> None:
         """
@@ -93,6 +99,7 @@ class DataBuffer:
         with self._lock:
             self.buffer.clear()
             self.markers.clear()
+            self._bc_offsets.clear()
 
     def cleanup_old_data(self) -> None:
         """Remove old data beyond max_duration_ms"""
@@ -116,6 +123,37 @@ class DataBuffer:
         """Get current buffer size"""
         with self._lock:
             return len(self.buffer)
+
+    def get_device_clock_offset(self) -> Optional[Dict[str, Any]]:
+        """
+        Get the offset between server clock and device clock (B-C offset).
+
+        The offset satisfies: server_timestamp = device_timestamp + offset
+
+        Returns:
+            Dictionary with offset statistics or None if no samples yet
+        """
+        with self._lock:
+            if not self._bc_offsets:
+                return None
+            offsets = list(self._bc_offsets)
+
+        offsets.sort()
+        n = len(offsets)
+        mid = n // 2
+        median = offsets[mid] if n % 2 == 1 else (offsets[mid - 1] + offsets[mid]) / 2
+
+        mean = sum(offsets) / n
+        variance = sum((x - mean) ** 2 for x in offsets) / n
+        std_dev = math.sqrt(variance)
+
+        return {
+            "offset": median,
+            "sample_count": n,
+            "std_dev": std_dev,
+            "min": offsets[0],
+            "max": offsets[-1],
+        }
 
     def get_statistics(self) -> Dict[str, Any]:
         """
