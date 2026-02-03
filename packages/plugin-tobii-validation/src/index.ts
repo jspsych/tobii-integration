@@ -267,13 +267,13 @@ class PluginTobiiValidationPlugin implements JsPsychPlugin<Info> {
         left: 50%;
         transform: translate(-50%, -50%);
         background-color: white;
-        padding: 40px 60px;
+        padding: 30px 40px;
         border-radius: 10px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         text-align: center;
-        width: 80vw;
-        max-width: 1400px;
-        max-height: 90vh;
+        width: 60vw;
+        max-width: 800px;
+        max-height: 85vh;
         overflow-y: auto;
       }
 

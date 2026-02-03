@@ -271,8 +271,8 @@ const practiceProcedure = {
                 const targetPresent = jsPsych.evaluateTimelineVariable('targetPresent');
                 const setSize = jsPsych.evaluateTimelineVariable('setSize');
                 // Generate display with current window dimensions
-                const displayWidth = window.innerWidth - 100;
-                const displayHeight = window.innerHeight - 150;
+                const displayWidth = window.innerWidth;
+                const displayHeight = window.innerHeight;
 
                 let display;
                 if (searchType === 'feature') {
@@ -446,8 +446,8 @@ const trialProcedure = {
                     searchType,
                     setSize,
                     targetPresent,
-                    displayWidth: window.innerWidth - 100,
-                    displayHeight: window.innerHeight - 150
+                    displayWidth: window.innerWidth,
+                    displayHeight: window.innerHeight
                 });
 
                 // Store display info for scoring
