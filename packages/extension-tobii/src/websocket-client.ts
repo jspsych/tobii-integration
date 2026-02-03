@@ -11,6 +11,7 @@ export class WebSocketClient {
   private messageHandlers: Map<string, (data: Record<string, unknown>) => void>;
   private reconnectTimeout: number | null = null;
   private currentReconnectAttempt: number = 0;
+  private nextRequestId: number = 0;
 
   constructor(config: ConnectionConfig = {}) {
     this.config = {
@@ -127,7 +128,7 @@ export class WebSocketClient {
 
     return new Promise((resolve, reject) => {
       // Generate unique ID for this request
-      const requestId = `req_${Date.now()}_${Math.random()}`;
+      const requestId = `req_${this.nextRequestId++}`;
       const messageWithId = { ...message, requestId };
 
       // Set up response handler

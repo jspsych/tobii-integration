@@ -293,7 +293,7 @@ export class CalibrationDisplay {
 
     if (success) {
       result.innerHTML = `
-        <div class="result-content success">
+        <div class="tobii-calibration-result-content success">
           <h2>Calibration Successful!</h2>
           <p>Continuing automatically...</p>
         </div>
@@ -314,7 +314,7 @@ export class CalibrationDisplay {
       : `<button class="calibration-continue-btn">Continue</button>`;
 
     result.innerHTML = `
-      <div class="result-content error">
+      <div class="tobii-calibration-result-content error">
         <h2>Calibration Failed</h2>
         <p>Please try again or continue.</p>
         ${buttonsHTML}

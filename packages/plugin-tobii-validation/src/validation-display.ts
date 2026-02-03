@@ -238,7 +238,7 @@ export class ValidationDisplay {
     }
 
     result.innerHTML = `
-      <div class="result-content ${statusClass}">
+      <div class="tobii-validation-result-content ${statusClass}">
         <h2>${statusText}</h2>
         <p>Average error: ${((averageAccuracyNorm || 0) * 100).toFixed(1)}% (tolerance: ${((tolerance || 0) * 100).toFixed(0)}%)</p>
         ${feedbackHTML}

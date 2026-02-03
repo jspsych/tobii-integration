@@ -339,21 +339,21 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
         text-align: center;
       }
 
-      .result-content h2 {
+      .tobii-calibration-result-content h2 {
         margin-top: 0;
         margin-bottom: 20px;
         font-size: 24px;
       }
 
-      .result-content.success h2 {
+      .tobii-calibration-result-content.success h2 {
         color: ${trial.success_color};
       }
 
-      .result-content.error h2 {
+      .tobii-calibration-result-content.error h2 {
         color: ${trial.error_color};
       }
 
-      .result-content p {
+      .tobii-calibration-result-content p {
         margin-bottom: 20px;
         font-size: 16px;
         color: #666;
