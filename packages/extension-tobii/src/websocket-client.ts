@@ -206,7 +206,10 @@ export class WebSocketClient {
             reconnectedHandler({ type: 'reconnected' });
           }
         } catch (error) {
-          // Reconnection failed
+          console.warn(
+            `Tobii: Reconnection attempt ${this.currentReconnectAttempt}/${this.config.reconnectAttempts} failed:`,
+            error
+          );
         }
       }, delay);
     } else {

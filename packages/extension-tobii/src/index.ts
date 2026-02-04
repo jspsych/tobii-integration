@@ -97,8 +97,8 @@ class TobiiExtension implements JsPsychExtension {
         this.gazeSampleCount++;
         if (!this.deviceTimeSyncTriggered && this.gazeSampleCount >= 50) {
           this.deviceTimeSyncTriggered = true;
-          this.deviceTimeSync.synchronizeDeviceClock().catch(() => {
-            // Device time sync failed silently — can be retried manually
+          this.deviceTimeSync.synchronizeDeviceClock().catch((e) => {
+            console.warn('Tobii: Device time sync failed, can be retried manually:', e);
           });
         }
       }
@@ -109,7 +109,7 @@ class TobiiExtension implements JsPsychExtension {
       try {
         await this.timeSync.synchronize();
       } catch (e) {
-        // Time sync failed after reconnection
+        console.warn('Tobii: Time sync failed after reconnection:', e);
       }
       // Reset device time sync so it re-triggers once new samples arrive
       this.deviceTimeSync.reset();
