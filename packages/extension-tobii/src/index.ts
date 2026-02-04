@@ -220,7 +220,7 @@ class TobiiExtension implements JsPsychExtension {
     if (response.success) {
       this.tracking = true;
     } else {
-      throw new Error('Server failed to start tracking');
+      throw new Error(`Server failed to start tracking: ${response.error || 'unknown error'}`);
     }
   }
 
@@ -252,7 +252,9 @@ class TobiiExtension implements JsPsychExtension {
    */
   async collectCalibrationPoint(x: number, y: number): Promise<{ success: boolean }> {
     if (!Validation.validateCalibrationPoint({ x, y })) {
-      throw new Error('Invalid calibration point. Coordinates must be in range [0, 1].');
+      throw new Error(
+        `Invalid calibration point (${x}, ${y}). Coordinates must be in range [0, 1].`
+      );
     }
 
     const response = await this.ws.sendAndWait({
@@ -305,7 +307,9 @@ class TobiiExtension implements JsPsychExtension {
    */
   async collectValidationPoint(x: number, y: number, gazeSamples?: GazeData[]): Promise<void> {
     if (!Validation.validateCalibrationPoint({ x, y })) {
-      throw new Error('Invalid validation point. Coordinates must be in range [0, 1].');
+      throw new Error(
+        `Invalid validation point (${x}, ${y}). Coordinates must be in range [0, 1].`
+      );
     }
 
     await this.ws.send({
