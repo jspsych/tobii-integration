@@ -140,6 +140,10 @@ const info = <const>{
     validation_data: {
       type: ParameterType.COMPLEX,
     },
+    /** Normalized tolerance used for pass/fail determination */
+    tolerance: {
+      type: ParameterType.FLOAT,
+    },
     /** Number of validation attempts made */
     num_attempts: {
       type: ParameterType.INT,
@@ -637,8 +641,8 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
     // Finish trial
     const trial_data = {
       validation_success: validationPassed,
-      average_accuracy_norm: avgAccuracyNorm,
-      average_precision_norm: avgPrecisionNorm,
+      average_accuracy: avgAccuracyNorm,
+      average_precision: avgPrecisionNorm,
       tolerance: trial.tolerance,
       num_points: points.length,
       validation_data: validationResult,
