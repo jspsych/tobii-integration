@@ -392,17 +392,19 @@ export class PositionDisplay {
     } else {
       const issues: string[] = [];
 
-      // Horizontal feedback
-      if (x < 0.35) issues.push('move right');
-      else if (x > 0.65) issues.push('move left');
+      // Horizontal feedback — use configurable threshold (offset from 0.5 center)
+      const posFairThreshold = this.options.positionThresholdFair;
+      if (x < 0.5 - posFairThreshold) issues.push('move right');
+      else if (x > 0.5 + posFairThreshold) issues.push('move left');
 
       // Vertical feedback (y=0 is bottom, y=1 is top)
-      if (y < 0.35) issues.push('move up');
-      else if (y > 0.65) issues.push('move down');
+      if (y < 0.5 - posFairThreshold) issues.push('move up');
+      else if (y > 0.5 + posFairThreshold) issues.push('move down');
 
       // Distance feedback (z=1 is close, z=0 is far)
-      if (z > 0.7) issues.push('move back');
-      else if (z < 0.3) issues.push('move closer');
+      const distFairThreshold = this.options.distanceThresholdFair;
+      if (z > 0.5 + distFairThreshold) issues.push('move back');
+      else if (z < 0.5 - distFairThreshold) issues.push('move closer');
 
       if (issues.length > 0) {
         feedback = `Please ${issues.join(' and ')}`;
