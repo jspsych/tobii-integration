@@ -93,21 +93,6 @@ const info = <const>{
       type: ParameterType.STRING,
       default: '#dc3545',
     },
-    /** Good accuracy color */
-    accuracy_good_color: {
-      type: ParameterType.STRING,
-      default: '#00ff00',
-    },
-    /** Fair accuracy color */
-    accuracy_fair_color: {
-      type: ParameterType.STRING,
-      default: '#ffff00',
-    },
-    /** Poor accuracy color */
-    accuracy_poor_color: {
-      type: ParameterType.STRING,
-      default: '#ff0000',
-    },
     /** Normalized tolerance for acceptable accuracy (0-1 scale, validation passes if average error <= this) */
     tolerance: {
       type: ParameterType.FLOAT,

@@ -61,12 +61,6 @@ describe('TobiiValidationPlugin', () => {
       expect(params.background_color.default).toBe('#808080');
     });
 
-    it('should have accuracy color parameters', () => {
-      expect(params.accuracy_good_color).toBeDefined();
-      expect(params.accuracy_fair_color).toBeDefined();
-      expect(params.accuracy_poor_color).toBeDefined();
-    });
-
     it('should have max_retries parameter with default 1', () => {
       expect(params.max_retries).toBeDefined();
       expect(params.max_retries.default).toBe(1);
