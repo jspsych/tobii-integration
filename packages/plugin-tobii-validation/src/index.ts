@@ -537,7 +537,7 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
     if (trial.custom_points) {
       points = this.validateCustomPoints(trial.custom_points);
     } else {
-      points = this.getValidationPoints(trial.validation_points);
+      points = this.getValidationPoints(trial.validation_points!);
     }
 
     const maxAttempts = 1 + (trial.max_retries as number);
@@ -578,7 +578,7 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
         const collectionStartTime = performance.now();
 
         // Wait for data collection
-        await this.delay(trial.collection_duration);
+        await this.delay(trial.collection_duration!);
 
         // Capture end time after collection period
         const collectionEndTime = performance.now();
@@ -609,7 +609,7 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
       avgPrecisionNorm = validationResult.averagePrecisionNorm || 0;
 
       // Determine if validation passes based on normalized tolerance
-      validationPassed = validationResult.success && avgAccuracyNorm <= trial.tolerance;
+      validationPassed = validationResult.success && avgAccuracyNorm <= trial.tolerance!;
 
       // Show result with retry option if retries remain
       const userChoice = await validationDisplay.showResult(

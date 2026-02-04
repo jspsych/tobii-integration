@@ -8,15 +8,15 @@ import type { GazeData, CalibrationPoint, CalibrationResult, ValidationResult } 
  * Validate gaze data point
  */
 export function validateGazeData(data: unknown): data is GazeData {
+  if (typeof data !== 'object' || data === null) return false;
+  const d = data as Record<string, unknown>;
   return (
-    typeof data === 'object' &&
-    data !== null &&
-    typeof data.x === 'number' &&
-    typeof data.y === 'number' &&
-    typeof data.timestamp === 'number' &&
-    !isNaN(data.x) &&
-    !isNaN(data.y) &&
-    !isNaN(data.timestamp)
+    typeof d.x === 'number' &&
+    typeof d.y === 'number' &&
+    typeof d.timestamp === 'number' &&
+    !isNaN(d.x) &&
+    !isNaN(d.y) &&
+    !isNaN(d.timestamp)
   );
 }
 
@@ -24,15 +24,15 @@ export function validateGazeData(data: unknown): data is GazeData {
  * Validate calibration point
  */
 export function validateCalibrationPoint(point: unknown): point is CalibrationPoint {
+  if (typeof point !== 'object' || point === null) return false;
+  const p = point as Record<string, unknown>;
   return (
-    typeof point === 'object' &&
-    point !== null &&
-    typeof point.x === 'number' &&
-    typeof point.y === 'number' &&
-    point.x >= 0 &&
-    point.x <= 1 &&
-    point.y >= 0 &&
-    point.y <= 1
+    typeof p.x === 'number' &&
+    typeof p.y === 'number' &&
+    p.x >= 0 &&
+    p.x <= 1 &&
+    p.y >= 0 &&
+    p.y <= 1
   );
 }
 
@@ -47,14 +47,16 @@ export function filterValidGaze(data: GazeData[]): GazeData[] {
  * Validate that a server response conforms to CalibrationResult
  */
 export function validateCalibrationResult(data: unknown): data is CalibrationResult {
-  return typeof data === 'object' && data !== null && typeof data.success === 'boolean';
+  if (typeof data !== 'object' || data === null) return false;
+  return typeof (data as Record<string, unknown>).success === 'boolean';
 }
 
 /**
  * Validate that a server response conforms to ValidationResult
  */
 export function validateValidationResult(data: unknown): data is ValidationResult {
-  return typeof data === 'object' && data !== null && typeof data.success === 'boolean';
+  if (typeof data !== 'object' || data === null) return false;
+  return typeof (data as Record<string, unknown>).success === 'boolean';
 }
 
 /**

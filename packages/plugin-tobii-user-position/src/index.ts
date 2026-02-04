@@ -315,18 +315,18 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
 
       // Create position display
       const positionDisplay = new PositionDisplay(container, {
-        message: trial.message,
-        showDistanceFeedback: trial.show_distance_feedback,
-        showPositionFeedback: trial.show_position_feedback,
-        backgroundColor: trial.background_color,
-        goodColor: trial.good_color,
-        fairColor: trial.fair_color,
-        poorColor: trial.poor_color,
-        fontSize: trial.font_size,
-        positionThresholdGood: trial.position_threshold_good,
-        positionThresholdFair: trial.position_threshold_fair,
-        distanceThresholdGood: trial.distance_threshold_good,
-        distanceThresholdFair: trial.distance_threshold_fair,
+        message: trial.message!,
+        showDistanceFeedback: trial.show_distance_feedback!,
+        showPositionFeedback: trial.show_position_feedback!,
+        backgroundColor: trial.background_color!,
+        goodColor: trial.good_color!,
+        fairColor: trial.fair_color!,
+        poorColor: trial.poor_color!,
+        fontSize: trial.font_size!,
+        positionThresholdGood: trial.position_threshold_good!,
+        positionThresholdFair: trial.position_threshold_fair!,
+        distanceThresholdGood: trial.distance_threshold_good!,
+        distanceThresholdFair: trial.distance_threshold_fair!,
       });
 
       // Add continue button if no duration specified
@@ -334,7 +334,7 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
       if (trial.duration === null) {
         continueButton = document.createElement('button');
         continueButton.className = 'tobii-user-position-button';
-        continueButton.textContent = trial.button_text;
+        continueButton.textContent = trial.button_text!;
         if (trial.require_good_position) {
           continueButton.disabled = true;
         }
@@ -362,7 +362,7 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
         } catch (error) {
           console.error('Error updating user position:', error);
         }
-      }, trial.update_interval);
+      }, trial.update_interval!);
 
       // Handle trial end
       const endTrial = () => {
@@ -408,7 +408,7 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
       }
 
       // Set up duration timeout
-      if (trial.duration !== null) {
+      if (trial.duration != null) {
         this.jsPsych.pluginAPI.setTimeout(endTrial, trial.duration);
       }
     });

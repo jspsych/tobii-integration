@@ -397,7 +397,7 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
     if (trial.custom_points) {
       points = this.validateCustomPoints(trial.custom_points);
     } else {
-      points = this.getCalibrationPoints(trial.calibration_points);
+      points = this.getCalibrationPoints(trial.calibration_points!);
     }
 
     const maxAttempts = 1 + (trial.max_retries as number);
@@ -433,7 +433,7 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
           await calibrationDisplay.waitForClick();
         } else {
           // Wait for user to fixate on the point
-          await this.delay(trial.point_duration);
+          await this.delay(trial.point_duration!);
         }
 
         // Collect calibration data for this point (blocks until SDK finishes)

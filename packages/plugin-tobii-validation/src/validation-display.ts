@@ -211,7 +211,7 @@ export class ValidationDisplay {
   async showResult(
     success: boolean,
     averageAccuracyNorm?: number,
-    averagePrecisionNorm?: number,
+    _averagePrecisionNorm?: number,
     pointData?: PointValidationData[],
     tolerance?: number,
     canRetry: boolean = false

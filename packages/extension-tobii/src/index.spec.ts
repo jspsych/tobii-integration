@@ -2,6 +2,8 @@ import { initJsPsych } from 'jspsych';
 
 import TobiiExtension from '.';
 
+type TobiiExt = InstanceType<typeof TobiiExtension>;
+
 // Mock WebSocket
 class MockWebSocket {
   static CONNECTING = 0;
@@ -57,7 +59,7 @@ describe('TobiiExtension', () => {
     });
 
     it('should have tobii_data in data specification', () => {
-      expect(TobiiExtension.info.data.tobii_data).toBeDefined();
+      expect(TobiiExtension.info.data!.tobii_data).toBeDefined();
     });
   });
 
@@ -82,17 +84,19 @@ describe('TobiiExtension', () => {
         },
       });
 
-      expect(jsPsych.extensions.tobii.isConnected()).toBe(true);
+      expect((jsPsych.extensions.tobii as unknown as TobiiExt).isConnected()).toBe(true);
     });
   });
 
   describe('connection methods', () => {
     let jsPsych: ReturnType<typeof initJsPsych>;
+    let tobii: TobiiExt;
 
     beforeEach(async () => {
       jsPsych = initJsPsych({
         extensions: [{ type: TobiiExtension }],
       });
+      tobii = jsPsych.extensions.tobii as unknown as TobiiExt;
 
       await jsPsych.extensions.tobii.initialize({
         connection: {
@@ -103,18 +107,18 @@ describe('TobiiExtension', () => {
     });
 
     it('isConnected should return false before connecting', () => {
-      expect(jsPsych.extensions.tobii.isConnected()).toBe(false);
+      expect(tobii.isConnected()).toBe(false);
     });
 
     it('connect should establish connection', async () => {
-      await jsPsych.extensions.tobii.connect();
-      expect(jsPsych.extensions.tobii.isConnected()).toBe(true);
+      await tobii.connect();
+      expect(tobii.isConnected()).toBe(true);
     });
 
     it('getConnectionStatus should return status object', async () => {
-      await jsPsych.extensions.tobii.connect();
+      await tobii.connect();
 
-      const status = jsPsych.extensions.tobii.getConnectionStatus();
+      const status = tobii.getConnectionStatus();
       expect(status).toHaveProperty('connected');
       expect(status).toHaveProperty('tracking');
     });
@@ -122,11 +126,13 @@ describe('TobiiExtension', () => {
 
   describe('tracking methods', () => {
     let jsPsych: ReturnType<typeof initJsPsych>;
+    let tobii: TobiiExt;
 
     beforeEach(async () => {
       jsPsych = initJsPsych({
         extensions: [{ type: TobiiExtension }],
       });
+      tobii = jsPsych.extensions.tobii as unknown as TobiiExt;
 
       await jsPsych.extensions.tobii.initialize({
         connection: {
@@ -137,28 +143,30 @@ describe('TobiiExtension', () => {
     });
 
     it('isTracking should return false initially', () => {
-      expect(jsPsych.extensions.tobii.isTracking()).toBe(false);
+      expect(tobii.isTracking()).toBe(false);
     });
 
     it('startTracking should start data collection', async () => {
-      await jsPsych.extensions.tobii.startTracking();
-      expect(jsPsych.extensions.tobii.isTracking()).toBe(true);
+      await tobii.startTracking();
+      expect(tobii.isTracking()).toBe(true);
     });
 
     it('stopTracking should stop data collection', async () => {
-      await jsPsych.extensions.tobii.startTracking();
-      await jsPsych.extensions.tobii.stopTracking();
-      expect(jsPsych.extensions.tobii.isTracking()).toBe(false);
+      await tobii.startTracking();
+      await tobii.stopTracking();
+      expect(tobii.isTracking()).toBe(false);
     });
   });
 
   describe('coordinate utilities', () => {
     let jsPsych: ReturnType<typeof initJsPsych>;
+    let tobii: TobiiExt;
 
     beforeEach(() => {
       jsPsych = initJsPsych({
         extensions: [{ type: TobiiExtension }],
       });
+      tobii = jsPsych.extensions.tobii as unknown as TobiiExt;
 
       // Mock window dimensions
       Object.defineProperty(window, 'innerWidth', { value: 1920, writable: true });
@@ -166,36 +174,38 @@ describe('TobiiExtension', () => {
     });
 
     it('normalizedToPixels should convert correctly', () => {
-      const result = jsPsych.extensions.tobii.normalizedToPixels(0.5, 0.5);
+      const result = tobii.normalizedToPixels(0.5, 0.5);
       expect(result.x).toBe(960);
       expect(result.y).toBe(540);
     });
 
     it('pixelsToNormalized should convert correctly', () => {
-      const result = jsPsych.extensions.tobii.pixelsToNormalized(960, 540);
+      const result = tobii.pixelsToNormalized(960, 540);
       expect(result.x).toBe(0.5);
       expect(result.y).toBe(0.5);
     });
 
     it('getScreenDimensions should return correct dimensions', () => {
-      const dims = jsPsych.extensions.tobii.getScreenDimensions();
+      const dims = tobii.getScreenDimensions();
       expect(dims.width).toBe(1920);
       expect(dims.height).toBe(1080);
     });
 
     it('calculateDistance should calculate correctly', () => {
-      const distance = jsPsych.extensions.tobii.calculateDistance({ x: 0, y: 0 }, { x: 3, y: 4 });
+      const distance = tobii.calculateDistance({ x: 0, y: 0 }, { x: 3, y: 4 });
       expect(distance).toBe(5);
     });
   });
 
   describe('configuration', () => {
     let jsPsych: ReturnType<typeof initJsPsych>;
+    let tobii: TobiiExt;
 
     beforeEach(async () => {
       jsPsych = initJsPsych({
         extensions: [{ type: TobiiExtension }],
       });
+      tobii = jsPsych.extensions.tobii as unknown as TobiiExt;
 
       await jsPsych.extensions.tobii.initialize({
         data: { coordinateSystem: 'normalized' },
@@ -203,26 +213,28 @@ describe('TobiiExtension', () => {
     });
 
     it('getConfig should return current configuration', () => {
-      const config = jsPsych.extensions.tobii.getConfig();
+      const config = tobii.getConfig();
       expect(config.data?.coordinateSystem).toBe('normalized');
     });
 
     it('setConfig should update configuration', () => {
-      jsPsych.extensions.tobii.setConfig({
+      tobii.setConfig({
         data: { coordinateSystem: 'pixels' },
       });
-      const config = jsPsych.extensions.tobii.getConfig();
+      const config = tobii.getConfig();
       expect(config.data?.coordinateSystem).toBe('pixels');
     });
   });
 
   describe('time synchronization', () => {
     let jsPsych: ReturnType<typeof initJsPsych>;
+    let tobii: TobiiExt;
 
     beforeEach(async () => {
       jsPsych = initJsPsych({
         extensions: [{ type: TobiiExtension }],
       });
+      tobii = jsPsych.extensions.tobii as unknown as TobiiExt;
 
       await jsPsych.extensions.tobii.initialize({
         connection: {
@@ -233,12 +245,12 @@ describe('TobiiExtension', () => {
     });
 
     it('isTimeSynced should return boolean', () => {
-      const synced = jsPsych.extensions.tobii.isTimeSynced();
+      const synced = tobii.isTimeSynced();
       expect(typeof synced).toBe('boolean');
     });
 
     it('getTimeOffset should return number', () => {
-      const offset = jsPsych.extensions.tobii.getTimeOffset();
+      const offset = tobii.getTimeOffset();
       expect(typeof offset).toBe('number');
     });
   });

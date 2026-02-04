@@ -21,14 +21,14 @@ export interface PositionDisplayOptions {
  */
 export class PositionDisplay {
   private container: HTMLElement;
-  private messageElement: HTMLElement;
-  private trackingBoxElement: HTMLElement;
-  private faceOutlineElement: HTMLElement;
-  private leftEyeElement: HTMLElement;
-  private rightEyeElement: HTMLElement;
-  private distanceBarContainer: HTMLElement;
-  private distanceBarFill: HTMLElement;
-  private feedbackElement: HTMLElement;
+  private messageElement!: HTMLElement;
+  private trackingBoxElement!: HTMLElement;
+  private faceOutlineElement!: HTMLElement;
+  private leftEyeElement!: HTMLElement;
+  private rightEyeElement!: HTMLElement;
+  private distanceBarContainer!: HTMLElement;
+  private distanceBarFill!: HTMLElement;
+  private feedbackElement!: HTMLElement;
   private options: PositionDisplayOptions;
 
   // Constants for the display
@@ -244,7 +244,7 @@ export class PositionDisplay {
   /**
    * Update the display with new position data
    */
-  public updatePosition(positionData: UserPositionData): void {
+  public updatePosition(positionData: UserPositionData | null): void {
     if (!positionData) {
       this.showNoData();
       return;
@@ -469,7 +469,7 @@ export class PositionDisplay {
   /**
    * Get current position quality
    */
-  public getCurrentQuality(positionData: UserPositionData): PositionQuality {
+  public getCurrentQuality(positionData: UserPositionData | null): PositionQuality {
     if (!positionData) {
       return {
         isGoodPosition: false,

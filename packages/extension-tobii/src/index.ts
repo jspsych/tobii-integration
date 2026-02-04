@@ -54,7 +54,6 @@ class TobiiExtension implements JsPsychExtension {
   private dataManager!: DataManager;
   private timeSync!: TimeSync;
   private deviceTimeSync!: DeviceTimeSync;
-  private initialized: boolean = false;
   private tracking: boolean = false;
   private config: InitializeParameters = {};
   private gazeSampleCount: number = 0;
@@ -123,7 +122,6 @@ class TobiiExtension implements JsPsychExtension {
       await this.connect();
     }
 
-    this.initialized = true;
   };
 
   on_start = async (params: OnStartParameters = {}): Promise<void> => {
