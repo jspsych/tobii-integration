@@ -161,9 +161,8 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
   }
 
   private injectStyles(trial: TrialType<Info>): void {
-    if (TobiiUserPositionPlugin.styleInjected) {
-      return;
-    }
+    // Remove existing styles so each trial gets its own colors
+    TobiiUserPositionPlugin.removeStyles();
 
     const css = `
       .tobii-user-position-container {

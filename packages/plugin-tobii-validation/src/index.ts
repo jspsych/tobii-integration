@@ -153,10 +153,8 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
   }
 
   private injectStyles(trial: TrialType<Info>): void {
-    // Only inject once per page
-    if (TobiiValidationPlugin.styleInjected) {
-      return;
-    }
+    // Remove existing styles so each trial gets its own colors
+    TobiiValidationPlugin.removeStyles();
 
     const css = `
       .tobii-validation-container {

@@ -151,10 +151,8 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
   }
 
   private injectStyles(trial: TrialType<Info>): void {
-    // Only inject once per page
-    if (TobiiCalibrationPlugin.styleInjected) {
-      return;
-    }
+    // Remove existing styles so each trial gets its own colors
+    TobiiCalibrationPlugin.removeStyles();
 
     const css = `
       .tobii-calibration-container {
