@@ -228,12 +228,7 @@ class TobiiExtension implements JsPsychExtension {
    * Stop eye tracking data collection
    */
   async stopTracking(): Promise<void> {
-    // Wait for server confirmation before setting state
-    const response = await this.ws.sendAndWait({ type: 'stop_tracking' });
-    if (response.success) {
-      this.tracking = false;
-    }
-    // Even if server fails, reset local tracking state
+    await this.ws.sendAndWait({ type: 'stop_tracking' });
     this.tracking = false;
   }
 
