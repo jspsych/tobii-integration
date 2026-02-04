@@ -58,11 +58,6 @@ Parameters passed to the extension in the `params` object when initializing jsPs
 | connection.autoConnect | boolean | `undefined` | Automatically connect on initialization |
 | connection.reconnectAttempts | number | `undefined` | Number of reconnection attempts |
 | connection.reconnectDelay | number | `undefined` | Delay between reconnection attempts in ms |
-| sampling | object | `{}` | Sampling settings (see below) |
-| sampling.rate | number | `undefined` | Sampling rate in Hz |
-| data | object | `{}` | Data settings (see below) |
-| data.includeRawSamples | boolean | `undefined` | Include raw eye tracking samples in trial data |
-| data.coordinateSystem | string | `undefined` | Coordinate system for gaze data: `'pixels'` or `'normalized'` |
 
 ## On Start Parameters
 

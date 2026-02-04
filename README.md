@@ -1080,15 +1080,13 @@ Update extension configuration.
 
 ```javascript
 jsPsych.extensions.tobii.setConfig({
-  data: { coordinateSystem: 'pixels' },
+  connection: { reconnectAttempts: 10 },
 });
 ```
 
 **Parameters:**
 - `config` (Partial<InitializeParameters>) - Configuration options:
   - `connection` - `{ url?, autoConnect?, reconnectAttempts?, reconnectDelay? }`
-  - `sampling` - `{ rate? }` (Hz)
-  - `data` - `{ includeRawSamples?, coordinateSystem? }` (`'pixels'` or `'normalized'`)
 
 #### `getConfig()`
 

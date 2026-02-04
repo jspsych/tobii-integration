@@ -17,33 +17,11 @@ export interface ConnectionConfig {
 }
 
 /**
- * Sampling configuration options
- */
-export interface SamplingConfig {
-  /** Sampling rate in Hz */
-  rate?: number;
-}
-
-/**
- * Data configuration options
- */
-export interface DataConfig {
-  /** Include raw eye tracking samples in trial data */
-  includeRawSamples?: boolean;
-  /** Coordinate system for gaze data */
-  coordinateSystem?: 'pixels' | 'normalized';
-}
-
-/**
  * Extension initialization parameters
  */
 export interface InitializeParameters {
   /** Connection settings */
   connection?: ConnectionConfig;
-  /** Sampling settings */
-  sampling?: SamplingConfig;
-  /** Data settings */
-  data?: DataConfig;
 }
 
 /**
