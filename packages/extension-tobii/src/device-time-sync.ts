@@ -113,11 +113,13 @@ export class DeviceTimeSync {
   /**
    * Validate timestamp alignment across a set of gaze samples.
    *
-   * For each sample, computes: residual = (clientTimestamp + offset_AC) - timestamp
+   * For each sample, computes: residual = (_receiveTime + offset_AC) - timestamp
+   * using the internal _receiveTime property (raw WebSocket receive time) as an
+   * independent measurement to cross-validate the sync offset.
    * If clocks are well-aligned, residuals should cluster tightly around the
    * one-way WebSocket latency (server→client).
    *
-   * @param samples - Array of gaze samples with clientTimestamp set
+   * @param samples - Array of gaze samples (must have internal _receiveTime set)
    * @returns Alignment statistics, or null if sync is not established or no valid samples
    */
   validateTimestampAlignment(samples: GazeData[]): TimestampAlignmentResult | null {
@@ -130,8 +132,11 @@ export class DeviceTimeSync {
 
     const residuals: number[] = [];
     for (const sample of samples) {
-      if (sample.clientTimestamp != null && sample.timestamp != null) {
-        residuals.push(sample.clientTimestamp + offsetAC - sample.timestamp);
+      const receiveTime = (sample as unknown as Record<string, unknown>)._receiveTime as
+        | number
+        | undefined;
+      if (receiveTime != null && sample.timestamp != null) {
+        residuals.push(receiveTime + offsetAC - sample.timestamp);
       }
     }
 

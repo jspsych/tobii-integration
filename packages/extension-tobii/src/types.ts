@@ -74,10 +74,8 @@ export interface GazeData {
   y: number;
   /** Timestamp in milliseconds (device clock) */
   timestamp: number;
-  /** Server timestamp in milliseconds (Python server clock) */
-  serverTimestamp?: number;
-  /** Client timestamp in milliseconds (performance.now() when sample was received) */
-  clientTimestamp?: number;
+  /** Device timestamp mapped to performance.now() domain */
+  browserTimestamp?: number;
   /** Left eye validity */
   leftValid?: boolean;
   /** Right eye validity */

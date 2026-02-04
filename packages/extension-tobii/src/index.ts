@@ -83,13 +83,15 @@ class TobiiExtension implements JsPsychExtension {
     this.ws.on('gaze_data', (data) => {
       const rawGaze = data.gaze;
       if (rawGaze && Validation.validateGazeData(rawGaze)) {
-        // Map server_timestamp to camelCase and add client timestamp
+        const receiveTime = (data._clientReceiveTime as number) ?? performance.now();
         const gazeWithTimestamps: GazeData = {
           ...rawGaze,
-          serverTimestamp: (rawGaze as unknown as Record<string, unknown>)
-            .server_timestamp as number | undefined,
-          clientTimestamp: (data._clientReceiveTime as number) ?? performance.now(),
+          browserTimestamp: this.deviceTimeSync.isSynced()
+            ? this.deviceTimeSync.toLocalTime(rawGaze.timestamp as number)
+            : receiveTime,
         };
+        // Store raw receive time for validateTimestampAlignment cross-check
+        (gazeWithTimestamps as unknown as Record<string, unknown>)._receiveTime = receiveTime;
         this.dataManager.addGazeData(gazeWithTimestamps);
 
         // Auto-trigger device time sync after first 50 gaze samples
@@ -536,7 +538,7 @@ class TobiiExtension implements JsPsychExtension {
    * Validate timestamp alignment across a set of gaze samples.
    * Computes per-sample residuals to verify the A↔C offset is consistent.
    * Low stdDev indicates well-aligned timestamps.
-   * @param samples - Gaze samples to validate (must have clientTimestamp set)
+   * @param samples - Gaze samples to validate (uses internal _receiveTime for cross-check)
    */
   validateTimestampAlignment(samples: GazeData[]): TimestampAlignmentResult | null {
     return this.deviceTimeSync.validateTimestampAlignment(samples);

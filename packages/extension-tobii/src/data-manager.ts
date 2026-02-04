@@ -41,21 +41,20 @@ export class DataManager {
     const endTime = this.trialEndTime || performance.now();
 
     return this.gazeBuffer.filter((data) => {
-      // Use clientTimestamp for filtering (set by extension when gaze data arrives)
-      // This is in the same time domain as performance.now() used by startTrial/endTrial
-      const ts = data.clientTimestamp ?? data.timestamp;
+      // Use browserTimestamp for filtering (in performance.now() domain, same as startTrial/endTrial)
+      const ts = data.browserTimestamp ?? data.timestamp;
       return ts >= this.trialStartTime! && ts <= endTime;
     });
   }
 
   /**
-   * Get gaze data for specific time range (using clientTimestamp if available)
+   * Get gaze data for specific time range (using browserTimestamp if available)
    */
   getDataRange(startTime: number, endTime: number): GazeData[] {
     return this.gazeBuffer.filter((data) => {
-      // Use clientTimestamp for filtering (set by extension when gaze data arrives)
-      // Fall back to timestamp if clientTimestamp not available
-      const ts = data.clientTimestamp ?? data.timestamp;
+      // Use browserTimestamp for filtering (in performance.now() domain)
+      // Fall back to timestamp if browserTimestamp not available
+      const ts = data.browserTimestamp ?? data.timestamp;
       return ts >= startTime && ts <= endTime;
     });
   }
@@ -85,7 +84,7 @@ export class DataManager {
   clearOldData(keepDuration: number = 60000): void {
     const cutoffTime = performance.now() - keepDuration;
     this.gazeBuffer = this.gazeBuffer.filter((data) => {
-      const ts = data.clientTimestamp ?? data.timestamp;
+      const ts = data.browserTimestamp ?? data.timestamp;
       return ts >= cutoffTime;
     });
   }
@@ -104,7 +103,7 @@ export class DataManager {
     const now = performance.now();
     const startTime = now - durationMs;
     return this.gazeBuffer.filter((data) => {
-      const ts = data.clientTimestamp ?? data.timestamp;
+      const ts = data.browserTimestamp ?? data.timestamp;
       return ts >= startTime;
     });
   }
