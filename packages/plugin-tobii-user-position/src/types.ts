@@ -1,3 +1,7 @@
+/**
+ * Re-export UserPositionData from extension.
+ * This mirrors the type defined in @jspsych/extension-tobii.
+ */
 export type { UserPositionData } from '@jspsych/extension-tobii';
 
 /**

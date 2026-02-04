@@ -140,7 +140,6 @@ type Info = typeof info;
 
 class TobiiValidationPlugin implements JsPsychPlugin<Info> {
   static info = info;
-  private static styleInjected = false;
 
   constructor(private jsPsych: JsPsych) {}
 
@@ -149,7 +148,6 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
     if (el) {
       el.remove();
     }
-    TobiiValidationPlugin.styleInjected = false;
   }
 
   private injectStyles(trial: TrialType<Info>): void {
@@ -492,7 +490,6 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
     styleElement.textContent = css;
     document.head.appendChild(styleElement);
 
-    TobiiValidationPlugin.styleInjected = true;
   }
 
   async trial(display_element: HTMLElement, trial: TrialType<Info>): Promise<void> {

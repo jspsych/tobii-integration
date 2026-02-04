@@ -148,7 +148,6 @@ type Info = typeof info;
 
 class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
   static info = info;
-  private static styleInjected = false;
 
   constructor(private jsPsych: JsPsych) {}
 
@@ -157,7 +156,6 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
     if (el) {
       el.remove();
     }
-    TobiiUserPositionPlugin.styleInjected = false;
   }
 
   private injectStyles(trial: TrialType<Info>): void {
@@ -238,7 +236,6 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
     styleElement.textContent = css;
     document.head.appendChild(styleElement);
 
-    TobiiUserPositionPlugin.styleInjected = true;
   }
 
   trial(display_element: HTMLElement, trial: TrialType<Info>) {
