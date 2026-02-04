@@ -167,29 +167,6 @@ export class ValidationDisplay {
     await this.delay(50);
   }
 
-  async showPoint(point: ValidationPoint, index: number, total: number): Promise<void> {
-    if (this.progressElement) {
-      this.progressElement.textContent = `Point ${index + 1} of ${total}`;
-    }
-
-    this.currentPoint = document.createElement('div');
-    this.currentPoint.className = 'tobii-validation-point';
-
-    const x = point.x * window.innerWidth;
-    const y = point.y * window.innerHeight;
-
-    Object.assign(this.currentPoint.style, {
-      left: `${x}px`,
-      top: `${y}px`,
-      width: `${this.params.point_size || 20}px`,
-      height: `${this.params.point_size || 20}px`,
-      backgroundColor: this.params.point_color || '#00ff00',
-    });
-
-    this.container.appendChild(this.currentPoint);
-    await this.delay(100);
-  }
-
   async hidePoint(): Promise<void> {
     if (this.currentPoint) {
       this.currentPoint.remove();

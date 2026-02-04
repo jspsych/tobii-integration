@@ -184,42 +184,6 @@ export class CalibrationDisplay {
   }
 
   /**
-   * Show calibration point at specified location (legacy method for compatibility)
-   */
-  async showPoint(point: CalibrationPoint, index: number, total: number): Promise<void> {
-    // Update progress
-    if (this.progressElement) {
-      this.progressElement.textContent = `Point ${index + 1} of ${total}`;
-    }
-
-    // Create point element
-    this.currentPoint = document.createElement('div');
-    this.currentPoint.className = 'tobii-calibration-point';
-
-    if (this.params.animation) {
-      this.currentPoint.classList.add(`animation-${this.params.animation}`);
-    }
-
-    // Convert normalized coordinates to pixels
-    const x = point.x * window.innerWidth;
-    const y = point.y * window.innerHeight;
-
-    // Style the point
-    Object.assign(this.currentPoint.style, {
-      left: `${x}px`,
-      top: `${y}px`,
-      width: `${this.params.point_size || 20}px`,
-      height: `${this.params.point_size || 20}px`,
-      backgroundColor: this.params.point_color || '#ff0000',
-    });
-
-    this.container.appendChild(this.currentPoint);
-
-    // Small delay for point to appear
-    await this.delay(100);
-  }
-
-  /**
    * Play explosion animation on the current point
    */
   async playExplosion(success: boolean): Promise<void> {
