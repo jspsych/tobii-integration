@@ -41,7 +41,15 @@ export class WebSocketClient {
       try {
         this.ws = new WebSocket(this.config.url);
 
+        // Timeout for connection — cleared on success
+        const timeoutId = setTimeout(() => {
+          if (this.ws?.readyState !== WebSocket.OPEN) {
+            reject(new Error(`Connection timeout (${this.config.url})`));
+          }
+        }, 5000);
+
         this.ws.onopen = () => {
+          clearTimeout(timeoutId);
           this.status.connected = true;
           this.status.connectedAt = Date.now();
           this.currentReconnectAttempt = 0;
@@ -62,13 +70,6 @@ export class WebSocketClient {
           this.status.tracking = false;
           this.handleDisconnect();
         };
-
-        // Timeout for connection
-        setTimeout(() => {
-          if (this.ws?.readyState !== WebSocket.OPEN) {
-            reject(new Error('Connection timeout'));
-          }
-        }, 5000);
       } catch (error) {
         reject(error);
       }
