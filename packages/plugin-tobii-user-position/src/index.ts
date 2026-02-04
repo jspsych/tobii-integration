@@ -189,56 +189,6 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
         margin-bottom: 40px;
       }
 
-      .tobii-position-box {
-        position: relative;
-        width: 400px;
-        height: 300px;
-        border: 3px solid #333;
-        border-radius: 8px;
-        background-color: rgba(255, 255, 255, 0.8);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
-
-      .tobii-eye-indicator {
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        border: 2px solid;
-        transform: translate(-50%, -50%);
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .tobii-left-eye::before {
-        content: 'L';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: white;
-        font-size: 10px;
-        font-weight: bold;
-      }
-
-      .tobii-right-eye::before {
-        content: 'R';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: white;
-        font-size: 10px;
-        font-weight: bold;
-      }
-
-      .tobii-distance-feedback {
-        text-align: center;
-        margin-top: 20px;
-        font-weight: 600;
-        font-size: 1.1em;
-      }
-
       .tobii-position-feedback {
         text-align: center;
         margin-bottom: 30px;
