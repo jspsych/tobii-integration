@@ -143,7 +143,7 @@ class TobiiExtension implements JsPsychExtension {
     }
   };
 
-  on_load = async (_params: OnStartParameters = {}): Promise<void> => {
+  on_load = async (): Promise<void> => {
     // Optional: additional setup when trial loads
   };
 
