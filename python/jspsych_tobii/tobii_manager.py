@@ -2,7 +2,6 @@
 Tobii eye tracker management using adapter pattern for multi-SDK support
 """
 
-import time
 from typing import Optional, Dict, Any, Callable
 import logging
 

@@ -17,7 +17,6 @@ class ServerConfig:
 
     # Tobii tracker settings
     tracker_address: Optional[str] = None  # Auto-detect if None
-    sampling_rate: int = 60  # Hz
     sdk_type: Optional[str] = None  # SDK type: "tobii-pro" or None for auto-detect
     use_mock: bool = False  # Use mock tracker for testing
 

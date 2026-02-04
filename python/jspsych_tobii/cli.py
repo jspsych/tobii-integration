@@ -67,13 +67,6 @@ Examples:
     )
 
     parser.add_argument(
-        "--sampling-rate",
-        type=int,
-        default=60,
-        help="Sampling rate in Hz (default: 60)",
-    )
-
-    parser.add_argument(
         "--buffer-size",
         type=int,
         default=10000,
@@ -107,7 +100,6 @@ Examples:
         tracker_address=args.tracker,
         sdk_type=args.sdk,
         use_mock=args.mock,
-        sampling_rate=args.sampling_rate,
         buffer_size=args.buffer_size,
         log_level=args.log_level,
         log_file=args.log_file,

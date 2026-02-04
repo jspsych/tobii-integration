@@ -2,6 +2,7 @@
 Calibration and validation management using Tobii tracker adapters
 """
 
+import math
 import threading
 from typing import List, Dict, Any, Optional
 import logging
@@ -352,8 +353,6 @@ class CalibrationManager:
             point_data = []
             all_accuracies = []
             all_precisions = []
-
-            import math
 
             # Saccade exclusion: skip first portion of samples to allow fixation
             # At 120Hz, 300ms = ~36 samples. We'll skip first 30% of samples.
