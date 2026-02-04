@@ -43,16 +43,6 @@ const info = <const>{
       type: ParameterType.INT,
       default: 500,
     },
-    /** Duration to collect data at each point (ms) */
-    collection_duration: {
-      type: ParameterType.INT,
-      default: 1000,
-    },
-    /** Gap duration between points (ms) - blank screen before next point appears */
-    gap_duration: {
-      type: ParameterType.INT,
-      default: 250,
-    },
     /** Show progress indicator */
     show_progress: {
       type: ParameterType.BOOL,

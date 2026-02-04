@@ -41,11 +41,6 @@ describe('TobiiCalibrationPlugin', () => {
       expect(params.point_duration.default).toBe(500);
     });
 
-    it('should have collection_duration parameter', () => {
-      expect(params.collection_duration).toBeDefined();
-      expect(params.collection_duration.default).toBe(1000);
-    });
-
     it('should have custom_points parameter', () => {
       expect(params.custom_points).toBeDefined();
       expect(params.custom_points.default).toBeNull();

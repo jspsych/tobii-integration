@@ -35,8 +35,6 @@ The Tobii extension must be loaded and connected before this plugin runs. See th
 | point_size | int | `20` | Size of calibration points in pixels. |
 | point_color | string | `'#ff0000'` | Color of calibration points (CSS color value). |
 | point_duration | int | `500` | Duration to show each point before data collection begins (ms). Allows the participant to fixate. |
-| collection_duration | int | `1000` | Duration to collect calibration data at each point (ms). |
-| gap_duration | int | `250` | Blank screen duration between points (ms). |
 | show_progress | boolean | `true` | Show a progress indicator (e.g., "Point 3 of 9"). |
 | custom_points | array | `null` | Array of custom calibration points. Each point is an object with `x` and `y` properties (normalized 0-1). Overrides `calibration_points` when provided. |
 | animation | string | `'shrink'` | Animation style for point appearance. Options: `'none'`, `'pulse'`, `'shrink'`. |

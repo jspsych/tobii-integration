@@ -596,7 +596,7 @@ Tell participants to:
 
 #### Troubleshooting Poor Calibration
 
-- **High calibration error**: Use position guide first, increase `collection_duration`, try click mode, check lighting
+- **High calibration error**: Use position guide first, increase `point_duration`, try click mode, check lighting
 - **Inconsistent results**: Ensure participant isn't moving, check glasses/contacts, verify tracker position
 - **Points in certain areas fail**: Check visibility, verify monitor calibration, consider custom points avoiding problem areas
 
@@ -1154,7 +1154,7 @@ const config = jsPsych.extensions.tobii.getConfig();
 **Solutions:**
 
 1. Use position guide first to optimize participant position
-2. Increase `collection_duration` (e.g., 1500ms) and `point_duration` (e.g., 750ms)
+2. Increase `point_duration` (e.g., 750ms)
 3. Try click mode: `calibration_mode: 'click'`
 4. Check environmental factors: reduce ambient lighting, remove reflective surfaces, clean tracker lens
 

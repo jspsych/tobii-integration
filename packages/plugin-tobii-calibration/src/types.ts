@@ -18,10 +18,6 @@ export interface CalibrationParameters {
   point_color?: string;
   /** Duration to show each point before data collection (ms) - allows user to fixate */
   point_duration?: number;
-  /** Duration to collect data at each point (ms) */
-  collection_duration?: number;
-  /** Gap duration between points (ms) - blank screen before next point appears */
-  gap_duration?: number;
   /** Show progress indicator */
   show_progress?: boolean;
   /** Custom calibration points (overrides calibration_points) */
