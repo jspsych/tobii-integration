@@ -549,6 +549,7 @@ export type {
   CalibrationPoint,
   CalibrationResult,
   ValidationResult,
+  UserPositionData,
   MarkerData,
   ScreenDimensions,
   Coordinates,
