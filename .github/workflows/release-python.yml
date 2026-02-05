@@ -14,13 +14,18 @@ name: Release Python Package
         type: boolean
         default: false
 
+concurrency:
+  group: release-python
+  cancel-in-progress: false
+
 permissions:
   contents: write
-  id-token: write  # Required for trusted publishing to PyPI
+  id-token: write # Required for trusted publishing to PyPI
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    environment: pypi
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,19 +44,21 @@ jobs:
           pip install build twine
 
       - name: Validate version format
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
-          VERSION="${{ inputs.version }}"
-          PATTERN='^[0-9]+\.[0-9]+\.[0-9]+([a-z0-9.\-]+)?$'
+          PATTERN='^[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9.]+)?$'
           if [[ ! "$VERSION" =~ $PATTERN ]]; then
-            echo "Error: Invalid version format."
+            echo "Error: Invalid version format: $VERSION"
             echo "Use semantic versioning (e.g., 0.1.1, 1.0.0-alpha.1)"
             exit 1
           fi
 
       - name: Update version in pyproject.toml
+        env:
+          VERSION: ${{ inputs.version }}
         working-directory: python
         run: |
-          VERSION="${{ inputs.version }}"
           sed -i "s/^version = .*/version = \"$VERSION\"/" pyproject.toml
           echo "Updated version to $VERSION"
           grep '^version = ' pyproject.toml
@@ -60,51 +67,56 @@ jobs:
         working-directory: python
         run: |
           python -m build
-          echo "Package built successfully"
           ls -lh dist/
 
       - name: Check package with twine
         working-directory: python
-        run: |
-          twine check dist/*
+        run: twine check dist/*
 
       - name: Commit version bump
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
-          git config --global user.name 'github-actions[bot]'
-          EMAIL='github-actions[bot]@users.noreply.github.com'
-          git config --global user.email "$EMAIL"
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add python/pyproject.toml
-          git commit -m "chore(python): release v${{ inputs.version }}"
+          git commit -m "chore(python): release v${VERSION}"
           git push
 
       - name: Create Git tag
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
-          TAG="python-v${{ inputs.version }}"
-          git tag -a "$TAG" -m "Python package v${{ inputs.version }}"
-          git push origin "$TAG"
+          git tag -a "python-v${VERSION}" -m "Python package v${VERSION}"
+          git push origin "python-v${VERSION}"
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: python-v${{ inputs.version }}
-          release_name: Python Package v${{ inputs.version }}
-          body: |
-            Python package release v${{ inputs.version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          PRERELEASE_FLAG=""
+          if [ "$PRERELEASE" = "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+          gh release create "python-v${VERSION}" \
+            --title "Python Package v${VERSION}" \
+            --notes "$(cat <<EOF
+          Python package release v${VERSION}
 
-            ## Installation
+          ## Installation
 
-            ```bash
-            pip install jspsych-tobii==${{ inputs.version }}
-            ```
+          \`\`\`bash
+          pip install jspsych-tobii==${VERSION}
+          \`\`\`
 
-            For more details, see the repository documentation.
-          draft: false
-          prerelease: ${{ inputs.prerelease }}
+          For more details, see the repository documentation.
+          EOF
+          )" $PRERELEASE_FLAG
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
         with:
           packages-dir: python/dist/
           print-hash: true
