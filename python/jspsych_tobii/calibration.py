@@ -58,8 +58,8 @@ class CalibrationManager:
                 # Release calibration lock and leave calibration mode
                 try:
                     self.tobii_manager.adapter.leave_calibration_mode()
-                except Exception:
-                    pass
+                except Exception as e:
+                    self.logger.warning(f"Error leaving calibration mode during session cleanup: {e}")
                 self._active_calibration_client = None
 
     def start_calibration(self, client_id: str = "default") -> Dict[str, Any]:
@@ -218,8 +218,8 @@ class CalibrationManager:
             # Always leave calibration mode and clean up state
             try:
                 self.tobii_manager.adapter.leave_calibration_mode()
-            except Exception:
-                pass
+            except Exception as e:
+                self.logger.warning(f"Error leaving calibration mode after compute: {e}")
             session.calibration_active = False
             with self._calibration_lock:
                 if self._active_calibration_client == client_id:
