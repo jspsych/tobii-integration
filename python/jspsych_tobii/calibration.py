@@ -17,7 +17,7 @@ class CalibrationSession:
     def __init__(self, client_id: str):
         self.client_id = client_id
         self.calibration_points: List[Dict[str, float]] = []
-        self.validation_points: List[Dict[str, float]] = []
+        self.validation_points: List[Dict[str, Any]] = []
         self.calibration_active = False
         self.validation_active = False
 
@@ -366,7 +366,7 @@ class CalibrationManager:
             for vp in session.validation_points:
                 expected_x = vp["x"]
                 expected_y = vp["y"]
-                gaze_samples = vp.get("gaze_samples", [])
+                gaze_samples: List[Dict[str, Any]] = vp.get("gaze_samples", [])
 
                 if not gaze_samples:
                     # No gaze data collected for this point

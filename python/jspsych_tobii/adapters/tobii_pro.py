@@ -3,7 +3,7 @@ Adapter for Tobii Pro series trackers using tobii-research SDK
 """
 
 import logging
-from typing import Optional, Callable, List, Any
+from typing import Optional, Callable, List, Any, Tuple
 
 from .base import (
     TobiiTrackerAdapter,
@@ -16,7 +16,7 @@ from .base import (
 
 # Try to import tobii_research
 try:
-    import tobii_research as tr
+    import tobii_research as tr  # type: ignore[import-not-found]
 
     TOBII_RESEARCH_AVAILABLE = True
 except ImportError:
@@ -47,6 +47,7 @@ class TobiiProAdapter(TobiiTrackerAdapter):
         self._gaze_callback: Optional[Callable[[GazeDataPoint], None]] = None
         self._is_tracking = False
         self._in_calibration_mode = False
+        self._position_gaze_subscribed = False
         self._latest_gaze_data: Optional[Any] = None
         # Lock for thread-safe access to latest gaze data (SDK callbacks run on separate thread)
         import threading
@@ -64,7 +65,7 @@ class TobiiProAdapter(TobiiTrackerAdapter):
     def find_trackers(self) -> List[Any]:
         """Find all available Tobii Pro trackers"""
         try:
-            return tr.find_all_eyetrackers()
+            return list(tr.find_all_eyetrackers())
         except Exception as e:
             self.logger.error(f"Error finding trackers: {e}")
             return []
@@ -359,7 +360,7 @@ class TobiiProAdapter(TobiiTrackerAdapter):
             # Normalize positions relative to track box
             # Track box defines the optimal tracking volume in 3D space
             # UCS coordinates: X = user's right (+), Y = up (+), Z = towards user (+)
-            def normalize_position(origin_xyz, track_box):
+            def normalize_position(origin_xyz: Any, track_box: Any) -> Tuple[Any, Any, Any]:
                 """Normalize 3D position to 0-1 range based on track box.
 
                 Returns normalized coordinates where:

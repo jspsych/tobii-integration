@@ -276,7 +276,7 @@ class WebSocketHandler:
         if not self._loop or not self.active:
             return
 
-        async def send_gaze_data():
+        async def send_gaze_data() -> None:
             try:
                 await self.send(
                     {

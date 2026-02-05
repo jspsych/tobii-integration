@@ -79,7 +79,7 @@ class DataBuffer:
         """
         with self._lock:
             if self.buffer:
-                return self.buffer[-1]
+                return dict(self.buffer[-1])
             return None
 
     def clear(self) -> None:
