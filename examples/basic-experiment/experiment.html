@@ -92,14 +92,6 @@
                     type: jsPsychExtensionTobii,
                 },
             ],
-            on_load: function() {
-                // Send marker when stimulus appears
-                jsPsych.extensions.tobii.sendMarker({
-                    label: 'stimulus_onset',
-                    word: word,
-                    trial: index,
-                });
-            },
         });
 
         // Inter-stimulus interval

@@ -97,7 +97,6 @@ asyncio.run(server.start())
 - **Time Synchronization**: Accurate timestamp alignment between client and server
 - **Calibration Support**: Full calibration and validation workflow
 - **Data Buffering**: Efficient data storage and retrieval
-- **Marker Support**: Inject custom markers into data stream
 - **Logging**: Comprehensive logging for debugging
 
 ## WebSocket Protocol
@@ -117,7 +116,6 @@ The server communicates via WebSocket using JSON messages.
 - `validation_compute`: Compute validation
 - `get_current_gaze`: Get latest gaze position
 - `get_data`: Get gaze data for time range
-- `marker`: Send marker
 - `time_sync`: Synchronize time
 
 **Server -> Client:**

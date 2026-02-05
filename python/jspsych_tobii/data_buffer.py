@@ -23,7 +23,6 @@ class DataBuffer:
         self.max_size = max_size
         self.max_duration_ms = max_duration_ms
         self.buffer: deque = deque(maxlen=max_size)
-        self.markers: List[Dict[str, Any]] = []
         self._bc_offsets: deque = deque(maxlen=200)
         self._lock = threading.Lock()
 
@@ -41,17 +40,6 @@ class DataBuffer:
             device_ts = sample.get("timestamp")
             if device_ts is not None:
                 self._bc_offsets.append(sample["server_timestamp"] - device_ts)
-
-    def add_marker(self, marker: Dict[str, Any]) -> None:
-        """
-        Add marker to buffer
-
-        Args:
-            marker: Marker data
-        """
-        marker["server_timestamp"] = time.time() * 1000
-        with self._lock:
-            self.markers.append(marker)
 
     def get_samples(
         self,
@@ -98,7 +86,6 @@ class DataBuffer:
         """Clear all data"""
         with self._lock:
             self.buffer.clear()
-            self.markers.clear()
             self._bc_offsets.clear()
 
     def cleanup_old_data(self) -> None:
@@ -113,11 +100,6 @@ class DataBuffer:
             # Remove old samples
             while self.buffer and self.buffer[0].get("server_timestamp", 0) < cutoff_time:
                 self.buffer.popleft()
-
-            # Remove old markers
-            self.markers = [
-                m for m in self.markers if m.get("server_timestamp", 0) >= cutoff_time
-            ]
 
     def get_size(self) -> int:
         """Get current buffer size"""

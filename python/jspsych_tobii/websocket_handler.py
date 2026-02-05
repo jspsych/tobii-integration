@@ -179,10 +179,6 @@ class WebSocketHandler:
             end_time = data.get("end_time")
             response = self.handle_get_data(start_time, end_time)
 
-        elif message_type == "marker":
-            self.handle_marker(data)
-            response = {"type": "marker", "success": True}
-
         elif message_type == "time_sync":
             client_time = data.get("clientTime", 0)
             response = self.time_sync.handle_sync_request(client_time)
@@ -236,10 +232,6 @@ class WebSocketHandler:
             "type": "get_data",
             "samples": samples,
         }
-
-    def handle_marker(self, data: Dict[str, Any]) -> None:
-        """Handle marker"""
-        self.data_buffer.add_marker(data)
 
     def handle_get_user_position(self) -> Dict[str, Any]:
         """Handle get user position request"""

@@ -28,7 +28,6 @@ import type {
   CalibrationResult,
   ValidationResult,
   UserPositionData,
-  MarkerData,
   ScreenDimensions,
   Coordinates,
   ConnectionStatus,
@@ -123,18 +122,9 @@ class TobiiExtension implements JsPsychExtension {
     }
   };
 
-  on_start = async (params: OnStartParameters = {}): Promise<void> => {
+  on_start = async (_params: OnStartParameters = {}): Promise<void> => {
     // Mark trial start
     this.dataManager.startTrial();
-
-    // Send trial start marker with synchronized timestamp
-    const localTime = performance.now();
-    await this.sendMarker({
-      label: 'trial_start',
-      timestamp: localTime,
-      syncedTimestamp: this.timeSync.isSynced() ? this.timeSync.toServerTime(localTime) : localTime,
-      ...params.metadata,
-    });
 
     // Start tracking if not already tracking
     if (!this.tracking) {
@@ -149,14 +139,6 @@ class TobiiExtension implements JsPsychExtension {
   on_finish = async (_params: OnFinishParameters = {}): Promise<{ tobii_data: GazeData[] }> => {
     // Mark trial end
     this.dataManager.endTrial();
-
-    // Send trial end marker with synchronized timestamp
-    const localTime = performance.now();
-    await this.sendMarker({
-      label: 'trial_end',
-      timestamp: localTime,
-      syncedTimestamp: this.timeSync.isSynced() ? this.timeSync.toServerTime(localTime) : localTime,
-    });
 
     // Get trial data
     const trialData = this.dataManager.getTrialData();
@@ -392,17 +374,6 @@ class TobiiExtension implements JsPsychExtension {
   }
 
   /**
-   * Send a marker to the eye tracking data stream
-   */
-  async sendMarker(markerData: MarkerData): Promise<void> {
-    await this.ws.send({
-      type: 'marker',
-      ...markerData,
-      timestamp: markerData.timestamp ?? performance.now(),
-    });
-  }
-
-  /**
    * Convert normalized coordinates (0-1) to pixels
    */
   normalizedToPixels(x: number, y: number): Coordinates {
@@ -556,7 +527,6 @@ export type {
   CalibrationResult,
   ValidationResult,
   UserPositionData,
-  MarkerData,
   ScreenDimensions,
   Coordinates,
   ConnectionStatus,

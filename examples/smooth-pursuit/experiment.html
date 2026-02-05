@@ -195,14 +195,6 @@
                     dot.style.left = startPos.x + 'px';
                     dot.style.top = startPos.y + 'px';
 
-                    // Send marker at animation start
-                    jsPsych.extensions.tobii.sendMarker({
-                        label: 'pursuit_start',
-                        motion_type: 'horizontal_sine',
-                        screen_width: screenW,
-                        screen_height: screenH,
-                    });
-
                     // Start animation loop
                     const startTime = performance.now();
 
@@ -246,13 +238,6 @@
 
                     // Store dot trajectory in trial data
                     data.dot_positions = currentDotPositions;
-
-                    // Send end marker
-                    jsPsych.extensions.tobii.sendMarker({
-                        label: 'pursuit_end',
-                        motion_type: data.motion_type,
-                        num_dot_samples: currentDotPositions.length,
-                    });
                 },
             },
         ],

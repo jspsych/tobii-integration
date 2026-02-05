@@ -66,7 +66,6 @@ Parameters passed to the extension in the `extensions` array on individual trial
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | trialId | string \| number | `undefined` | Trial ID or index |
-| metadata | object | `undefined` | Additional metadata to include in the trial start marker |
 
 ## Data Generated
 
@@ -138,12 +137,6 @@ All methods are accessible via `jsPsych.extensions.tobii.*`. See the [full API r
 | `getRecentGazeData(durationMs)` | `GazeData[]` | Get recent data from buffer |
 | `getUserPosition()` | `Promise<UserPositionData \| null>` | Get head position data |
 | `clearGazeData()` | `void` | Clear stored gaze data |
-
-### Markers
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `sendMarker(markerData)` | `Promise<void>` | Send a marker to the data stream |
 
 ### Coordinate Utilities
 

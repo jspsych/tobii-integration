@@ -27,7 +27,6 @@ Tobii Pro eye tracker integration for jsPsych experiments.
   - [Calibration Control](#calibration-control)
   - [Validation Control](#validation-control)
   - [Data Access](#data-access)
-  - [Markers](#markers)
   - [Coordinate Utilities](#coordinate-utilities)
   - [Data Export](#data-export)
   - [Time Synchronization](#time-synchronization)
@@ -386,18 +385,6 @@ console.log(`Looking at: (${gaze.x}, ${gaze.y})`);
 const startTime = performance.now() - 1000;
 const endTime = performance.now();
 const gazeData = await jsPsych.extensions.tobii.getGazeData(startTime, endTime);
-```
-
-#### Sending Markers
-
-Mark specific events in the eye tracking data stream:
-
-```javascript
-await jsPsych.extensions.tobii.sendMarker({
-  label: 'stimulus_onset',
-  stimulus_id: 'face_001',
-  condition: 'happy',
-});
 ```
 
 #### Coordinate Conversion
@@ -857,28 +844,6 @@ jsPsych.extensions.tobii.clearGazeData();
 ```
 
 **Returns:** `void`
-
-### Markers
-
-#### `sendMarker(markerData)`
-
-Send a marker to the eye tracking data stream.
-
-```javascript
-await jsPsych.extensions.tobii.sendMarker({
-  label: 'stimulus_onset',
-  stimulus_id: 'face_001',
-  condition: 'happy',
-});
-```
-
-**Parameters:**
-- `markerData` (MarkerData) - Object with:
-  - `label` (string, required) - Marker label/identifier
-  - `timestamp` (number, optional) - Timestamp in ms (defaults to `performance.now()`)
-  - Any additional key-value pairs
-
-**Returns:** `Promise<void>`
 
 ### Coordinate Utilities
 

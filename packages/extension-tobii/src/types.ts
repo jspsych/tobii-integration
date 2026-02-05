@@ -30,8 +30,6 @@ export interface InitializeParameters {
 export interface OnStartParameters {
   /** Trial ID or index */
   trialId?: string | number;
-  /** Additional metadata */
-  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -133,7 +131,6 @@ export type MessageType =
   | 'get_data'
   | 'get_user_position'
   | 'get_device_clock_offset'
-  | 'marker'
   | 'time_sync'
   | 'error';
 
@@ -159,18 +156,6 @@ export interface ConnectionStatus {
   lastError?: string;
   /** Connection timestamp */
   connectedAt?: number;
-}
-
-/**
- * Marker data
- */
-export interface MarkerData {
-  /** Marker label/identifier */
-  label: string;
-  /** Timestamp in milliseconds */
-  timestamp?: number;
-  /** Additional marker data */
-  [key: string]: unknown;
 }
 
 /**

@@ -42,17 +42,9 @@ class TestDataBuffer:
     def test_clear(self):
         buf = DataBuffer()
         buf.add_sample({"x": 0.5, "y": 0.5, "timestamp": 1000.0})
-        buf.add_marker({"label": "test"})
         buf.clear()
         assert buf.get_size() == 0
         assert buf.get_latest_sample() is None
-
-    def test_add_marker(self):
-        buf = DataBuffer()
-        buf.add_marker({"label": "stimulus_onset", "trial": 1})
-        assert len(buf.markers) == 1
-        assert buf.markers[0]["label"] == "stimulus_onset"
-        assert "server_timestamp" in buf.markers[0]
 
     def test_device_clock_offset(self):
         buf = DataBuffer()

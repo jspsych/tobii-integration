@@ -4,8 +4,6 @@ Items identified during pre-release review. Organized by priority.
 
 ## Critical
 
-### ~~1. `sendMarker` uses `||` instead of `??` for timestamp~~ DONE
-
 ### ~~2. Extension README documents non-existent GazeData fields~~ DONE
 
 ## High Priority
