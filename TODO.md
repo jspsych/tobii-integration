@@ -41,24 +41,24 @@
 
 ### Data Management
 
-- [ ] Implement buffer size cap in `DataManager` (`packages/extension-tobii/src/data-manager.ts:15-17`). Currently unbounded; CLAUDE.md describes a 7200-sample circular buffer that is not implemented.
-- [ ] Fix `URL.revokeObjectURL()` timing in data export (`packages/extension-tobii/src/data-export.ts:80-83`). Called synchronously after `link.click()` before the download has started. Add a delay before revoking.
+- [x] Implement buffer size cap in `DataManager` (`packages/extension-tobii/src/data-manager.ts:15-17`). Currently unbounded; CLAUDE.md describes a 7200-sample circular buffer that is not implemented.
+- [x] Fix `URL.revokeObjectURL()` timing in data export (`packages/extension-tobii/src/data-export.ts:80-83`). Called synchronously after `link.click()` before the download has started. Add a delay before revoking.
 
 ### Testing
 
-- [ ] Create Python test directory and tests (`python/pyproject.toml` references `testpaths = ["tests"]` but the directory doesn't exist).
-- [ ] Expand JS test coverage beyond static `info` checks. Key gaps: trial execution flows, display components, calibration/validation logic, grid point generation, custom point validation, error paths.
+- [x] Create Python test directory and tests (`python/pyproject.toml` references `testpaths = ["tests"]` but the directory doesn't exist).
+- [x] Expand JS test coverage beyond static `info` checks. Key gaps: trial execution flows, display components, calibration/validation logic, grid point generation, custom point validation, error paths.
 
 ### Python Server
 
-- [ ] Replace `Any` types in `WebSocketHandler` constructor (`python/jspsych_tobii/websocket_handler.py:40-43`) with actual class types.
-- [ ] Standardize error response format. Some handlers return `{"type": "error", ...}`, others return `{"type": "calibration_xxx", "success": false, ...}`.
-- [ ] Add logging to bare `except: pass` blocks in `calibration.py:60-61,220-221`.
-- [ ] Extract duplicated calibration state guard checks in `calibration.py` into a helper method.
+- [x] Replace `Any` types in `WebSocketHandler` constructor (`python/jspsych_tobii/websocket_handler.py:40-43`) with actual class types.
+- [x] Standardize error response format. Some handlers return `{"type": "error", ...}`, others return `{"type": "calibration_xxx", "success": false, ...}`.
+- [x] Add logging to bare `except: pass` blocks in `calibration.py:60-61,220-221`.
+- [x] Extract duplicated calibration state guard checks in `calibration.py` into a helper method.
 
 ### Infrastructure
 
-- [ ] Set up CI/CD (GitHub Actions for linting, type checking, and test execution on push/PR).
+- [x] Set up CI/CD (GitHub Actions for linting, type checking, and test execution on push/PR).
 
 ## Lower Priority
 
