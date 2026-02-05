@@ -48,6 +48,10 @@ The Tobii extension must be loaded and connected before this plugin runs. See th
 | success_color | string | `'#28a745'` | Success message heading color. |
 | error_color | string | `'#dc3545'` | Error message heading color. |
 | max_retries | int | `1` | Maximum number of retry attempts allowed if calibration fails. The participant is shown a retry button on failure. Set to `0` to disable retries. |
+| zoom_duration | int | `300` | Duration of zoom in/out point animations in ms. |
+| explosion_duration | int | `400` | Duration of the explosion animation after each point is collected in ms. |
+| success_display_duration | int | `2000` | Duration to show the success result before auto-advancing in ms. |
+| instruction_display_duration | int | `3000` | Duration to show instructions before auto-advancing in view mode in ms. Has no effect in click mode. |
 
 ## Data Generated
 
