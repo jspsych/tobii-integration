@@ -47,7 +47,9 @@ class TobiiManager:
             self.adapter: TobiiTrackerAdapter = create_tracker_adapter(
                 sdk_type=sdk_type, use_mock=use_mock
             )
-            self.logger.info(f"Created adapter: {self.adapter.sdk_name} v{self.adapter.sdk_version}")
+            self.logger.info(
+                f"Created adapter: {self.adapter.sdk_name} v{self.adapter.sdk_version}"
+            )
         except ImportError as e:
             self.logger.error(f"Failed to create tracker adapter: {e}")
             raise

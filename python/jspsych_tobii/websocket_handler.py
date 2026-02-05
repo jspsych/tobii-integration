@@ -191,7 +191,11 @@ class WebSocketHandler:
 
         else:
             self.logger.warning(f"Unknown message type: {message_type}")
-            response = {"type": "error", "success": False, "error": f"Unknown message type: {message_type}"}
+            response = {
+                "type": "error",
+                "success": False,
+                "error": f"Unknown message type: {message_type}",
+            }
 
         # Add request ID to response if present
         if response and request_id:

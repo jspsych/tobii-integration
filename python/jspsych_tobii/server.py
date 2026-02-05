@@ -40,6 +40,7 @@ class TobiiServer:
         sdk_type_enum = None
         if config.sdk_type:
             from .adapters import SDKType
+
             sdk_map = {
                 "tobii-pro": SDKType.TOBII_PRO,
                 "mock": SDKType.MOCK,
@@ -63,7 +64,9 @@ class TobiiServer:
 
     async def start(self) -> None:
         """Start the WebSocket server"""
-        self.logger.info(f"Starting Tobii WebSocket server on {self.config.host}:{self.config.port}")
+        self.logger.info(
+            f"Starting Tobii WebSocket server on {self.config.host}:{self.config.port}"
+        )
 
         # Find and connect to tracker
         if not self.tobii_manager.find_tracker():
