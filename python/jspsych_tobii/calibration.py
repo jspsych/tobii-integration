@@ -83,7 +83,9 @@ class CalibrationManager:
                 try:
                     self.tobii_manager.adapter.leave_calibration_mode()
                 except Exception as e:
-                    self.logger.warning(f"Error leaving calibration mode during session cleanup: {e}")
+                    self.logger.warning(
+                        f"Error leaving calibration mode during session cleanup: {e}"
+                    )
                 self._active_calibration_client = None
 
     def start_calibration(self, client_id: str = "default") -> Dict[str, Any]:
@@ -268,8 +270,12 @@ class CalibrationManager:
             }
 
     def collect_validation_point(
-        self, x: float, y: float, timestamp: float, gaze_samples: Optional[List[Dict[str, Any]]] = None,
-        client_id: str = "default"
+        self,
+        x: float,
+        y: float,
+        timestamp: float,
+        gaze_samples: Optional[List[Dict[str, Any]]] = None,
+        client_id: str = "default",
     ) -> Dict[str, Any]:
         """
         Collect validation data for a point.
@@ -298,12 +304,9 @@ class CalibrationManager:
 
         try:
             # Store validation point with its expected position and collected gaze data
-            session.validation_points.append({
-                "x": x,
-                "y": y,
-                "timestamp": timestamp,
-                "gaze_samples": gaze_samples or []
-            })
+            session.validation_points.append(
+                {"x": x, "y": y, "timestamp": timestamp, "gaze_samples": gaze_samples or []}
+            )
 
             self.logger.info(f"Collected validation point ({x:.3f}, {y:.3f})")
 
@@ -398,10 +401,11 @@ class CalibrationManager:
                     mean_x = sum(s["x"] for s in valid_samples) / len(valid_samples)
                     mean_y = sum(s["y"] for s in valid_samples) / len(valid_samples)
                     variances = [
-                        ((s["x"] - mean_x)**2 + (s["y"] - mean_y)**2)
-                        for s in valid_samples
+                        ((s["x"] - mean_x) ** 2 + (s["y"] - mean_y) ** 2) for s in valid_samples
                     ]
-                    precision_norm = math.sqrt(sum(variances) / len(variances)) if variances else 0.0
+                    precision_norm = (
+                        math.sqrt(sum(variances) / len(variances)) if variances else 0.0
+                    )
                 else:
                     precision_norm = 0.0
 
@@ -410,16 +414,18 @@ class CalibrationManager:
                 mean_gaze_y = sum(s["y"] for s in valid_samples) / len(valid_samples)
 
                 # Return normalized values - client will convert to pixels
-                point_data.append({
-                    "point": {"x": expected_x, "y": expected_y},
-                    "accuracyNorm": accuracy_norm,
-                    "precisionNorm": precision_norm,
-                    "meanGaze": {"x": mean_gaze_x, "y": mean_gaze_y},
-                    "numSamples": len(valid_samples),
-                    "numSamplesTotal": len(gaze_samples),
-                    "numSamplesSkipped": skip_count,
-                    "gazeSamples": [{"x": s["x"], "y": s["y"]} for s in valid_samples],
-                })
+                point_data.append(
+                    {
+                        "point": {"x": expected_x, "y": expected_y},
+                        "accuracyNorm": accuracy_norm,
+                        "precisionNorm": precision_norm,
+                        "meanGaze": {"x": mean_gaze_x, "y": mean_gaze_y},
+                        "numSamples": len(valid_samples),
+                        "numSamplesTotal": len(gaze_samples),
+                        "numSamplesSkipped": skip_count,
+                        "gazeSamples": [{"x": s["x"], "y": s["y"]} for s in valid_samples],
+                    }
+                )
 
                 all_accuracies.append(accuracy_norm)
                 all_precisions.append(precision_norm)
@@ -434,7 +440,9 @@ class CalibrationManager:
                 }
 
             avg_accuracy_norm = sum(all_accuracies) / len(all_accuracies) if all_accuracies else 0.0
-            avg_precision_norm = sum(all_precisions) / len(all_precisions) if all_precisions else 0.0
+            avg_precision_norm = (
+                sum(all_precisions) / len(all_precisions) if all_precisions else 0.0
+            )
 
             session.validation_active = False
             self.logger.info(

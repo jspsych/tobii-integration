@@ -50,6 +50,7 @@ class TobiiProAdapter(TobiiTrackerAdapter):
         self._latest_gaze_data: Optional[Any] = None
         # Lock for thread-safe access to latest gaze data (SDK callbacks run on separate thread)
         import threading
+
         self._gaze_data_lock = threading.Lock()
 
     @property
@@ -312,7 +313,9 @@ class TobiiProAdapter(TobiiTrackerAdapter):
 
         try:
             if hasattr(self, "_position_gaze_subscribed") and self._position_gaze_subscribed:
-                self._tracker.unsubscribe_from(tr.EYETRACKER_GAZE_DATA, self._position_gaze_callback)
+                self._tracker.unsubscribe_from(
+                    tr.EYETRACKER_GAZE_DATA, self._position_gaze_callback
+                )
                 self._position_gaze_subscribed = False
                 self.logger.info("Unsubscribed from position gaze data")
             return True
