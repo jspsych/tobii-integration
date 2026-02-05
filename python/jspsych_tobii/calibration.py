@@ -4,8 +4,11 @@ Calibration and validation management using Tobii tracker adapters
 
 import math
 import threading
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, TYPE_CHECKING
 import logging
+
+if TYPE_CHECKING:
+    from .tobii_manager import TobiiManager
 
 
 class CalibrationSession:
@@ -30,7 +33,7 @@ class CalibrationManager:
     to prevent concurrent calibration conflicts.
     """
 
-    def __init__(self, tobii_manager: Any) -> None:
+    def __init__(self, tobii_manager: "TobiiManager") -> None:
         """
         Initialize calibration manager
 
@@ -48,6 +51,27 @@ class CalibrationManager:
         if client_id not in self._sessions:
             self._sessions[client_id] = CalibrationSession(client_id)
         return self._sessions[client_id]
+
+    def _check_calibration_owner(
+        self, session: CalibrationSession, client_id: str, response_type: str
+    ) -> Optional[Dict[str, Any]]:
+        """Check that calibration is active and owned by this client.
+
+        Returns an error response dict if the check fails, or None if OK.
+        """
+        if not session.calibration_active:
+            return {
+                "type": response_type,
+                "success": False,
+                "error": "Calibration not active",
+            }
+        if self._active_calibration_client != client_id:
+            return {
+                "type": response_type,
+                "success": False,
+                "error": "This client does not own the active calibration",
+            }
+        return None
 
     def remove_session(self, client_id: str) -> None:
         """Remove a client's session (call when client disconnects)"""
@@ -123,20 +147,9 @@ class CalibrationManager:
             Response indicating point collected
         """
         session = self._get_or_create_session(client_id)
-
-        if not session.calibration_active:
-            return {
-                "type": "calibration_point",
-                "success": False,
-                "error": "Calibration not active",
-            }
-
-        if self._active_calibration_client != client_id:
-            return {
-                "type": "calibration_point",
-                "success": False,
-                "error": "This client does not own the active calibration",
-            }
+        error = self._check_calibration_owner(session, client_id, "calibration_point")
+        if error:
+            return error
 
         try:
             # Import CalibrationPoint from adapter
@@ -177,20 +190,9 @@ class CalibrationManager:
             Calibration result with quality metrics
         """
         session = self._get_or_create_session(client_id)
-
-        if not session.calibration_active:
-            return {
-                "type": "calibration_compute",
-                "success": False,
-                "error": "Calibration not active",
-            }
-
-        if self._active_calibration_client != client_id:
-            return {
-                "type": "calibration_compute",
-                "success": False,
-                "error": "This client does not own the active calibration",
-            }
+        error = self._check_calibration_owner(session, client_id, "calibration_compute")
+        if error:
+            return error
 
         try:
             # Use adapter to compute and apply calibration
