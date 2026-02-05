@@ -53,10 +53,6 @@ const jsPsych = initJsPsych({
                     url: 'ws://localhost:8080',
                     autoConnect: true,
                 },
-                data: {
-                    includeRawSamples: true,
-                    coordinateSystem: 'normalized',
-                },
             },
         },
     ],

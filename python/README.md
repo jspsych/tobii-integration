@@ -63,7 +63,6 @@ Options:
   --host HOST           Server host address (default: localhost)
   --port PORT           Server port (default: 8080)
   --tracker ADDRESS     Specific tracker address (auto-detect if not specified)
-  --sampling-rate HZ    Sampling rate in Hz (default: 60)
   --buffer-size SIZE    Maximum buffer size (default: 10000)
   --log-level LEVEL     Logging level: DEBUG, INFO, WARNING, ERROR (default: INFO)
   --log-file FILE       Log file path (console if not specified)
@@ -148,11 +147,7 @@ The server communicates via WebSocket using JSON messages.
 
 ### Performance Issues
 
-1. Reduce sampling rate:
-   ```bash
-   jspsych-tobii-server --sampling-rate 30
-   ```
-2. Increase buffer size:
+1. Increase buffer size:
    ```bash
    jspsych-tobii-server --buffer-size 20000
    ```

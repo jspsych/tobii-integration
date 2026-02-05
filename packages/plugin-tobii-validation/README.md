@@ -34,7 +34,6 @@ The Tobii extension must be loaded, connected, and calibrated before this plugin
 | validation_points | int | `9` | Number of validation points. Supported values: `5`, `9`, `13`, `15`, `19`, `25`. |
 | point_size | int | `20` | Size of validation points in pixels. |
 | point_color | string | `'#00ff00'` | Color of validation points (CSS color value). |
-| collection_duration | int | `1000` | Duration to collect gaze data at each point (ms). |
 | show_progress | boolean | `true` | Show a progress indicator (e.g., "Point 3 of 9"). |
 | custom_points | array | `null` | Array of custom validation points. Each point is an object with `x` and `y` properties (normalized 0-1). Overrides `validation_points` when provided. |
 | show_feedback | boolean | `true` | Show visual feedback after validation, including a scatter plot of targets vs. gaze positions and a per-point accuracy table. |
@@ -142,7 +141,6 @@ const trial = {
   tolerance: 0.10,
   point_color: '#00aaff',
   background_color: '#333333',
-  collection_duration: 1500,
 };
 ```
 
