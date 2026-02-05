@@ -235,7 +235,6 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
     styleElement.id = 'tobii-user-position-styles';
     styleElement.textContent = css;
     document.head.appendChild(styleElement);
-
   }
 
   trial(display_element: HTMLElement, trial: TrialType<Info>) {

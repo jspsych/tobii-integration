@@ -103,6 +103,11 @@ const info = <const>{
       type: ParameterType.INT,
       default: 1,
     },
+    /** Duration of zoom in/out animations in ms */
+    zoom_duration: {
+      type: ParameterType.INT,
+      default: 300,
+    },
   },
   data: {
     /** Validation success status */
@@ -227,7 +232,7 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
       }
 
       .tobii-validation-point.animation-zoom-out {
-        animation: tobii-validation-zoom-out 0.3s ease-out forwards;
+        animation: tobii-validation-zoom-out ${(trial.zoom_duration as number) / 1000}s ease-out forwards;
       }
 
       @keyframes tobii-validation-zoom-out {
@@ -240,7 +245,7 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
       }
 
       .tobii-validation-point.animation-zoom-in {
-        animation: tobii-validation-zoom-in 0.3s ease-out forwards;
+        animation: tobii-validation-zoom-in ${(trial.zoom_duration as number) / 1000}s ease-out forwards;
       }
 
       @keyframes tobii-validation-zoom-in {
@@ -489,7 +494,6 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
     styleElement.id = 'tobii-validation-styles';
     styleElement.textContent = css;
     document.head.appendChild(styleElement);
-
   }
 
   async trial(display_element: HTMLElement, trial: TrialType<Info>): Promise<void> {

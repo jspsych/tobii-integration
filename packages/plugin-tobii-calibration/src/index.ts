@@ -109,6 +109,26 @@ const info = <const>{
       type: ParameterType.INT,
       default: 1,
     },
+    /** Duration of zoom in/out animations in ms */
+    zoom_duration: {
+      type: ParameterType.INT,
+      default: 300,
+    },
+    /** Duration of explosion animation in ms */
+    explosion_duration: {
+      type: ParameterType.INT,
+      default: 400,
+    },
+    /** Duration to show success result before auto-advancing in ms */
+    success_display_duration: {
+      type: ParameterType.INT,
+      default: 2000,
+    },
+    /** Duration to show instructions before auto-advancing in view mode in ms */
+    instruction_display_duration: {
+      type: ParameterType.INT,
+      default: 3000,
+    },
   },
   data: {
     /** Calibration success status */
@@ -256,7 +276,7 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
       }
 
       .tobii-calibration-point.animation-explosion {
-        animation: tobii-calibration-explosion 0.4s ease-out forwards;
+        animation: tobii-calibration-explosion ${(trial.explosion_duration as number) / 1000}s ease-out forwards;
       }
 
       @keyframes tobii-calibration-explosion {
@@ -275,7 +295,7 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
       }
 
       .tobii-calibration-point.animation-zoom-out {
-        animation: tobii-calibration-zoom-out 0.3s ease-out forwards;
+        animation: tobii-calibration-zoom-out ${(trial.zoom_duration as number) / 1000}s ease-out forwards;
       }
 
       @keyframes tobii-calibration-zoom-out {
@@ -288,7 +308,7 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
       }
 
       .tobii-calibration-point.animation-zoom-in {
-        animation: tobii-calibration-zoom-in 0.3s ease-out forwards;
+        animation: tobii-calibration-zoom-in ${(trial.zoom_duration as number) / 1000}s ease-out forwards;
       }
 
       @keyframes tobii-calibration-zoom-in {
@@ -350,7 +370,6 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
     styleElement.id = 'tobii-calibration-styles';
     styleElement.textContent = css;
     document.head.appendChild(styleElement);
-
   }
 
   async trial(display_element: HTMLElement, trial: TrialType<Info>): Promise<void> {

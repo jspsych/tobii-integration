@@ -61,6 +61,8 @@ export class PositionDisplay {
     // Tracking box (represents the optimal tracking zone)
     this.trackingBoxElement = document.createElement('div');
     this.trackingBoxElement.className = 'tobii-tracking-box';
+    this.trackingBoxElement.setAttribute('role', 'img');
+    this.trackingBoxElement.setAttribute('aria-label', 'Head position tracking display');
     this.trackingBoxElement.style.cssText = `
       position: relative;
       width: ${this.BOX_WIDTH}px;
@@ -90,6 +92,7 @@ export class PositionDisplay {
     // Face outline container (this moves and scales)
     this.faceOutlineElement = document.createElement('div');
     this.faceOutlineElement.className = 'tobii-face-outline';
+    this.faceOutlineElement.setAttribute('aria-hidden', 'true');
     this.faceOutlineElement.style.cssText = `
       position: absolute;
       top: 50%;
@@ -172,6 +175,8 @@ export class PositionDisplay {
     // Textual feedback
     this.feedbackElement = document.createElement('div');
     this.feedbackElement.className = 'tobii-position-feedback';
+    this.feedbackElement.setAttribute('role', 'status');
+    this.feedbackElement.setAttribute('aria-live', 'polite');
     this.feedbackElement.style.cssText = `
       margin-top: 20px;
       font-size: 1.1em;

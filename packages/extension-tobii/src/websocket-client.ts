@@ -122,7 +122,10 @@ export class WebSocketClient {
   /**
    * Send message and wait for response
    */
-  async sendAndWait(message: WebSocketMessage, timeout: number = 5000): Promise<Record<string, unknown>> {
+  async sendAndWait(
+    message: WebSocketMessage,
+    timeout: number = 5000
+  ): Promise<Record<string, unknown>> {
     if (!this.isConnected()) {
       throw new Error('Not connected to server');
     }

@@ -44,4 +44,12 @@ export interface CalibrationParameters {
   error_color?: string;
   /** Maximum number of retry attempts allowed on calibration failure */
   max_retries?: number;
+  /** Duration of zoom in/out animations in ms */
+  zoom_duration?: number;
+  /** Duration of explosion animation in ms */
+  explosion_duration?: number;
+  /** Duration to show success result before auto-advancing in ms */
+  success_display_duration?: number;
+  /** Duration to show instructions before auto-advancing in view mode in ms */
+  instruction_display_duration?: number;
 }

@@ -42,6 +42,8 @@ export interface ValidationParameters {
   tolerance?: number;
   /** Maximum number of retry attempts allowed on validation failure */
   max_retries?: number;
+  /** Duration of zoom in/out animations in ms */
+  zoom_duration?: number;
 }
 
 export interface GazeSample {

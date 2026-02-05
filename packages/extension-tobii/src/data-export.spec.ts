@@ -2,14 +2,10 @@ import { toCSV, toJSON } from './data-export';
 
 // Mock DOM APIs
 let mockClickCalled: boolean;
-let mockHref: string;
-let mockDownload: string;
 let mockBlob: Blob | null;
 
 beforeEach(() => {
   mockClickCalled = false;
-  mockHref = '';
-  mockDownload = '';
   mockBlob = null;
 
   // Mock URL.createObjectURL / revokeObjectURL
@@ -24,8 +20,6 @@ beforeEach(() => {
       Object.defineProperty(link, 'click', {
         value: jest.fn(() => {
           mockClickCalled = true;
-          mockHref = link.href;
-          mockDownload = link.download;
         }),
       });
       return link;
@@ -76,14 +70,6 @@ describe('toCSV', () => {
 
   it('should quote values containing commas', () => {
     const data = [{ name: 'hello, world', value: 1 }];
-
-    let capturedContent = '';
-    (URL.createObjectURL as jest.Mock).mockImplementation((blob: Blob) => {
-      // Read blob synchronously via constructor
-      capturedContent = 'captured';
-      return 'blob:mock-url';
-    });
-
     toCSV(data, 'test.csv');
     expect(mockClickCalled).toBe(true);
   });

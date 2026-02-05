@@ -39,6 +39,8 @@ export class CalibrationDisplay {
   private createProgressIndicator(): HTMLElement {
     const progress = document.createElement('div');
     progress.className = 'tobii-calibration-progress';
+    progress.setAttribute('role', 'status');
+    progress.setAttribute('aria-live', 'polite');
     return progress;
   }
 
@@ -46,33 +48,48 @@ export class CalibrationDisplay {
    * Show instructions
    */
   async showInstructions(): Promise<void> {
-    const instructions = document.createElement('div');
-    instructions.className = 'tobii-calibration-instructions';
-    instructions.innerHTML = `
-      <div class="instructions-content">
-        <h2>Eye Tracker Calibration</h2>
-        <p>${this.params.instructions || 'Look at each point and follow the instructions.'}</p>
-        ${
-          this.params.calibration_mode === 'click'
-            ? `<button class="calibration-start-btn">${this.params.button_text || 'Start Calibration'}</button>`
-            : '<p>Starting in a moment...</p>'
-        }
-      </div>
-    `;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'tobii-calibration-instructions';
+    wrapper.setAttribute('role', 'dialog');
+    wrapper.setAttribute('aria-label', 'Eye tracker calibration instructions');
 
-    this.container.appendChild(instructions);
+    const content = document.createElement('div');
+    content.className = 'instructions-content';
+
+    const heading = document.createElement('h2');
+    heading.textContent = 'Eye Tracker Calibration';
+    content.appendChild(heading);
+
+    const paragraph = document.createElement('p');
+    paragraph.innerHTML =
+      this.params.instructions || 'Look at each point and follow the instructions.';
+    content.appendChild(paragraph);
+
+    if (this.params.calibration_mode === 'click') {
+      const button = document.createElement('button');
+      button.className = 'calibration-start-btn';
+      button.textContent = this.params.button_text || 'Start Calibration';
+      content.appendChild(button);
+    } else {
+      const autoMsg = document.createElement('p');
+      autoMsg.textContent = 'Starting in a moment...';
+      content.appendChild(autoMsg);
+    }
+
+    wrapper.appendChild(content);
+    this.container.appendChild(wrapper);
 
     if (this.params.calibration_mode === 'click') {
       return new Promise((resolve) => {
-        const button = instructions.querySelector('button');
+        const button = wrapper.querySelector('button');
         button?.addEventListener('click', () => {
-          instructions.remove();
+          wrapper.remove();
           resolve();
         });
       });
     } else {
-      await this.delay(3000);
-      instructions.remove();
+      await this.delay(this.params.instruction_display_duration || 3000);
+      wrapper.remove();
     }
   }
 
@@ -84,6 +101,8 @@ export class CalibrationDisplay {
 
     this.currentPoint = document.createElement('div');
     this.currentPoint.className = 'tobii-calibration-point';
+    this.currentPoint.setAttribute('role', 'img');
+    this.currentPoint.setAttribute('aria-label', 'Calibration target point');
 
     // Start at center
     const x = 0.5 * window.innerWidth;
@@ -103,7 +122,7 @@ export class CalibrationDisplay {
     this.container.appendChild(this.currentPoint);
 
     // Brief pause to show point at center before traveling
-    await this.delay(300);
+    await this.delay(this.params.zoom_duration || 300);
   }
 
   /**
@@ -118,6 +137,12 @@ export class CalibrationDisplay {
     if (this.progressElement) {
       this.progressElement.textContent = `Point ${index + 1} of ${total}`;
     }
+
+    // Update aria-label with current point number
+    this.currentPoint!.setAttribute(
+      'aria-label',
+      `Calibration target point ${index + 1} of ${total}`
+    );
 
     // Calculate travel distance for dynamic duration
     const dx = point.x - this.currentX;
@@ -168,7 +193,7 @@ export class CalibrationDisplay {
     );
     this.currentPoint.classList.add('animation-zoom-out');
 
-    await this.delay(300);
+    await this.delay(this.params.zoom_duration || 300);
   }
 
   /**
@@ -180,7 +205,7 @@ export class CalibrationDisplay {
     this.currentPoint.classList.remove('animation-zoom-out');
     this.currentPoint.classList.add('animation-zoom-in');
 
-    await this.delay(300);
+    await this.delay(this.params.zoom_duration || 300);
   }
 
   /**
@@ -203,7 +228,7 @@ export class CalibrationDisplay {
     }
 
     // Wait for animation to complete
-    await this.delay(400);
+    await this.delay(this.params.explosion_duration || 400);
   }
 
   /**
@@ -254,6 +279,8 @@ export class CalibrationDisplay {
   async showResult(success: boolean, canRetry: boolean = false): Promise<'retry' | 'continue'> {
     const result = document.createElement('div');
     result.className = 'tobii-calibration-result';
+    result.setAttribute('role', 'alert');
+    result.setAttribute('aria-live', 'assertive');
 
     if (success) {
       result.innerHTML = `
@@ -266,7 +293,7 @@ export class CalibrationDisplay {
       this.container.appendChild(result);
 
       // Auto-advance after showing result
-      await this.delay(2000);
+      await this.delay(this.params.success_display_duration || 2000);
       result.remove();
       return 'continue';
     }

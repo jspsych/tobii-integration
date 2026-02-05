@@ -121,7 +121,6 @@ class TobiiExtension implements JsPsychExtension {
     if (params.connection?.autoConnect) {
       await this.connect();
     }
-
   };
 
   on_start = async (params: OnStartParameters = {}): Promise<void> => {

@@ -58,4 +58,3 @@ export function validateValidationResult(data: unknown): data is ValidationResul
   if (typeof data !== 'object' || data === null) return false;
   return typeof (data as Record<string, unknown>).success === 'boolean';
 }
-

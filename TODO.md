@@ -62,7 +62,7 @@
 
 ## Lower Priority
 
-- [ ] Consider extracting a shared base class for `CalibrationDisplay`, `ValidationDisplay`, and `PositionDisplay` — they share ~200 lines of near-identical code.
-- [ ] Sanitize `instructions` and `button_text` inserted via `innerHTML` in display components to prevent XSS.
-- [ ] Add accessibility: ARIA labels, keyboard navigation, non-color-based pass/fail indicators.
-- [ ] Make animation timings configurable (300ms zoom, 400ms explosion, 2000ms success display, 3000ms instruction display are all hardcoded).
+- [x] Consider extracting a shared base class for `CalibrationDisplay`, `ValidationDisplay`, and `PositionDisplay` — they share ~200 lines of near-identical code. **Decision: Deferred.** CalibrationDisplay and ValidationDisplay share ~170 lines, but they live in separate npm packages. A shared base class would require either adding UI code to extension-tobii (wrong abstraction level) or creating a new internal package (infrastructure overhead). The duplication is manageable and the classes are stable.
+- [x] Sanitize `instructions` and `button_text` inserted via `innerHTML` in display components to prevent XSS.
+- [x] Add accessibility: ARIA labels, keyboard navigation, non-color-based pass/fail indicators.
+- [x] Make animation timings configurable (300ms zoom, 400ms explosion, 2000ms success display, 3000ms instruction display are all hardcoded).
