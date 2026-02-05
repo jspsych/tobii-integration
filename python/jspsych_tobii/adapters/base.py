@@ -3,7 +3,7 @@ Abstract base class for Tobii tracker adapters
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Callable, Dict, Any, List
+from typing import Optional, Callable, Any, List
 from dataclasses import dataclass
 
 

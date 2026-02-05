@@ -9,7 +9,6 @@ from .adapters import (
     create_tracker_adapter,
     TobiiTrackerAdapter,
     GazeDataPoint,
-    UserPositionData,
     SDKType,
 )
 

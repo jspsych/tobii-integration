@@ -3,7 +3,6 @@ WebSocket server for Tobii eye tracker integration
 """
 
 import asyncio
-import logging
 import signal
 import sys
 from typing import Set
