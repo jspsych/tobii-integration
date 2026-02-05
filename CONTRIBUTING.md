@@ -97,6 +97,22 @@ Common types:
 4. Push your branch and open a pull request against `main`.
 5. Provide a clear description of the changes and link any related issues.
 
+## Release Process
+
+### JavaScript/TypeScript Packages (npm)
+
+This project uses [Changesets](https://github.com/changesets/changesets) for managing package versions and releases.
+
+When you make changes that should trigger a release, create a changeset:
+
+```bash
+npm run changeset
+```
+
+Follow the prompts to select which packages changed, choose the semver bump type, and write a summary. Commit the generated changeset file with your changes.
+
+When changesets are merged to `main`, the GitHub Actions workflow will create a "Version Packages" PR that aggregates all changesets and updates versions and CHANGELOGs. Merging that PR publishes the updated packages to npm.
+
 ## Project Structure
 
 - `packages/extension-tobii` — Core jsPsych extension
