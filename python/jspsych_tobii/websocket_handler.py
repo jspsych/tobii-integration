@@ -11,6 +11,11 @@ from typing import Dict, Any, Optional
 import websockets
 from websockets.server import WebSocketServerProtocol
 
+from .tobii_manager import TobiiManager
+from .data_buffer import DataBuffer
+from .time_sync import TimeSync
+from .calibration import CalibrationManager
+
 
 def sanitize_for_json(obj: Any) -> Any:
     """
@@ -37,10 +42,10 @@ class WebSocketHandler:
     def __init__(
         self,
         websocket: WebSocketServerProtocol,
-        tobii_manager: Any,
-        data_buffer: Any,
-        time_sync: Any,
-        calibration_manager: Any,
+        tobii_manager: TobiiManager,
+        data_buffer: DataBuffer,
+        time_sync: TimeSync,
+        calibration_manager: CalibrationManager,
     ) -> None:
         """
         Initialize WebSocket handler
