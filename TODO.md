@@ -1,68 +1,59 @@
-# TODO — 1.0 Release Code Review
+# TODO — 1.0 Release
 
-## Fix Before 1.0
+Items identified during pre-release review. Organized by priority.
 
-### Dead / Unused Code
+## Critical
 
-- [x] Remove `showPoint()` method from `CalibrationDisplay` (`packages/plugin-tobii-calibration/src/calibration-display.ts`)
-- [x] Remove `showPoint()` method from `ValidationDisplay` (`packages/plugin-tobii-validation/src/validation-display.ts`)
-- [x] Remove `collection_duration` and `gap_duration` parameters in calibration plugin. They were declared and documented but never read.
-- [x] Remove `accuracy_good_color`, `accuracy_fair_color`, `accuracy_poor_color` in validation plugin. They were declared and documented but the feedback uses hardcoded colors.
-- [x] Remove `sampling.rate` and `data.includeRawSamples` in extension config. Accepted in `InitializeParameters` but never used.
-- [x] Remove unused exports from extension internals: `isWithinBounds()`, `angle()`, `isGazeInBounds()`. None were exposed through the extension API or called anywhere.
-- [x] Remove unused CSS classes in user-position plugin: `.tobii-position-box`, `.tobii-eye-indicator`, `.tobii-distance-feedback`.
-- [x] Remove unused `import time` in `python/jspsych_tobii/tobii_manager.py`.
-- [x] Move `import math` from inside `compute_validation()` to module level in `python/jspsych_tobii/calibration.py`.
-- [x] Remove `sampling_rate` in Python `ServerConfig`. Accepted but never used.
+### ~~1. `sendMarker` uses `||` instead of `??` for timestamp~~ DONE
 
-### Logic Bugs
+### ~~2. Extension README documents non-existent GazeData fields~~ DONE
 
-- [x] Fix `stopTracking()` redundant conditional. The `if (response.success)` block was dead code since `this.tracking = false` ran unconditionally afterward.
-- [x] Fix CSS injection one-shot bug in all three plugins. Static `styleInjected` flag caused per-trial color parameters to be silently ignored on subsequent trials.
-- [x] Fix connection timeout race condition. The timeout was never cleared on successful connection.
-- [x] Fix mismatched position thresholds in user-position plugin. Textual feedback used hardcoded values while quality assessment used configurable thresholds.
+## High Priority
 
-### Incomplete Types
+### ~~3. `animation` parameter defined but not connected in calibration plugin~~ DONE
 
-- [x] Export `UserPositionData` from extension and remove the duplicate definition in user-position plugin.
-- [x] Complete `CalibrationParameters` interface: add all grid sizes (5, 9, 13, 15, 19, 25), color parameters, and `max_retries`.
-- [x] Complete `ValidationParameters` interface: add all grid sizes, color parameters, `tolerance`, and `max_retries`.
+Removed the `animation` parameter from the plugin API, types, and README since it was not connected to any logic.
 
-### Error Handling
+### ~~4. No try-finally cleanup in plugin `trial()` methods~~ DONE
 
-- [x] Add `console.warn` for silently swallowed errors in extension: device time sync failure, reconnection time sync failure, reconnection failure.
-- [x] Improve error messages with context: include coordinates in "Invalid calibration point", include URL in "Connection timeout", include detail in "Server failed to start tracking".
+### ~~5. `stopTracking()` leaves inconsistent state on error~~ DONE
 
-### Minor
+### ~~6. WebSocket `on()` silently overwrites handlers~~ DONE
 
-- [x] Fix `on_load` parameter type — was accepting `OnStartParameters` instead of no params.
+### ~~7. Python: no coordinate validation for calibration points~~ DONE
 
-## Should Address Soon
+### ~~8. Migrate Python server to modern `websockets` API~~ DONE
 
-### Data Management
+## Documentation
 
-- [x] Implement buffer size cap in `DataManager` (`packages/extension-tobii/src/data-manager.ts:15-17`). Currently unbounded; CLAUDE.md describes a 7200-sample circular buffer that is not implemented.
-- [x] Fix `URL.revokeObjectURL()` timing in data export (`packages/extension-tobii/src/data-export.ts:80-83`). Called synchronously after `link.click()` before the download has started. Add a delay before revoking.
+### ~~9. CITATION.cff missing from `plugin-tobii-user-position`~~ DONE
 
-### Testing
+### ~~10. No CONTRIBUTING.md~~ DONE
 
-- [x] Create Python test directory and tests (`python/pyproject.toml` references `testpaths = ["tests"]` but the directory doesn't exist).
-- [x] Expand JS test coverage beyond static `info` checks. Key gaps: trial execution flows, display components, calibration/validation logic, grid point generation, custom point validation, error paths.
+### ~~11. Python README links to non-existent `/docs/` directory~~ DONE
 
-### Python Server
+## Minor
 
-- [x] Replace `Any` types in `WebSocketHandler` constructor (`python/jspsych_tobii/websocket_handler.py:40-43`) with actual class types.
-- [x] Standardize error response format. Some handlers return `{"type": "error", ...}`, others return `{"type": "calibration_xxx", "success": false, ...}`.
-- [x] Add logging to bare `except: pass` blocks in `calibration.py:60-61,220-221`.
-- [x] Extract duplicated calibration state guard checks in `calibration.py` into a helper method.
+### ~~12. Empty author URL in `package.json` files~~ DONE
 
-### Infrastructure
+### 13. Connection timeout hardcoded at 5 seconds
 
-- [x] Set up CI/CD (GitHub Actions for linting, type checking, and test execution on push/PR).
+**File:** `packages/extension-tobii/src/websocket-client.ts:45`
 
-## Lower Priority
+The WebSocket connection timeout is a hardcoded `5000`ms, not configurable through `initialize()` parameters. Researchers running the server on a different machine over a network may need longer. Consider making this configurable.
 
-- [x] Consider extracting a shared base class for `CalibrationDisplay`, `ValidationDisplay`, and `PositionDisplay` — they share ~200 lines of near-identical code. **Decision: Deferred.** CalibrationDisplay and ValidationDisplay share ~170 lines, but they live in separate npm packages. A shared base class would require either adding UI code to extension-tobii (wrong abstraction level) or creating a new internal package (infrastructure overhead). The duplication is manageable and the classes are stable.
-- [x] Sanitize `instructions` and `button_text` inserted via `innerHTML` in display components to prevent XSS.
-- [x] Add accessibility: ARIA labels, keyboard navigation, non-color-based pass/fail indicators.
-- [x] Make animation timings configurable (300ms zoom, 400ms explosion, 2000ms success display, 3000ms instruction display are all hardcoded).
+### 14. No WebSocket origin validation in Python server
+
+**File:** `python/jspsych_tobii/server.py:78-82`
+
+No `origins` parameter is passed to `websockets.serve()`. Any webpage on any domain can connect. In a typical lab setup (localhost) this is fine, but if bound to `0.0.0.0` on a shared network, any browser can connect. Document this as a security consideration.
+
+### 15. Linear reconnection backoff
+
+**File:** `packages/extension-tobii/src/websocket-client.ts:201`
+
+```typescript
+const delay = this.config.reconnectDelay * this.currentReconnectAttempt;
+```
+
+Reconnection delay grows linearly (1s, 2s, 3s) rather than exponentially (1s, 2s, 4s, 8s). For the typical localhost use case, linear is fine. Exponential would be better for sustained outages.

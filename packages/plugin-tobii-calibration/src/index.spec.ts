@@ -56,11 +56,6 @@ describe('TobiiCalibrationPlugin', () => {
       expect(typeof params.instructions.default).toBe('string');
     });
 
-    it('should have animation parameter', () => {
-      expect(params.animation).toBeDefined();
-      expect(params.animation.default).toBe('shrink');
-    });
-
     it('should have background_color parameter', () => {
       expect(params.background_color).toBeDefined();
       expect(params.background_color.default).toBe('#808080');

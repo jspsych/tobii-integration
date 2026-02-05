@@ -9,7 +9,7 @@ import math
 import uuid
 from typing import Dict, Any, Optional
 import websockets
-from websockets.server import WebSocketServerProtocol
+from websockets.asyncio.server import ServerConnection
 
 from .tobii_manager import TobiiManager
 from .data_buffer import DataBuffer
@@ -41,7 +41,7 @@ class WebSocketHandler:
 
     def __init__(
         self,
-        websocket: WebSocketServerProtocol,
+        websocket: ServerConnection,
         tobii_manager: TobiiManager,
         data_buffer: DataBuffer,
         time_sync: TimeSync,
@@ -131,12 +131,21 @@ class WebSocketHandler:
         elif message_type == "calibration_point":
             point = data.get("point", {})
             timestamp = data.get("timestamp", 0)
-            response = self.calibration_manager.collect_calibration_point(
-                point.get("x", 0),
-                point.get("y", 0),
-                timestamp,
-                self.client_id,
-            )
+            x = point.get("x", 0)
+            y = point.get("y", 0)
+            if not (0 <= x <= 1 and 0 <= y <= 1):
+                response = {
+                    "type": "calibration_point",
+                    "success": False,
+                    "error": f"Calibration point coordinates out of range: x={x}, y={y}. Must be in [0, 1].",
+                }
+            else:
+                response = self.calibration_manager.collect_calibration_point(
+                    x,
+                    y,
+                    timestamp,
+                    self.client_id,
+                )
 
         elif message_type == "calibration_compute":
             response = self.calibration_manager.compute_calibration(self.client_id)

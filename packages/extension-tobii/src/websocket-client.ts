@@ -156,6 +156,11 @@ export class WebSocketClient {
    * Register message handler
    */
   on(messageType: string, handler: (data: Record<string, unknown>) => void): void {
+    if (this.messageHandlers.has(messageType)) {
+      console.warn(
+        `Tobii WebSocket: Overwriting existing handler for message type "${messageType}"`
+      );
+    }
     this.messageHandlers.set(messageType, handler);
   }
 

@@ -85,8 +85,7 @@ Each element in the `tobii_data` array contains:
 | x | number | X coordinate (normalized 0-1 or pixels, depending on config) |
 | y | number | Y coordinate (normalized 0-1 or pixels, depending on config) |
 | timestamp | number | Timestamp in ms (Tobii device clock) |
-| serverTimestamp | number | Timestamp in ms (Python server clock) |
-| clientTimestamp | number | Timestamp in ms (`performance.now()` when sample was received in browser) |
+| browserTimestamp | number | Device timestamp mapped to `performance.now()` domain |
 | leftValid | boolean | Whether the left eye data is valid |
 | rightValid | boolean | Whether the right eye data is valid |
 | leftPupilDiameter | number | Left eye pupil diameter |

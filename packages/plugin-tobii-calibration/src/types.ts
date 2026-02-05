@@ -22,8 +22,6 @@ export interface CalibrationParameters {
   show_progress?: boolean;
   /** Custom calibration points (overrides calibration_points) */
   custom_points?: CalibrationPoint[];
-  /** Animation style for point appearance */
-  animation?: 'none' | 'pulse' | 'shrink';
   /** Instructions text */
   instructions?: string;
   /** Button text for click mode */

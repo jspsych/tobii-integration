@@ -309,10 +309,16 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
         }
       }, trial.update_interval!);
 
+      // Cleanup helper to ensure DOM and styles are always cleaned up
+      const cleanup = () => {
+        clearInterval(updateInterval);
+        positionDisplay.destroy();
+        display_element.innerHTML = '';
+        TobiiUserPositionPlugin.removeStyles();
+      };
+
       // Handle trial end
       const endTrial = () => {
-        clearInterval(updateInterval);
-
         // Calculate average position
         const validSamples = positionSamples.filter(
           (s) => s.averageX !== null && s.averageY !== null && s.averageZ !== null
@@ -341,8 +347,7 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
           rt: Math.round(performance.now() - startTime),
         };
 
-        positionDisplay.destroy();
-        TobiiUserPositionPlugin.removeStyles();
+        cleanup();
         this.jsPsych.finishTrial(trialData);
         resolve();
       };

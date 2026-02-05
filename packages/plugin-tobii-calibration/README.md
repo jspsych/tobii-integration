@@ -37,7 +37,6 @@ The Tobii extension must be loaded and connected before this plugin runs. See th
 | point_duration | int | `500` | Duration to show each point before data collection begins (ms). Allows the participant to fixate. |
 | show_progress | boolean | `true` | Show a progress indicator (e.g., "Point 3 of 9"). |
 | custom_points | array | `null` | Array of custom calibration points. Each point is an object with `x` and `y` properties (normalized 0-1). Overrides `calibration_points` when provided. |
-| animation | string | `'shrink'` | Animation style for point appearance. Options: `'none'`, `'pulse'`, `'shrink'`. |
 | instructions | string | `'Look at each point as it appears on the screen. Keep your gaze fixed on each point until it disappears.'` | Instructions text shown before calibration begins. |
 | button_text | string | `'Start Calibration'` | Button text shown on the instructions screen before calibration begins. |
 | background_color | string | `'#808080'` | Background color of the calibration container. |

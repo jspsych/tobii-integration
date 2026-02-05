@@ -227,8 +227,11 @@ class TobiiExtension implements JsPsychExtension {
    * Stop eye tracking data collection
    */
   async stopTracking(): Promise<void> {
-    await this.ws.sendAndWait({ type: 'stop_tracking' });
-    this.tracking = false;
+    try {
+      await this.ws.sendAndWait({ type: 'stop_tracking' });
+    } finally {
+      this.tracking = false;
+    }
   }
 
   /**
@@ -395,7 +398,7 @@ class TobiiExtension implements JsPsychExtension {
     await this.ws.send({
       type: 'marker',
       ...markerData,
-      timestamp: markerData.timestamp || performance.now(),
+      timestamp: markerData.timestamp ?? performance.now(),
     });
   }
 

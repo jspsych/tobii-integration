@@ -180,4 +180,4 @@ MIT
 ## Support
 
 - [GitHub Issues](https://github.com/jspsych/jspsych-tobii/issues)
-- [Documentation](../docs/)
+- [Documentation](../README.md)
