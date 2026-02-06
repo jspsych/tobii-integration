@@ -1,6 +1,6 @@
 {
   "name": "@jspsych/plugin-tobii-user-position",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "jsPsych plugin for Tobii eye tracker user position guide",
   "type": "module",
   "main": "dist/index.cjs",
