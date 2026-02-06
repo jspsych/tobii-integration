@@ -1,6 +1,6 @@
 {
   "name": "@jspsych/extension-tobii",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "jsPsych extension for Tobii eye tracker integration via WebSocket",
   "type": "module",
   "main": "dist/index.cjs",
