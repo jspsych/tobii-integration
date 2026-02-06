@@ -5,4 +5,4 @@
 "@jspsych/plugin-tobii-user-position": minor
 ---
 
-Initial release of jsPsych Tobii eye tracker integration packages
+Initial release of jsPsych Tobii eye tracker integration packages.
