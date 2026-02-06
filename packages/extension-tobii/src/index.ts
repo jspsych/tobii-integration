@@ -28,7 +28,6 @@ import type {
   CalibrationResult,
   ValidationResult,
   UserPositionData,
-  MarkerData,
   ScreenDimensions,
   Coordinates,
   ConnectionStatus,
@@ -97,8 +96,8 @@ class TobiiExtension implements JsPsychExtension {
         this.gazeSampleCount++;
         if (!this.deviceTimeSyncTriggered && this.gazeSampleCount >= 50) {
           this.deviceTimeSyncTriggered = true;
-          this.deviceTimeSync.synchronizeDeviceClock().catch(() => {
-            // Device time sync failed silently — can be retried manually
+          this.deviceTimeSync.synchronizeDeviceClock().catch((e) => {
+            console.warn('Tobii: Device time sync failed, can be retried manually:', e);
           });
         }
       }
@@ -109,7 +108,7 @@ class TobiiExtension implements JsPsychExtension {
       try {
         await this.timeSync.synchronize();
       } catch (e) {
-        // Time sync failed after reconnection
+        console.warn('Tobii: Time sync failed after reconnection:', e);
       }
       // Reset device time sync so it re-triggers once new samples arrive
       this.deviceTimeSync.reset();
@@ -121,21 +120,11 @@ class TobiiExtension implements JsPsychExtension {
     if (params.connection?.autoConnect) {
       await this.connect();
     }
-
   };
 
-  on_start = async (params: OnStartParameters = {}): Promise<void> => {
+  on_start = async (_params: OnStartParameters = {}): Promise<void> => {
     // Mark trial start
     this.dataManager.startTrial();
-
-    // Send trial start marker with synchronized timestamp
-    const localTime = performance.now();
-    await this.sendMarker({
-      label: 'trial_start',
-      timestamp: localTime,
-      syncedTimestamp: this.timeSync.isSynced() ? this.timeSync.toServerTime(localTime) : localTime,
-      ...params.metadata,
-    });
 
     // Start tracking if not already tracking
     if (!this.tracking) {
@@ -143,21 +132,13 @@ class TobiiExtension implements JsPsychExtension {
     }
   };
 
-  on_load = async (_params: OnStartParameters = {}): Promise<void> => {
+  on_load = async (): Promise<void> => {
     // Optional: additional setup when trial loads
   };
 
   on_finish = async (_params: OnFinishParameters = {}): Promise<{ tobii_data: GazeData[] }> => {
     // Mark trial end
     this.dataManager.endTrial();
-
-    // Send trial end marker with synchronized timestamp
-    const localTime = performance.now();
-    await this.sendMarker({
-      label: 'trial_end',
-      timestamp: localTime,
-      syncedTimestamp: this.timeSync.isSynced() ? this.timeSync.toServerTime(localTime) : localTime,
-    });
 
     // Get trial data
     const trialData = this.dataManager.getTrialData();
@@ -220,7 +201,7 @@ class TobiiExtension implements JsPsychExtension {
     if (response.success) {
       this.tracking = true;
     } else {
-      throw new Error('Server failed to start tracking');
+      throw new Error(`Server failed to start tracking: ${response.error || 'unknown error'}`);
     }
   }
 
@@ -228,13 +209,11 @@ class TobiiExtension implements JsPsychExtension {
    * Stop eye tracking data collection
    */
   async stopTracking(): Promise<void> {
-    // Wait for server confirmation before setting state
-    const response = await this.ws.sendAndWait({ type: 'stop_tracking' });
-    if (response.success) {
+    try {
+      await this.ws.sendAndWait({ type: 'stop_tracking' });
+    } finally {
       this.tracking = false;
     }
-    // Even if server fails, reset local tracking state
-    this.tracking = false;
   }
 
   /**
@@ -257,7 +236,9 @@ class TobiiExtension implements JsPsychExtension {
    */
   async collectCalibrationPoint(x: number, y: number): Promise<{ success: boolean }> {
     if (!Validation.validateCalibrationPoint({ x, y })) {
-      throw new Error('Invalid calibration point. Coordinates must be in range [0, 1].');
+      throw new Error(
+        `Invalid calibration point (${x}, ${y}). Coordinates must be in range [0, 1].`
+      );
     }
 
     const response = await this.ws.sendAndWait({
@@ -310,7 +291,9 @@ class TobiiExtension implements JsPsychExtension {
    */
   async collectValidationPoint(x: number, y: number, gazeSamples?: GazeData[]): Promise<void> {
     if (!Validation.validateCalibrationPoint({ x, y })) {
-      throw new Error('Invalid validation point. Coordinates must be in range [0, 1].');
+      throw new Error(
+        `Invalid validation point (${x}, ${y}). Coordinates must be in range [0, 1].`
+      );
     }
 
     await this.ws.send({
@@ -388,17 +371,6 @@ class TobiiExtension implements JsPsychExtension {
    */
   clearGazeData(): void {
     this.dataManager.clear();
-  }
-
-  /**
-   * Send a marker to the eye tracking data stream
-   */
-  async sendMarker(markerData: MarkerData): Promise<void> {
-    await this.ws.send({
-      type: 'marker',
-      ...markerData,
-      timestamp: markerData.timestamp || performance.now(),
-    });
   }
 
   /**
@@ -554,7 +526,7 @@ export type {
   CalibrationPoint,
   CalibrationResult,
   ValidationResult,
-  MarkerData,
+  UserPositionData,
   ScreenDimensions,
   Coordinates,
   ConnectionStatus,

@@ -1,178 +1,141 @@
 # Contributing to jsPsych-Tobii
 
-Thank you for your interest in contributing! This document provides guidelines for contributing to the jsPsych-Tobii project.
+Thank you for your interest in contributing to jsPsych-Tobii! This guide will help you get set up for development.
+
+## Prerequisites
+
+- Node.js >= 18 and npm >= 9
+- Python >= 3.9
+- Git
 
 ## Development Setup
 
-### Prerequisites
+### 1. Clone and install
 
-- Node.js 18.0 or higher
-- Python 3.9 or higher
-- Tobii Pro eye tracker (for testing)
-
-### Initial Setup
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/jspsych/jspsych-tobii.git
-   cd jspsych-tobii
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   cd python && pip install -e ".[dev]" && cd ..
-   ```
-
-3. Build all packages:
-   ```bash
-   npm run build
-   ```
-
-## Project Structure
-
-This is a monorepo containing:
-
-- **packages/extension-tobii**: Core extension
-- **packages/plugin-tobii-calibration**: Calibration plugin
-- **packages/plugin-tobii-validation**: Validation plugin
-- **packages/plugin-tobii-user-position**: User position guide plugin
-- **python**: Python WebSocket server
-
-## Development Workflow
-
-### JavaScript Development
-
-1. Make changes to source files in `packages/*/src/`
-2. Build packages:
-   ```bash
-   npm run build
-   ```
-3. Or use watch mode:
-   ```bash
-   npm run build:watch
-   ```
-
-### Python Development
-
-1. Make changes to Python files in `python/jspsych_tobii/`
-2. Test changes:
-   ```bash
-   cd python
-   pytest
-   ```
-
-### Testing
-
-Run all tests:
 ```bash
-npm test
+git clone https://github.com/jspsych/jspsych-tobii.git
+cd jspsych-tobii
+npm install
 ```
 
-Run Python tests:
+This installs dependencies for all packages via npm workspaces.
+
+### 2. Python environment
+
 ```bash
 cd python
+python -m venv .venv
+source .venv/bin/activate   # macOS/Linux
+# .venv\Scripts\activate    # Windows
+pip install -e ".[dev]"
+```
+
+### 3. Build all packages
+
+```bash
+npm run build
+```
+
+## Running Tests
+
+### JavaScript tests
+
+```bash
+npm test                                         # All packages
+cd packages/extension-tobii && npm test          # Single package
+cd packages/extension-tobii && npm run test:watch # Watch mode
+```
+
+### Python tests
+
+```bash
+cd python
+source .venv/bin/activate
 pytest
 ```
 
-### Code Quality
+## Linting and Formatting
 
-Format code:
 ```bash
-npm run format
+npm run lint          # ESLint
+npm run lint:fix      # ESLint with auto-fix
+npm run format        # Prettier format
+npm run format:check  # Prettier check
 ```
-
-Lint code:
-```bash
-npm run lint
-```
-
-## Contribution Guidelines
-
-### Reporting Issues
-
-- Check existing issues first
-- Provide clear description
-- Include:
-  - OS and browser version
-  - Tobii tracker model
-  - Steps to reproduce
-  - Expected vs actual behavior
-  - Error messages/logs
-
-### Pull Requests
-
-1. Fork the repository
-2. Create a feature branch:
-   ```bash
-   git checkout -b feature/my-feature
-   ```
-3. Make your changes
-4. Add tests if applicable
-5. Ensure all tests pass:
-   ```bash
-   npm test
-   ```
-6. Format code:
-   ```bash
-   npm run format
-   ```
-7. Commit with clear message:
-   ```bash
-   git commit -m "feat: description"
-   ```
-8. Push to your fork:
-   ```bash
-   git push origin feature/my-feature
-   ```
-9. Open a pull request
-
-### Commit Messages
-
-Follow conventional commits format:
-
-- `feat: Add new feature`
-- `fix: Fix bug`
-- `docs: Update documentation`
-- `test: Add tests`
-- `refactor: Refactor code`
-- `style: Format code`
-- `chore: Update dependencies`
-
-### Code Style
-
-JavaScript/TypeScript:
-- Use Prettier for formatting
-- Follow ESLint rules
-- Add JSDoc comments for public APIs
-- Use TypeScript types
 
 Python:
-- Use Black for formatting
-- Follow PEP 8
-- Add type hints
-- Add docstrings
+
+```bash
+cd python
+black jspsych_tobii
+ruff check jspsych_tobii
+```
+
+## Commit Conventions
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/). Each commit message should follow this format:
+
+```
+<type>: <description>
+```
+
+Common types:
+
+- `feat:` — A new feature
+- `fix:` — A bug fix
+- `docs:` — Documentation changes
+- `test:` — Adding or updating tests
+- `refactor:` — Code changes that neither fix a bug nor add a feature
+- `style:` — Formatting, whitespace, etc.
+- `chore:` — Build process, tooling, or dependency changes
+
+## Pull Request Process
+
+1. Create a feature branch from `main`.
+2. Make your changes, ensuring tests pass (`npm test` and `pytest`).
+3. Run `npm run lint` and `npm run format:check` to verify code style.
+4. Push your branch and open a pull request against `main`.
+5. Provide a clear description of the changes and link any related issues.
 
 ## Release Process
 
-Releases are handled by maintainers using [changesets](https://github.com/changesets/changesets):
+### JavaScript/TypeScript Packages (npm)
 
-1. Create a changeset describing your changes:
-   ```bash
-   npm run changeset
-   ```
-2. Maintainers version and release:
-   ```bash
-   npm run version
-   npm run release
-   ```
+This project uses [Changesets](https://github.com/changesets/changesets) for managing package versions and releases.
 
-## Questions?
+When you make changes that should trigger a release, create a changeset:
 
-- Open a [discussion](https://github.com/jspsych/jspsych-tobii/discussions)
-- Join our community chat
-- Contact maintainers
+```bash
+npm run changeset
+```
 
-## License
+Follow the prompts to select which packages changed, choose the semver bump type, and write a summary. Commit the generated changeset file with your changes.
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
+When changesets are merged to `main`, the GitHub Actions workflow will create a "Version Packages" PR that aggregates all changesets and updates versions and CHANGELOGs. Merging that PR publishes the updated packages to npm.
+
+### Python Package (PyPI)
+
+The Python package uses a manual GitHub Actions workflow for releases:
+
+1. Go to Actions → Release Python Package
+2. Click "Run workflow"
+3. Enter the version number (e.g., `0.1.1`, `0.2.0`)
+4. Optionally mark as pre-release
+5. Click "Run workflow"
+
+The workflow will:
+- Update version in `python/pyproject.toml`
+- Build and validate the package
+- Create a git tag (`python-v{version}`)
+- Create a GitHub release
+- Publish to PyPI
+
+**Note:** PyPI publishing requires trusted publishing to be configured in PyPI for this repository.
+
+## Project Structure
+
+- `packages/extension-tobii` — Core jsPsych extension
+- `packages/plugin-tobii-calibration` — Calibration plugin
+- `packages/plugin-tobii-validation` — Validation plugin
+- `packages/plugin-tobii-user-position` — User position guide plugin
+- `python/` — Python WebSocket server

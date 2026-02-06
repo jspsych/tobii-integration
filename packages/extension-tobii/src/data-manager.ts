@@ -8,12 +8,25 @@ export class DataManager {
   private gazeBuffer: GazeData[] = [];
   private trialStartTime: number | null = null;
   private trialEndTime: number | null = null;
+  private maxBufferSize: number;
+
+  /**
+   * @param maxBufferSize Maximum number of samples to retain. Oldest samples
+   *   are dropped when the buffer exceeds this size. Default is 7200
+   *   (~60 seconds at 120 Hz).
+   */
+  constructor(maxBufferSize: number = 7200) {
+    this.maxBufferSize = maxBufferSize;
+  }
 
   /**
    * Add gaze data point to the buffer
    */
   addGazeData(data: GazeData): void {
     this.gazeBuffer.push(data);
+    if (this.gazeBuffer.length > this.maxBufferSize) {
+      this.gazeBuffer = this.gazeBuffer.slice(-this.maxBufferSize);
+    }
   }
 
   /**

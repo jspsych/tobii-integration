@@ -1,6 +1,6 @@
 {
   "name": "@jspsych/plugin-tobii-validation",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "jsPsych plugin for Tobii eye tracker validation",
   "type": "module",
   "main": "dist/index.cjs",
@@ -33,8 +33,8 @@
     "validation"
   ],
   "author": {
-    "name": "jsPsych Team",
-    "url": ""
+    "name": "Josh de Leeuw",
+    "url": "https://github.com/jodeleeuw"
   },
   "license": "MIT",
   "bugs": {
@@ -48,7 +48,7 @@
   "devDependencies": {
     "@jspsych/config": "^3.2.2",
     "@jspsych/test-utils": "^1.0.0",
-    "@jspsych/extension-tobii": "^0.1.0",
+    "@jspsych/extension-tobii": "^0.1.1",
     "jspsych": "^8.0.0"
   }
 }

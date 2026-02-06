@@ -58,11 +58,6 @@ Parameters passed to the extension in the `params` object when initializing jsPs
 | connection.autoConnect | boolean | `undefined` | Automatically connect on initialization |
 | connection.reconnectAttempts | number | `undefined` | Number of reconnection attempts |
 | connection.reconnectDelay | number | `undefined` | Delay between reconnection attempts in ms |
-| sampling | object | `{}` | Sampling settings (see below) |
-| sampling.rate | number | `undefined` | Sampling rate in Hz |
-| data | object | `{}` | Data settings (see below) |
-| data.includeRawSamples | boolean | `undefined` | Include raw eye tracking samples in trial data |
-| data.coordinateSystem | string | `undefined` | Coordinate system for gaze data: `'pixels'` or `'normalized'` |
 
 ## On Start Parameters
 
@@ -71,7 +66,6 @@ Parameters passed to the extension in the `extensions` array on individual trial
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | trialId | string \| number | `undefined` | Trial ID or index |
-| metadata | object | `undefined` | Additional metadata to include in the trial start marker |
 
 ## Data Generated
 
@@ -90,8 +84,7 @@ Each element in the `tobii_data` array contains:
 | x | number | X coordinate (normalized 0-1 or pixels, depending on config) |
 | y | number | Y coordinate (normalized 0-1 or pixels, depending on config) |
 | timestamp | number | Timestamp in ms (Tobii device clock) |
-| serverTimestamp | number | Timestamp in ms (Python server clock) |
-| clientTimestamp | number | Timestamp in ms (`performance.now()` when sample was received in browser) |
+| browserTimestamp | number | Device timestamp mapped to `performance.now()` domain |
 | leftValid | boolean | Whether the left eye data is valid |
 | rightValid | boolean | Whether the right eye data is valid |
 | leftPupilDiameter | number | Left eye pupil diameter |
@@ -144,12 +137,6 @@ All methods are accessible via `jsPsych.extensions.tobii.*`. See the [full API r
 | `getRecentGazeData(durationMs)` | `GazeData[]` | Get recent data from buffer |
 | `getUserPosition()` | `Promise<UserPositionData \| null>` | Get head position data |
 | `clearGazeData()` | `void` | Clear stored gaze data |
-
-### Markers
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `sendMarker(markerData)` | `Promise<void>` | Send a marker to the data stream |
 
 ### Coordinate Utilities
 

@@ -72,7 +72,7 @@ Async WebSocket server using the `websockets` library. Key components:
 
 ### WebSocket Protocol
 
-JSON messages with `requestId` for request/response pairing. Message types include `start_tracking`, `stop_tracking`, `calibration_*`, `validation_*`, `gaze_data` (streamed), `marker`, `time_sync`.
+JSON messages with `requestId` for request/response pairing. Message types include `start_tracking`, `stop_tracking`, `calibration_*`, `validation_*`, `gaze_data` (streamed), `time_sync`.
 
 ### Build System
 

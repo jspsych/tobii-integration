@@ -208,21 +208,21 @@ describe('TobiiExtension', () => {
       tobii = jsPsych.extensions.tobii as unknown as TobiiExt;
 
       await jsPsych.extensions.tobii.initialize({
-        data: { coordinateSystem: 'normalized' },
+        connection: { reconnectAttempts: 10 },
       });
     });
 
     it('getConfig should return current configuration', () => {
       const config = tobii.getConfig();
-      expect(config.data?.coordinateSystem).toBe('normalized');
+      expect(config.connection?.reconnectAttempts).toBe(10);
     });
 
     it('setConfig should update configuration', () => {
       tobii.setConfig({
-        data: { coordinateSystem: 'pixels' },
+        connection: { reconnectAttempts: 3 },
       });
       const config = tobii.getConfig();
-      expect(config.data?.coordinateSystem).toBe('pixels');
+      expect(config.connection?.reconnectAttempts).toBe(3);
     });
   });
 

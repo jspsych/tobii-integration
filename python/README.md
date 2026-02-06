@@ -63,7 +63,6 @@ Options:
   --host HOST           Server host address (default: localhost)
   --port PORT           Server port (default: 8080)
   --tracker ADDRESS     Specific tracker address (auto-detect if not specified)
-  --sampling-rate HZ    Sampling rate in Hz (default: 60)
   --buffer-size SIZE    Maximum buffer size (default: 10000)
   --log-level LEVEL     Logging level: DEBUG, INFO, WARNING, ERROR (default: INFO)
   --log-file FILE       Log file path (console if not specified)
@@ -98,7 +97,6 @@ asyncio.run(server.start())
 - **Time Synchronization**: Accurate timestamp alignment between client and server
 - **Calibration Support**: Full calibration and validation workflow
 - **Data Buffering**: Efficient data storage and retrieval
-- **Marker Support**: Inject custom markers into data stream
 - **Logging**: Comprehensive logging for debugging
 
 ## WebSocket Protocol
@@ -118,7 +116,6 @@ The server communicates via WebSocket using JSON messages.
 - `validation_compute`: Compute validation
 - `get_current_gaze`: Get latest gaze position
 - `get_data`: Get gaze data for time range
-- `marker`: Send marker
 - `time_sync`: Synchronize time
 
 **Server -> Client:**
@@ -148,11 +145,7 @@ The server communicates via WebSocket using JSON messages.
 
 ### Performance Issues
 
-1. Reduce sampling rate:
-   ```bash
-   jspsych-tobii-server --sampling-rate 30
-   ```
-2. Increase buffer size:
+1. Increase buffer size:
    ```bash
    jspsych-tobii-server --buffer-size 20000
    ```
@@ -185,4 +178,4 @@ MIT
 ## Support
 
 - [GitHub Issues](https://github.com/jspsych/jspsych-tobii/issues)
-- [Documentation](../docs/)
+- [Documentation](../README.md)

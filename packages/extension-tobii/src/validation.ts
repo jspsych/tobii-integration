@@ -58,13 +58,3 @@ export function validateValidationResult(data: unknown): data is ValidationResul
   if (typeof data !== 'object' || data === null) return false;
   return typeof (data as Record<string, unknown>).success === 'boolean';
 }
-
-/**
- * Check if gaze data is within screen bounds
- */
-export function isGazeInBounds(data: GazeData, normalized: boolean = true): boolean {
-  if (normalized) {
-    return data.x >= 0 && data.x <= 1 && data.y >= 0 && data.y <= 1;
-  }
-  return true; // Pixel coordinates are assumed valid
-}

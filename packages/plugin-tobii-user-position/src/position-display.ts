@@ -61,6 +61,8 @@ export class PositionDisplay {
     // Tracking box (represents the optimal tracking zone)
     this.trackingBoxElement = document.createElement('div');
     this.trackingBoxElement.className = 'tobii-tracking-box';
+    this.trackingBoxElement.setAttribute('role', 'img');
+    this.trackingBoxElement.setAttribute('aria-label', 'Head position tracking display');
     this.trackingBoxElement.style.cssText = `
       position: relative;
       width: ${this.BOX_WIDTH}px;
@@ -90,6 +92,7 @@ export class PositionDisplay {
     // Face outline container (this moves and scales)
     this.faceOutlineElement = document.createElement('div');
     this.faceOutlineElement.className = 'tobii-face-outline';
+    this.faceOutlineElement.setAttribute('aria-hidden', 'true');
     this.faceOutlineElement.style.cssText = `
       position: absolute;
       top: 50%;
@@ -172,6 +175,8 @@ export class PositionDisplay {
     // Textual feedback
     this.feedbackElement = document.createElement('div');
     this.feedbackElement.className = 'tobii-position-feedback';
+    this.feedbackElement.setAttribute('role', 'status');
+    this.feedbackElement.setAttribute('aria-live', 'polite');
     this.feedbackElement.style.cssText = `
       margin-top: 20px;
       font-size: 1.1em;
@@ -392,17 +397,19 @@ export class PositionDisplay {
     } else {
       const issues: string[] = [];
 
-      // Horizontal feedback
-      if (x < 0.35) issues.push('move right');
-      else if (x > 0.65) issues.push('move left');
+      // Horizontal feedback — use configurable threshold (offset from 0.5 center)
+      const posFairThreshold = this.options.positionThresholdFair;
+      if (x < 0.5 - posFairThreshold) issues.push('move right');
+      else if (x > 0.5 + posFairThreshold) issues.push('move left');
 
       // Vertical feedback (y=0 is bottom, y=1 is top)
-      if (y < 0.35) issues.push('move up');
-      else if (y > 0.65) issues.push('move down');
+      if (y < 0.5 - posFairThreshold) issues.push('move up');
+      else if (y > 0.5 + posFairThreshold) issues.push('move down');
 
       // Distance feedback (z=1 is close, z=0 is far)
-      if (z > 0.7) issues.push('move back');
-      else if (z < 0.3) issues.push('move closer');
+      const distFairThreshold = this.options.distanceThresholdFair;
+      if (z > 0.5 + distFairThreshold) issues.push('move back');
+      else if (z < 0.5 - distFairThreshold) issues.push('move closer');
 
       if (issues.length > 0) {
         feedback = `Please ${issues.join(' and ')}`;

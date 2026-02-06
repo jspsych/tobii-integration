@@ -9,7 +9,12 @@ import math
 import uuid
 from typing import Dict, Any, Optional
 import websockets
-from websockets.server import WebSocketServerProtocol
+from websockets.asyncio.server import ServerConnection
+
+from .tobii_manager import TobiiManager
+from .data_buffer import DataBuffer
+from .time_sync import TimeSync
+from .calibration import CalibrationManager
 
 
 def sanitize_for_json(obj: Any) -> Any:
@@ -36,11 +41,11 @@ class WebSocketHandler:
 
     def __init__(
         self,
-        websocket: WebSocketServerProtocol,
-        tobii_manager: Any,
-        data_buffer: Any,
-        time_sync: Any,
-        calibration_manager: Any,
+        websocket: ServerConnection,
+        tobii_manager: TobiiManager,
+        data_buffer: DataBuffer,
+        time_sync: TimeSync,
+        calibration_manager: CalibrationManager,
     ) -> None:
         """
         Initialize WebSocket handler
@@ -126,12 +131,21 @@ class WebSocketHandler:
         elif message_type == "calibration_point":
             point = data.get("point", {})
             timestamp = data.get("timestamp", 0)
-            response = self.calibration_manager.collect_calibration_point(
-                point.get("x", 0),
-                point.get("y", 0),
-                timestamp,
-                self.client_id,
-            )
+            x = point.get("x", 0)
+            y = point.get("y", 0)
+            if not (0 <= x <= 1 and 0 <= y <= 1):
+                response = {
+                    "type": "calibration_point",
+                    "success": False,
+                    "error": f"Calibration point coordinates out of range: x={x}, y={y}. Must be in [0, 1].",
+                }
+            else:
+                response = self.calibration_manager.collect_calibration_point(
+                    x,
+                    y,
+                    timestamp,
+                    self.client_id,
+                )
 
         elif message_type == "calibration_compute":
             response = self.calibration_manager.compute_calibration(self.client_id)
@@ -165,10 +179,6 @@ class WebSocketHandler:
             end_time = data.get("end_time")
             response = self.handle_get_data(start_time, end_time)
 
-        elif message_type == "marker":
-            self.handle_marker(data)
-            response = {"type": "marker", "success": True}
-
         elif message_type == "time_sync":
             client_time = data.get("clientTime", 0)
             response = self.time_sync.handle_sync_request(client_time)
@@ -181,7 +191,11 @@ class WebSocketHandler:
 
         else:
             self.logger.warning(f"Unknown message type: {message_type}")
-            response = {"type": "error", "error": f"Unknown message type: {message_type}"}
+            response = {
+                "type": "error",
+                "success": False,
+                "error": f"Unknown message type: {message_type}",
+            }
 
         # Add request ID to response if present
         if response and request_id:
@@ -223,10 +237,6 @@ class WebSocketHandler:
             "samples": samples,
         }
 
-    def handle_marker(self, data: Dict[str, Any]) -> None:
-        """Handle marker"""
-        self.data_buffer.add_marker(data)
-
     def handle_get_user_position(self) -> Dict[str, Any]:
         """Handle get user position request"""
         position = self.tobii_manager.get_user_position()
@@ -266,7 +276,7 @@ class WebSocketHandler:
         if not self._loop or not self.active:
             return
 
-        async def send_gaze_data():
+        async def send_gaze_data() -> None:
             try:
                 await self.send(
                     {
@@ -305,6 +315,7 @@ class WebSocketHandler:
         await self.send(
             {
                 "type": "error",
+                "success": False,
                 "error": error,
             }
         )

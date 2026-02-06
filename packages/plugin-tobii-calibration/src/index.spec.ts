@@ -41,11 +41,6 @@ describe('TobiiCalibrationPlugin', () => {
       expect(params.point_duration.default).toBe(500);
     });
 
-    it('should have collection_duration parameter', () => {
-      expect(params.collection_duration).toBeDefined();
-      expect(params.collection_duration.default).toBe(1000);
-    });
-
     it('should have custom_points parameter', () => {
       expect(params.custom_points).toBeDefined();
       expect(params.custom_points.default).toBeNull();
@@ -61,11 +56,6 @@ describe('TobiiCalibrationPlugin', () => {
       expect(typeof params.instructions.default).toBe('string');
     });
 
-    it('should have animation parameter', () => {
-      expect(params.animation).toBeDefined();
-      expect(params.animation.default).toBe('shrink');
-    });
-
     it('should have background_color parameter', () => {
       expect(params.background_color).toBeDefined();
       expect(params.background_color.default).toBe('#808080');
@@ -74,6 +64,61 @@ describe('TobiiCalibrationPlugin', () => {
     it('should have max_retries parameter with default 1', () => {
       expect(params.max_retries).toBeDefined();
       expect(params.max_retries.default).toBe(1);
+    });
+
+    it('should have button_text parameter', () => {
+      expect(params.button_text).toBeDefined();
+      expect(params.button_text.default).toBe('Start Calibration');
+    });
+
+    it('should have button_color parameter', () => {
+      expect(params.button_color).toBeDefined();
+      expect(params.button_color.default).toBe('#007bff');
+    });
+
+    it('should have button_hover_color parameter', () => {
+      expect(params.button_hover_color).toBeDefined();
+      expect(params.button_hover_color.default).toBe('#0056b3');
+    });
+
+    it('should have retry_button_color parameter', () => {
+      expect(params.retry_button_color).toBeDefined();
+      expect(params.retry_button_color.default).toBe('#dc3545');
+    });
+
+    it('should have retry_button_hover_color parameter', () => {
+      expect(params.retry_button_hover_color).toBeDefined();
+      expect(params.retry_button_hover_color.default).toBe('#c82333');
+    });
+
+    it('should have success_color parameter', () => {
+      expect(params.success_color).toBeDefined();
+      expect(params.success_color.default).toBe('#28a745');
+    });
+
+    it('should have error_color parameter', () => {
+      expect(params.error_color).toBeDefined();
+      expect(params.error_color.default).toBe('#dc3545');
+    });
+
+    it('should have zoom_duration parameter with default 300', () => {
+      expect(params.zoom_duration).toBeDefined();
+      expect(params.zoom_duration.default).toBe(300);
+    });
+
+    it('should have explosion_duration parameter with default 400', () => {
+      expect(params.explosion_duration).toBeDefined();
+      expect(params.explosion_duration.default).toBe(400);
+    });
+
+    it('should have success_display_duration parameter with default 2000', () => {
+      expect(params.success_display_duration).toBeDefined();
+      expect(params.success_display_duration.default).toBe(2000);
+    });
+
+    it('should have instruction_display_duration parameter with default 3000', () => {
+      expect(params.instruction_display_duration).toBeDefined();
+      expect(params.instruction_display_duration.default).toBe(3000);
     });
   });
 

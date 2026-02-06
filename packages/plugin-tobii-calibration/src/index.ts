@@ -43,16 +43,6 @@ const info = <const>{
       type: ParameterType.INT,
       default: 500,
     },
-    /** Duration to collect data at each point (ms) */
-    collection_duration: {
-      type: ParameterType.INT,
-      default: 1000,
-    },
-    /** Gap duration between points (ms) - blank screen before next point appears */
-    gap_duration: {
-      type: ParameterType.INT,
-      default: 250,
-    },
     /** Show progress indicator */
     show_progress: {
       type: ParameterType.BOOL,
@@ -62,11 +52,6 @@ const info = <const>{
     custom_points: {
       type: ParameterType.COMPLEX,
       default: null,
-    },
-    /** Animation style */
-    animation: {
-      type: ParameterType.STRING,
-      default: 'shrink',
     },
     /** Instructions text */
     instructions: {
@@ -119,6 +104,26 @@ const info = <const>{
       type: ParameterType.INT,
       default: 1,
     },
+    /** Duration of zoom in/out animations in ms */
+    zoom_duration: {
+      type: ParameterType.INT,
+      default: 300,
+    },
+    /** Duration of explosion animation in ms */
+    explosion_duration: {
+      type: ParameterType.INT,
+      default: 400,
+    },
+    /** Duration to show success result before auto-advancing in ms */
+    success_display_duration: {
+      type: ParameterType.INT,
+      default: 2000,
+    },
+    /** Duration to show instructions before auto-advancing in view mode in ms */
+    instruction_display_duration: {
+      type: ParameterType.INT,
+      default: 3000,
+    },
   },
   data: {
     /** Calibration success status */
@@ -148,7 +153,6 @@ type Info = typeof info;
 
 class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
   static info = info;
-  private static styleInjected = false;
 
   constructor(private jsPsych: JsPsych) {}
 
@@ -157,14 +161,11 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
     if (el) {
       el.remove();
     }
-    TobiiCalibrationPlugin.styleInjected = false;
   }
 
   private injectStyles(trial: TrialType<Info>): void {
-    // Only inject once per page
-    if (TobiiCalibrationPlugin.styleInjected) {
-      return;
-    }
+    // Remove existing styles so each trial gets its own colors
+    TobiiCalibrationPlugin.removeStyles();
 
     const css = `
       .tobii-calibration-container {
@@ -270,7 +271,7 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
       }
 
       .tobii-calibration-point.animation-explosion {
-        animation: tobii-calibration-explosion 0.4s ease-out forwards;
+        animation: tobii-calibration-explosion ${(trial.explosion_duration as number) / 1000}s ease-out forwards;
       }
 
       @keyframes tobii-calibration-explosion {
@@ -289,7 +290,7 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
       }
 
       .tobii-calibration-point.animation-zoom-out {
-        animation: tobii-calibration-zoom-out 0.3s ease-out forwards;
+        animation: tobii-calibration-zoom-out ${(trial.zoom_duration as number) / 1000}s ease-out forwards;
       }
 
       @keyframes tobii-calibration-zoom-out {
@@ -302,7 +303,7 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
       }
 
       .tobii-calibration-point.animation-zoom-in {
-        animation: tobii-calibration-zoom-in 0.3s ease-out forwards;
+        animation: tobii-calibration-zoom-in ${(trial.zoom_duration as number) / 1000}s ease-out forwards;
       }
 
       @keyframes tobii-calibration-zoom-in {
@@ -364,8 +365,6 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
     styleElement.id = 'tobii-calibration-styles';
     styleElement.textContent = css;
     document.head.appendChild(styleElement);
-
-    TobiiCalibrationPlugin.styleInjected = true;
   }
 
   async trial(display_element: HTMLElement, trial: TrialType<Info>): Promise<void> {
@@ -404,74 +403,76 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
     let attempt = 0;
     let calibrationResult: CalibrationResult = { success: false };
 
-    // Retry loop
-    while (attempt < maxAttempts) {
-      attempt++;
-      const retriesRemaining = maxAttempts - attempt;
+    try {
+      // Retry loop
+      while (attempt < maxAttempts) {
+        attempt++;
+        const retriesRemaining = maxAttempts - attempt;
 
-      // Start calibration on server (resets server-side state on each call)
-      await tobiiExt.startCalibration();
+        // Start calibration on server (resets server-side state on each call)
+        await tobiiExt.startCalibration();
 
-      // Initialize point at screen center (with brief pause)
-      await calibrationDisplay.initializePoint();
+        // Initialize point at screen center (with brief pause)
+        await calibrationDisplay.initializePoint();
 
-      // Show each point and collect calibration data with smooth path animation
-      for (let i = 0; i < points.length; i++) {
-        const point = points[i];
+        // Show each point and collect calibration data with smooth path animation
+        for (let i = 0; i < points.length; i++) {
+          const point = points[i];
 
-        // Travel to the point location (smooth animation from current position)
-        await calibrationDisplay.travelToPoint(point, i, points.length);
+          // Travel to the point location (smooth animation from current position)
+          await calibrationDisplay.travelToPoint(point, i, points.length);
 
-        // Zoom out (point grows larger to attract attention)
-        await calibrationDisplay.playZoomOut();
+          // Zoom out (point grows larger to attract attention)
+          await calibrationDisplay.playZoomOut();
 
-        // Zoom in (point shrinks to fixation size)
-        await calibrationDisplay.playZoomIn();
+          // Zoom in (point shrinks to fixation size)
+          await calibrationDisplay.playZoomIn();
 
-        if (trial.calibration_mode === 'click') {
-          // Wait for user to click
-          await calibrationDisplay.waitForClick();
-        } else {
-          // Wait for user to fixate on the point
-          await this.delay(trial.point_duration!);
+          if (trial.calibration_mode === 'click') {
+            // Wait for user to click
+            await calibrationDisplay.waitForClick();
+          } else {
+            // Wait for user to fixate on the point
+            await this.delay(trial.point_duration!);
+          }
+
+          // Collect calibration data for this point (blocks until SDK finishes)
+          const result = await tobiiExt.collectCalibrationPoint(point.x, point.y);
+
+          // Play explosion animation based on result
+          await calibrationDisplay.playExplosion(result.success);
+
+          // Reset point for next travel (don't remove element)
+          if (i < points.length - 1) {
+            await calibrationDisplay.resetPointAfterExplosion();
+          }
         }
 
-        // Collect calibration data for this point (blocks until SDK finishes)
-        const result = await tobiiExt.collectCalibrationPoint(point.x, point.y);
+        // Hide point after final explosion
+        await calibrationDisplay.hidePoint();
 
-        // Play explosion animation based on result
-        await calibrationDisplay.playExplosion(result.success);
+        // Compute calibration on server
+        calibrationResult = await tobiiExt.computeCalibration();
 
-        // Reset point for next travel (don't remove element)
-        if (i < points.length - 1) {
-          await calibrationDisplay.resetPointAfterExplosion();
+        // Show result with retry option if retries remain
+        const userChoice = await calibrationDisplay.showResult(
+          calibrationResult.success,
+          retriesRemaining > 0
+        );
+
+        if (userChoice === 'continue') {
+          break;
         }
+
+        // User chose retry — reset display for next attempt
+        calibrationDisplay.resetForRetry();
       }
-
-      // Hide point after final explosion
-      await calibrationDisplay.hidePoint();
-
-      // Compute calibration on server
-      calibrationResult = await tobiiExt.computeCalibration();
-
-      // Show result with retry option if retries remain
-      const userChoice = await calibrationDisplay.showResult(
-        calibrationResult.success,
-        retriesRemaining > 0
-      );
-
-      if (userChoice === 'continue') {
-        break;
-      }
-
-      // User chose retry — reset display for next attempt
-      calibrationDisplay.resetForRetry();
+    } finally {
+      // Clear display and remove injected styles
+      calibrationDisplay.clear();
+      display_element.innerHTML = '';
+      TobiiCalibrationPlugin.removeStyles();
     }
-
-    // Clear display and remove injected styles
-    calibrationDisplay.clear();
-    display_element.innerHTML = '';
-    TobiiCalibrationPlugin.removeStyles();
 
     // Finish trial
     const trial_data = {

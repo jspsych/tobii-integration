@@ -33,26 +33,40 @@ export class ValidationDisplay {
   private createProgressIndicator(): HTMLElement {
     const progress = document.createElement('div');
     progress.className = 'tobii-validation-progress';
+    progress.setAttribute('role', 'status');
+    progress.setAttribute('aria-live', 'polite');
     return progress;
   }
 
   async showInstructions(): Promise<void> {
-    const instructions = document.createElement('div');
-    instructions.className = 'tobii-validation-instructions';
-    instructions.innerHTML = `
-      <div class="instructions-content">
-        <h2>Eye Tracker Validation</h2>
-        <p>${this.params.instructions || 'Look at each point to validate calibration accuracy.'}</p>
-        <button class="validation-start-btn">Start Validation</button>
-      </div>
-    `;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'tobii-validation-instructions';
+    wrapper.setAttribute('role', 'dialog');
+    wrapper.setAttribute('aria-label', 'Eye tracker validation instructions');
 
-    this.container.appendChild(instructions);
+    const content = document.createElement('div');
+    content.className = 'instructions-content';
+
+    const heading = document.createElement('h2');
+    heading.textContent = 'Eye Tracker Validation';
+    content.appendChild(heading);
+
+    const paragraph = document.createElement('p');
+    paragraph.innerHTML =
+      this.params.instructions || 'Look at each point to validate calibration accuracy.';
+    content.appendChild(paragraph);
+
+    const button = document.createElement('button');
+    button.className = 'validation-start-btn';
+    button.textContent = 'Start Validation';
+    content.appendChild(button);
+
+    wrapper.appendChild(content);
+    this.container.appendChild(wrapper);
 
     return new Promise((resolve) => {
-      const button = instructions.querySelector('button');
-      button?.addEventListener('click', () => {
-        instructions.remove();
+      button.addEventListener('click', () => {
+        wrapper.remove();
         resolve();
       });
     });
@@ -66,6 +80,8 @@ export class ValidationDisplay {
 
     this.currentPoint = document.createElement('div');
     this.currentPoint.className = 'tobii-validation-point';
+    this.currentPoint.setAttribute('role', 'img');
+    this.currentPoint.setAttribute('aria-label', 'Validation target point');
 
     // Start at center
     const x = 0.5 * window.innerWidth;
@@ -85,7 +101,7 @@ export class ValidationDisplay {
     this.container.appendChild(this.currentPoint);
 
     // Brief pause to show point at center before traveling
-    await this.delay(300);
+    await this.delay(this.params.zoom_duration || 300);
   }
 
   /**
@@ -100,6 +116,12 @@ export class ValidationDisplay {
     if (this.progressElement) {
       this.progressElement.textContent = `Point ${index + 1} of ${total}`;
     }
+
+    // Update aria-label with current point number
+    this.currentPoint!.setAttribute(
+      'aria-label',
+      `Validation target point ${index + 1} of ${total}`
+    );
 
     // Calculate travel distance for dynamic duration
     const dx = point.x - this.currentX;
@@ -139,7 +161,7 @@ export class ValidationDisplay {
     this.currentPoint.classList.remove('animation-zoom-in');
     this.currentPoint.classList.add('animation-zoom-out');
 
-    await this.delay(300);
+    await this.delay(this.params.zoom_duration || 300);
   }
 
   /**
@@ -151,7 +173,7 @@ export class ValidationDisplay {
     this.currentPoint.classList.remove('animation-zoom-out');
     this.currentPoint.classList.add('animation-zoom-in');
 
-    await this.delay(300);
+    await this.delay(this.params.zoom_duration || 300);
   }
 
   /**
@@ -165,29 +187,6 @@ export class ValidationDisplay {
     this.currentPoint.style.transform = 'translate(-50%, -50%) scale(1)';
 
     await this.delay(50);
-  }
-
-  async showPoint(point: ValidationPoint, index: number, total: number): Promise<void> {
-    if (this.progressElement) {
-      this.progressElement.textContent = `Point ${index + 1} of ${total}`;
-    }
-
-    this.currentPoint = document.createElement('div');
-    this.currentPoint.className = 'tobii-validation-point';
-
-    const x = point.x * window.innerWidth;
-    const y = point.y * window.innerHeight;
-
-    Object.assign(this.currentPoint.style, {
-      left: `${x}px`,
-      top: `${y}px`,
-      width: `${this.params.point_size || 20}px`,
-      height: `${this.params.point_size || 20}px`,
-      backgroundColor: this.params.point_color || '#00ff00',
-    });
-
-    this.container.appendChild(this.currentPoint);
-    await this.delay(100);
   }
 
   async hidePoint(): Promise<void> {
@@ -218,6 +217,8 @@ export class ValidationDisplay {
   ): Promise<'retry' | 'continue'> {
     const result = document.createElement('div');
     result.className = 'tobii-validation-result';
+    result.setAttribute('role', 'alert');
+    result.setAttribute('aria-live', 'assertive');
 
     let feedbackHTML = '';
     if (this.params.show_feedback && pointData) {
@@ -293,7 +294,7 @@ export class ValidationDisplay {
       })
       .join('');
 
-    // Mean gaze positions - color coded based on tolerance
+    // Mean gaze positions - color coded based on tolerance with non-color indicators
     const gazeMarkers = pointData
       .map((data, idx) => {
         if (!data.meanGaze) return '';
@@ -301,12 +302,15 @@ export class ValidationDisplay {
         const y = data.meanGaze.y * 100;
         const withinTolerance = data.accuracyNorm <= tol;
         const colorClass = withinTolerance ? 'gaze-pass' : 'gaze-fail';
+        const statusSymbol = withinTolerance ? '\u2713' : '\u2717';
+        const statusLabel = withinTolerance ? 'pass' : 'fail';
         return `
         <div class="feedback-gaze ${colorClass}" style="
           left: ${x}%;
           top: ${y}%;
-        " title="Error: ${(data.accuracyNorm * 100).toFixed(1)}%">
-          <span class="gaze-label">${idx + 1}</span>
+        " title="Point ${idx + 1}: ${statusLabel}, error ${(data.accuracyNorm * 100).toFixed(1)}%"
+           aria-label="Point ${idx + 1}: ${statusLabel}, error ${(data.accuracyNorm * 100).toFixed(1)}%">
+          <span class="gaze-label">${statusSymbol}</span>
         </div>
       `;
       })
@@ -360,8 +364,8 @@ export class ValidationDisplay {
         </div>
         <div class="feedback-legend">
           <span><span class="legend-color target-legend"></span> Target</span>
-          <span><span class="legend-color gaze-pass-legend"></span> Pass</span>
-          <span><span class="legend-color gaze-fail-legend"></span> Fail</span>
+          <span><span class="legend-color gaze-pass-legend"></span> Pass (\u2713)</span>
+          <span><span class="legend-color gaze-fail-legend"></span> Fail (\u2717)</span>
         </div>
       </div>
     `;

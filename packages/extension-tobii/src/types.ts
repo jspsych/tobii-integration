@@ -17,33 +17,11 @@ export interface ConnectionConfig {
 }
 
 /**
- * Sampling configuration options
- */
-export interface SamplingConfig {
-  /** Sampling rate in Hz */
-  rate?: number;
-}
-
-/**
- * Data configuration options
- */
-export interface DataConfig {
-  /** Include raw eye tracking samples in trial data */
-  includeRawSamples?: boolean;
-  /** Coordinate system for gaze data */
-  coordinateSystem?: 'pixels' | 'normalized';
-}
-
-/**
  * Extension initialization parameters
  */
 export interface InitializeParameters {
   /** Connection settings */
   connection?: ConnectionConfig;
-  /** Sampling settings */
-  sampling?: SamplingConfig;
-  /** Data settings */
-  data?: DataConfig;
 }
 
 /**
@@ -52,8 +30,6 @@ export interface InitializeParameters {
 export interface OnStartParameters {
   /** Trial ID or index */
   trialId?: string | number;
-  /** Additional metadata */
-  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -155,7 +131,6 @@ export type MessageType =
   | 'get_data'
   | 'get_user_position'
   | 'get_device_clock_offset'
-  | 'marker'
   | 'time_sync'
   | 'error';
 
@@ -181,18 +156,6 @@ export interface ConnectionStatus {
   lastError?: string;
   /** Connection timestamp */
   connectedAt?: number;
-}
-
-/**
- * Marker data
- */
-export interface MarkerData {
-  /** Marker label/identifier */
-  label: string;
-  /** Timestamp in milliseconds */
-  timestamp?: number;
-  /** Additional marker data */
-  [key: string]: unknown;
 }
 
 /**

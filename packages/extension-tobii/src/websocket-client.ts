@@ -41,7 +41,15 @@ export class WebSocketClient {
       try {
         this.ws = new WebSocket(this.config.url);
 
+        // Timeout for connection — cleared on success
+        const timeoutId = setTimeout(() => {
+          if (this.ws?.readyState !== WebSocket.OPEN) {
+            reject(new Error(`Connection timeout (${this.config.url})`));
+          }
+        }, 5000);
+
         this.ws.onopen = () => {
+          clearTimeout(timeoutId);
           this.status.connected = true;
           this.status.connectedAt = Date.now();
           this.currentReconnectAttempt = 0;
@@ -62,13 +70,6 @@ export class WebSocketClient {
           this.status.tracking = false;
           this.handleDisconnect();
         };
-
-        // Timeout for connection
-        setTimeout(() => {
-          if (this.ws?.readyState !== WebSocket.OPEN) {
-            reject(new Error('Connection timeout'));
-          }
-        }, 5000);
       } catch (error) {
         reject(error);
       }
@@ -121,7 +122,10 @@ export class WebSocketClient {
   /**
    * Send message and wait for response
    */
-  async sendAndWait(message: WebSocketMessage, timeout: number = 5000): Promise<Record<string, unknown>> {
+  async sendAndWait(
+    message: WebSocketMessage,
+    timeout: number = 5000
+  ): Promise<Record<string, unknown>> {
     if (!this.isConnected()) {
       throw new Error('Not connected to server');
     }
@@ -152,6 +156,11 @@ export class WebSocketClient {
    * Register message handler
    */
   on(messageType: string, handler: (data: Record<string, unknown>) => void): void {
+    if (this.messageHandlers.has(messageType)) {
+      console.warn(
+        `Tobii WebSocket: Overwriting existing handler for message type "${messageType}"`
+      );
+    }
     this.messageHandlers.set(messageType, handler);
   }
 
@@ -205,7 +214,10 @@ export class WebSocketClient {
             reconnectedHandler({ type: 'reconnected' });
           }
         } catch (error) {
-          // Reconnection failed
+          console.warn(
+            `Tobii: Reconnection attempt ${this.currentReconnectAttempt}/${this.config.reconnectAttempts} failed:`,
+            error
+          );
         }
       }, delay);
     } else {

@@ -148,7 +148,6 @@ type Info = typeof info;
 
 class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
   static info = info;
-  private static styleInjected = false;
 
   constructor(private jsPsych: JsPsych) {}
 
@@ -157,13 +156,11 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
     if (el) {
       el.remove();
     }
-    TobiiUserPositionPlugin.styleInjected = false;
   }
 
   private injectStyles(trial: TrialType<Info>): void {
-    if (TobiiUserPositionPlugin.styleInjected) {
-      return;
-    }
+    // Remove existing styles so each trial gets its own colors
+    TobiiUserPositionPlugin.removeStyles();
 
     const css = `
       .tobii-user-position-container {
@@ -187,56 +184,6 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
       .tobii-user-position-guide {
         position: relative;
         margin-bottom: 40px;
-      }
-
-      .tobii-position-box {
-        position: relative;
-        width: 400px;
-        height: 300px;
-        border: 3px solid #333;
-        border-radius: 8px;
-        background-color: rgba(255, 255, 255, 0.8);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
-
-      .tobii-eye-indicator {
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        border: 2px solid;
-        transform: translate(-50%, -50%);
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .tobii-left-eye::before {
-        content: 'L';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: white;
-        font-size: 10px;
-        font-weight: bold;
-      }
-
-      .tobii-right-eye::before {
-        content: 'R';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: white;
-        font-size: 10px;
-        font-weight: bold;
-      }
-
-      .tobii-distance-feedback {
-        text-align: center;
-        margin-top: 20px;
-        font-weight: 600;
-        font-size: 1.1em;
       }
 
       .tobii-position-feedback {
@@ -288,8 +235,6 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
     styleElement.id = 'tobii-user-position-styles';
     styleElement.textContent = css;
     document.head.appendChild(styleElement);
-
-    TobiiUserPositionPlugin.styleInjected = true;
   }
 
   trial(display_element: HTMLElement, trial: TrialType<Info>) {
@@ -364,10 +309,16 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
         }
       }, trial.update_interval!);
 
+      // Cleanup helper to ensure DOM and styles are always cleaned up
+      const cleanup = () => {
+        clearInterval(updateInterval);
+        positionDisplay.destroy();
+        display_element.innerHTML = '';
+        TobiiUserPositionPlugin.removeStyles();
+      };
+
       // Handle trial end
       const endTrial = () => {
-        clearInterval(updateInterval);
-
         // Calculate average position
         const validSamples = positionSamples.filter(
           (s) => s.averageX !== null && s.averageY !== null && s.averageZ !== null
@@ -396,8 +347,7 @@ class TobiiUserPositionPlugin implements JsPsychPlugin<Info> {
           rt: Math.round(performance.now() - startTime),
         };
 
-        positionDisplay.destroy();
-        TobiiUserPositionPlugin.removeStyles();
+        cleanup();
         this.jsPsych.finishTrial(trialData);
         resolve();
       };

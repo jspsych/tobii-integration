@@ -1,22 +1,8 @@
 /**
- * User position data from eye tracker
+ * Re-export UserPositionData from extension.
+ * This mirrors the type defined in @jspsych/extension-tobii.
  */
-export interface UserPositionData {
-  leftX: number | null;
-  leftY: number | null;
-  leftZ: number | null;
-  rightX: number | null;
-  rightY: number | null;
-  rightZ: number | null;
-  leftValid: boolean;
-  rightValid: boolean;
-  leftOriginX?: number | null;
-  leftOriginY?: number | null;
-  leftOriginZ?: number | null;
-  rightOriginX?: number | null;
-  rightOriginY?: number | null;
-  rightOriginZ?: number | null;
-}
+export type { UserPositionData } from '@jspsych/extension-tobii';
 
 /**
  * Position quality assessment

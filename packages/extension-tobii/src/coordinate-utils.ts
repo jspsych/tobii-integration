@@ -41,32 +41,12 @@ export function getScreenDimensions(): ScreenDimensions {
 }
 
 /**
- * Check if coordinates are within bounds
- */
-export function isWithinBounds(x: number, y: number, normalized: boolean = true): boolean {
-  if (normalized) {
-    return x >= 0 && x <= 1 && y >= 0 && y <= 1;
-  } else {
-    return x >= 0 && x <= window.innerWidth && y >= 0 && y <= window.innerHeight;
-  }
-}
-
-/**
  * Calculate distance between two points
  */
 export function distance(p1: Coordinates, p2: Coordinates): number {
   const dx = p2.x - p1.x;
   const dy = p2.y - p1.y;
   return Math.sqrt(dx * dx + dy * dy);
-}
-
-/**
- * Calculate angle in degrees between two points
- */
-export function angle(p1: Coordinates, p2: Coordinates): number {
-  const dx = p2.x - p1.x;
-  const dy = p2.y - p1.y;
-  return (Math.atan2(dy, dx) * 180) / Math.PI;
 }
 
 /**

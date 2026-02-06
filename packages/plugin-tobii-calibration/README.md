@@ -35,11 +35,8 @@ The Tobii extension must be loaded and connected before this plugin runs. See th
 | point_size | int | `20` | Size of calibration points in pixels. |
 | point_color | string | `'#ff0000'` | Color of calibration points (CSS color value). |
 | point_duration | int | `500` | Duration to show each point before data collection begins (ms). Allows the participant to fixate. |
-| collection_duration | int | `1000` | Duration to collect calibration data at each point (ms). |
-| gap_duration | int | `250` | Blank screen duration between points (ms). |
 | show_progress | boolean | `true` | Show a progress indicator (e.g., "Point 3 of 9"). |
 | custom_points | array | `null` | Array of custom calibration points. Each point is an object with `x` and `y` properties (normalized 0-1). Overrides `calibration_points` when provided. |
-| animation | string | `'shrink'` | Animation style for point appearance. Options: `'none'`, `'pulse'`, `'shrink'`. |
 | instructions | string | `'Look at each point as it appears on the screen. Keep your gaze fixed on each point until it disappears.'` | Instructions text shown before calibration begins. |
 | button_text | string | `'Start Calibration'` | Button text shown on the instructions screen before calibration begins. |
 | background_color | string | `'#808080'` | Background color of the calibration container. |
@@ -50,6 +47,10 @@ The Tobii extension must be loaded and connected before this plugin runs. See th
 | success_color | string | `'#28a745'` | Success message heading color. |
 | error_color | string | `'#dc3545'` | Error message heading color. |
 | max_retries | int | `1` | Maximum number of retry attempts allowed if calibration fails. The participant is shown a retry button on failure. Set to `0` to disable retries. |
+| zoom_duration | int | `300` | Duration of zoom in/out point animations in ms. |
+| explosion_duration | int | `400` | Duration of the explosion animation after each point is collected in ms. |
+| success_display_duration | int | `2000` | Duration to show the success result before auto-advancing in ms. |
+| instruction_display_duration | int | `3000` | Duration to show instructions before auto-advancing in view mode in ms. Has no effect in click mode. |
 
 ## Data Generated
 

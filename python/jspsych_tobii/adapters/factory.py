@@ -24,12 +24,11 @@ def get_available_sdks() -> List[Dict[str, Any]]:
         List of dictionaries with SDK information:
         [{"type": SDKType, "name": str, "version": str, "available": bool}]
     """
-    logger = logging.getLogger(__name__)
     available = []
 
     # Check for tobii-research (supports both modern Pro series and older X-series trackers)
     try:
-        import tobii_research as tr
+        import tobii_research as tr  # type: ignore[import-not-found]
 
         available.append(
             {

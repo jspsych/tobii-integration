@@ -53,10 +53,6 @@ const jsPsych = initJsPsych({
                     url: 'ws://localhost:8080',
                     autoConnect: true,
                 },
-                data: {
-                    includeRawSamples: true,
-                    coordinateSystem: 'normalized',
-                },
             },
         },
     ],
@@ -318,14 +314,6 @@ const practiceProcedure = {
                     is_practice: true
                 };
             },
-            on_load: function() {
-                // Send marker when stimulus appears (use actual display info)
-                jsPsych.extensions.tobii.sendMarker({
-                    label: 'stimulus_onset',
-                    target_present: currentDisplayInfo.targetPresent,
-                    is_practice: true
-                });
-            },
             on_finish: function(data) {
                 // Score response using actual display info
                 const response = data.response;
@@ -348,14 +336,6 @@ const practiceProcedure = {
                     shape: item.shape,
                     isTarget: item.isTarget
                 }));
-
-                // Send response marker
-                jsPsych.extensions.tobii.sendMarker({
-                    label: 'response',
-                    response: response,
-                    correct: correct,
-                    rt: data.rt
-                });
             }
         },
         // Feedback
@@ -476,15 +456,6 @@ const trialProcedure = {
                     is_practice: false
                 };
             },
-            on_load: function() {
-                // Send marker when stimulus appears (use actual display info)
-                jsPsych.extensions.tobii.sendMarker({
-                    label: 'stimulus_onset',
-                    search_type: currentDisplayInfo.searchType,
-                    target_present: currentDisplayInfo.targetPresent,
-                    is_practice: false
-                });
-            },
             on_finish: function(data) {
                 // Score response using actual display info
                 const response = data.response;
@@ -507,14 +478,6 @@ const trialProcedure = {
                     shape: item.shape,
                     isTarget: item.isTarget
                 }));
-
-                // Send response marker
-                jsPsych.extensions.tobii.sendMarker({
-                    label: 'response',
-                    response: response,
-                    correct: correct,
-                    rt: data.rt
-                });
             }
         },
         // Inter-trial interval

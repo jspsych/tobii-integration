@@ -27,7 +27,6 @@ Tobii Pro eye tracker integration for jsPsych experiments.
   - [Calibration Control](#calibration-control)
   - [Validation Control](#validation-control)
   - [Data Access](#data-access)
-  - [Markers](#markers)
   - [Coordinate Utilities](#coordinate-utilities)
   - [Data Export](#data-export)
   - [Time Synchronization](#time-synchronization)
@@ -388,18 +387,6 @@ const endTime = performance.now();
 const gazeData = await jsPsych.extensions.tobii.getGazeData(startTime, endTime);
 ```
 
-#### Sending Markers
-
-Mark specific events in the eye tracking data stream:
-
-```javascript
-await jsPsych.extensions.tobii.sendMarker({
-  label: 'stimulus_onset',
-  stimulus_id: 'face_001',
-  condition: 'happy',
-});
-```
-
 #### Coordinate Conversion
 
 ```javascript
@@ -596,7 +583,7 @@ Tell participants to:
 
 #### Troubleshooting Poor Calibration
 
-- **High calibration error**: Use position guide first, increase `collection_duration`, try click mode, check lighting
+- **High calibration error**: Use position guide first, increase `point_duration`, try click mode, check lighting
 - **Inconsistent results**: Ensure participant isn't moving, check glasses/contacts, verify tracker position
 - **Points in certain areas fail**: Check visibility, verify monitor calibration, consider custom points avoiding problem areas
 
@@ -858,28 +845,6 @@ jsPsych.extensions.tobii.clearGazeData();
 
 **Returns:** `void`
 
-### Markers
-
-#### `sendMarker(markerData)`
-
-Send a marker to the eye tracking data stream.
-
-```javascript
-await jsPsych.extensions.tobii.sendMarker({
-  label: 'stimulus_onset',
-  stimulus_id: 'face_001',
-  condition: 'happy',
-});
-```
-
-**Parameters:**
-- `markerData` (MarkerData) - Object with:
-  - `label` (string, required) - Marker label/identifier
-  - `timestamp` (number, optional) - Timestamp in ms (defaults to `performance.now()`)
-  - Any additional key-value pairs
-
-**Returns:** `Promise<void>`
-
 ### Coordinate Utilities
 
 #### `normalizedToPixels(x, y)`
@@ -1080,15 +1045,13 @@ Update extension configuration.
 
 ```javascript
 jsPsych.extensions.tobii.setConfig({
-  data: { coordinateSystem: 'pixels' },
+  connection: { reconnectAttempts: 10 },
 });
 ```
 
 **Parameters:**
 - `config` (Partial<InitializeParameters>) - Configuration options:
   - `connection` - `{ url?, autoConnect?, reconnectAttempts?, reconnectDelay? }`
-  - `sampling` - `{ rate? }` (Hz)
-  - `data` - `{ includeRawSamples?, coordinateSystem? }` (`'pixels'` or `'normalized'`)
 
 #### `getConfig()`
 
@@ -1154,7 +1117,7 @@ const config = jsPsych.extensions.tobii.getConfig();
 **Solutions:**
 
 1. Use position guide first to optimize participant position
-2. Increase `collection_duration` (e.g., 1500ms) and `point_duration` (e.g., 750ms)
+2. Increase `point_duration` (e.g., 750ms)
 3. Try click mode: `calibration_mode: 'click'`
 4. Check environmental factors: reduce ambient lighting, remove reflective surfaces, clean tracker lens
 

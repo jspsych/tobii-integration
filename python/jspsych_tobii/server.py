@@ -3,12 +3,10 @@ WebSocket server for Tobii eye tracker integration
 """
 
 import asyncio
-import logging
 import signal
 import sys
 from typing import Set
-import websockets
-from websockets.server import WebSocketServerProtocol
+from websockets.asyncio.server import serve, ServerConnection
 
 from .config import ServerConfig
 from .logger import setup_logger
@@ -41,6 +39,7 @@ class TobiiServer:
         sdk_type_enum = None
         if config.sdk_type:
             from .adapters import SDKType
+
             sdk_map = {
                 "tobii-pro": SDKType.TOBII_PRO,
                 "mock": SDKType.MOCK,
@@ -57,14 +56,16 @@ class TobiiServer:
         self.calibration_manager = CalibrationManager(self.tobii_manager)
 
         # Active connections
-        self.clients: Set[WebSocketServerProtocol] = set()
+        self.clients: Set[ServerConnection] = set()
 
         # Server state
         self.running = False
 
     async def start(self) -> None:
         """Start the WebSocket server"""
-        self.logger.info(f"Starting Tobii WebSocket server on {self.config.host}:{self.config.port}")
+        self.logger.info(
+            f"Starting Tobii WebSocket server on {self.config.host}:{self.config.port}"
+        )
 
         # Find and connect to tracker
         if not self.tobii_manager.find_tracker():
@@ -75,7 +76,7 @@ class TobiiServer:
         self.logger.info(f"Connected to tracker: {tracker_info}")
 
         # Start WebSocket server
-        async with websockets.serve(
+        async with serve(
             self.handle_client,
             self.config.host,
             self.config.port,
@@ -86,7 +87,7 @@ class TobiiServer:
             # Keep server running
             await self.run_forever()
 
-    async def handle_client(self, websocket: WebSocketServerProtocol) -> None:
+    async def handle_client(self, websocket: ServerConnection) -> None:
         """
         Handle new client connection
 

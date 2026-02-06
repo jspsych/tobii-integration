@@ -61,15 +61,49 @@ describe('TobiiValidationPlugin', () => {
       expect(params.background_color.default).toBe('#808080');
     });
 
-    it('should have accuracy color parameters', () => {
-      expect(params.accuracy_good_color).toBeDefined();
-      expect(params.accuracy_fair_color).toBeDefined();
-      expect(params.accuracy_poor_color).toBeDefined();
-    });
-
     it('should have max_retries parameter with default 1', () => {
       expect(params.max_retries).toBeDefined();
       expect(params.max_retries.default).toBe(1);
+    });
+
+    it('should have instructions parameter', () => {
+      expect(params.instructions).toBeDefined();
+      expect(typeof params.instructions.default).toBe('string');
+    });
+
+    it('should have button_color parameter', () => {
+      expect(params.button_color).toBeDefined();
+      expect(params.button_color.default).toBe('#28a745');
+    });
+
+    it('should have button_hover_color parameter', () => {
+      expect(params.button_hover_color).toBeDefined();
+      expect(params.button_hover_color.default).toBe('#218838');
+    });
+
+    it('should have retry_button_color parameter', () => {
+      expect(params.retry_button_color).toBeDefined();
+      expect(params.retry_button_color.default).toBe('#dc3545');
+    });
+
+    it('should have retry_button_hover_color parameter', () => {
+      expect(params.retry_button_hover_color).toBeDefined();
+      expect(params.retry_button_hover_color.default).toBe('#c82333');
+    });
+
+    it('should have success_color parameter', () => {
+      expect(params.success_color).toBeDefined();
+      expect(params.success_color.default).toBe('#28a745');
+    });
+
+    it('should have error_color parameter', () => {
+      expect(params.error_color).toBeDefined();
+      expect(params.error_color.default).toBe('#dc3545');
+    });
+
+    it('should have zoom_duration parameter with default 300', () => {
+      expect(params.zoom_duration).toBeDefined();
+      expect(params.zoom_duration.default).toBe(300);
     });
   });
 

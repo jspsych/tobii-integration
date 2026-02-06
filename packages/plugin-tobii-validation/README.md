@@ -46,11 +46,9 @@ The Tobii extension must be loaded, connected, and calibrated before this plugin
 | retry_button_hover_color | string | `'#c82333'` | Retry button hover color. |
 | success_color | string | `'#28a745'` | Success message heading color. |
 | error_color | string | `'#dc3545'` | Error message heading color. |
-| accuracy_good_color | string | `'#00ff00'` | Color for good accuracy points in feedback visualization. |
-| accuracy_fair_color | string | `'#ffff00'` | Color for fair accuracy points in feedback visualization. |
-| accuracy_poor_color | string | `'#ff0000'` | Color for poor accuracy points in feedback visualization. |
 | tolerance | float | `0.05` | Normalized tolerance for acceptable accuracy (0-1 scale). Validation passes if average accuracy error is less than or equal to this value. For example, `0.05` means 5% of screen dimensions. |
 | max_retries | int | `1` | Maximum number of retry attempts allowed if validation fails. The participant is shown a retry button on failure. Set to `0` to disable retries. |
+| zoom_duration | int | `300` | Duration of zoom in/out point animations in ms. |
 
 ### Tolerance Guidelines
 
@@ -67,8 +65,8 @@ In addition to the [default data collected by jsPsych plugins](https://www.jspsy
 | Name | Type | Description |
 |------|------|-------------|
 | validation_success | boolean | Whether validation passed (average accuracy <= tolerance). |
-| average_accuracy_norm | float | Average accuracy error across all points (normalized, 0-1 scale). Lower is better. |
-| average_precision_norm | float | Average precision (consistency) across all points (normalized, 0-1 scale). Lower is better. |
+| average_accuracy | float | Average accuracy error across all points (normalized, 0-1 scale). Lower is better. |
+| average_precision | float | Average precision (consistency) across all points (normalized, 0-1 scale). Lower is better. |
 | tolerance | float | The tolerance value used for this validation. |
 | num_points | int | Number of validation points used. |
 | validation_data | object | Full validation result from the server (see below). |
@@ -145,7 +143,6 @@ const trial = {
   tolerance: 0.10,
   point_color: '#00aaff',
   background_color: '#333333',
-  collection_duration: 1500,
 };
 ```
 

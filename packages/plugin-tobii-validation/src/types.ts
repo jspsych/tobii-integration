@@ -8,8 +8,8 @@ export interface ValidationPoint {
 }
 
 export interface ValidationParameters {
-  /** Number of validation points (5 or 9) */
-  validation_points?: 5 | 9;
+  /** Number of validation points */
+  validation_points?: 5 | 9 | 13 | 15 | 19 | 25;
   /** Size of validation point in pixels */
   point_size?: number;
   /** Color of validation point */
@@ -24,6 +24,26 @@ export interface ValidationParameters {
   show_feedback?: boolean;
   /** Instructions text */
   instructions?: string;
+  /** Background color of the validation container */
+  background_color?: string;
+  /** Primary button color */
+  button_color?: string;
+  /** Primary button hover color */
+  button_hover_color?: string;
+  /** Retry button color */
+  retry_button_color?: string;
+  /** Retry button hover color */
+  retry_button_hover_color?: string;
+  /** Success message color */
+  success_color?: string;
+  /** Error message color */
+  error_color?: string;
+  /** Normalized tolerance for acceptable accuracy (0-1 scale) */
+  tolerance?: number;
+  /** Maximum number of retry attempts allowed on validation failure */
+  max_retries?: number;
+  /** Duration of zoom in/out animations in ms */
+  zoom_duration?: number;
 }
 
 export interface GazeSample {
