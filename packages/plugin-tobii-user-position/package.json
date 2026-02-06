@@ -1,6 +1,6 @@
 {
   "name": "@jspsych/plugin-tobii-user-position",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "jsPsych plugin for Tobii eye tracker user position guide",
   "type": "module",
   "main": "dist/index.cjs",
@@ -44,12 +44,12 @@
   "homepage": "https://github.com/jspsych/jspsych-tobii/tree/main/packages/plugin-tobii-user-position#readme",
   "peerDependencies": {
     "jspsych": ">=8.0.0",
-    "@jspsych/extension-tobii": "^0.0.1"
+    "@jspsych/extension-tobii": "^0.1.0"
   },
   "devDependencies": {
     "@jspsych/config": "^3.2.2",
     "@jspsych/test-utils": "^1.0.0",
-    "@jspsych/extension-tobii": "^0.0.1",
+    "@jspsych/extension-tobii": "^0.1.0",
     "jspsych": "^8.0.0"
   }
 }
