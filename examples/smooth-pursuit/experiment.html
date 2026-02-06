@@ -36,16 +36,16 @@
 
     const CONFIG = {
         // Trial timing
-        trialDuration: 30000,      // ms per pursuit trial
-        fixationDuration: 1000,    // ms fixation cross before each trial
+        trialDuration: 15000,      // ms per pursuit trial
+        fixationDuration: 1500,    // ms fixation cross before each trial
 
         // Trial structure
-        numTrials: 20,
+        numTrials: 15,
         trialsPerBlock: 5,         // break after every N trials
 
         // Horizontal sinusoidal motion
         frequency: 0.4,            // Hz
-        amplitudeFraction: 0.7,    // fraction of screen width
+        amplitudeFraction: 0.5,    // fraction of screen width
 
         // Dot appearance
         dotSize: 20,               // px diameter
@@ -72,8 +72,8 @@
             },
         ],
         on_finish: function () {
-            const allData = jsPsych.data.get().values();
-            jsPsych.extensions.tobii.exportToCSV(allData, 'smooth_pursuit_data.csv');
+            const allData = jsPsych.data.get().localSave('json', `${jsPsych.randomization.randomID(4)}_data.json`)
+            
             jsPsych.data.displayData();
         },
     });
