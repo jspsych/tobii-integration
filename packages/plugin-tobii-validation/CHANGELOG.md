@@ -1,5 +1,11 @@
 # @jspsych/plugin-tobii-validation
 
+## 0.2.0
+
+### Minor Changes
+
+- a0aa22b: Hide mouse cursor during eye tracking to reduce distraction. Default show_progress to false to remove point counter from top of screen. Calibration now always shows a click-to-start button matching the validation flow.
+
 ## 0.1.1
 
 ### Patch Changes
