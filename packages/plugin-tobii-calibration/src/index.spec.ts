@@ -115,7 +115,6 @@ describe('TobiiCalibrationPlugin', () => {
       expect(params.success_display_duration).toBeDefined();
       expect(params.success_display_duration.default).toBe(2000);
     });
-
   });
 
   describe('data specification', () => {
