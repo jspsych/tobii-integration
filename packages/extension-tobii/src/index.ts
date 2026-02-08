@@ -126,10 +126,7 @@ class TobiiExtension implements JsPsychExtension {
     // Mark trial start
     this.dataManager.startTrial();
 
-    // Start tracking if not already tracking
-    if (!this.tracking) {
-      await this.startTracking();
-    }
+    await this.startTracking();
   };
 
   on_load = async (): Promise<void> => {
@@ -192,6 +189,10 @@ class TobiiExtension implements JsPsychExtension {
    * Start eye tracking data collection
    */
   async startTracking(): Promise<void> {
+    if (this.tracking) {
+      return;
+    }
+
     if (!this.isConnected()) {
       throw new Error('Not connected to server. Call connect() first.');
     }
