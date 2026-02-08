@@ -43,7 +43,7 @@ describe('TobiiValidationPlugin', () => {
 
     it('should have show_progress parameter', () => {
       expect(params.show_progress).toBeDefined();
-      expect(params.show_progress.default).toBe(true);
+      expect(params.show_progress.default).toBe(false);
     });
 
     it('should have show_feedback parameter', () => {

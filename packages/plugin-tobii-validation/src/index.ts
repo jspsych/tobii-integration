@@ -41,7 +41,7 @@ const info = <const>{
     /** Show progress indicator */
     show_progress: {
       type: ParameterType.BOOL,
-      default: true,
+      default: false,
     },
     /** Custom validation points */
     custom_points: {
@@ -169,6 +169,7 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
         background-color: ${trial.background_color};
         font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
         z-index: 9999;
+        cursor: none;
       }
 
       .tobii-validation-instructions {
@@ -182,6 +183,7 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         text-align: center;
         max-width: 600px;
+        cursor: auto;
       }
 
       .tobii-validation-instructions h2 {
@@ -284,6 +286,7 @@ class TobiiValidationPlugin implements JsPsychPlugin<Info> {
         max-width: 800px;
         max-height: 85vh;
         overflow-y: auto;
+        cursor: auto;
       }
 
       .tobii-validation-result-content h2 {

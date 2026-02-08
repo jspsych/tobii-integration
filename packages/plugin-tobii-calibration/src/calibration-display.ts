@@ -65,32 +65,20 @@ export class CalibrationDisplay {
       this.params.instructions || 'Look at each point and follow the instructions.';
     content.appendChild(paragraph);
 
-    if (this.params.calibration_mode === 'click') {
-      const button = document.createElement('button');
-      button.className = 'calibration-start-btn';
-      button.textContent = this.params.button_text || 'Start Calibration';
-      content.appendChild(button);
-    } else {
-      const autoMsg = document.createElement('p');
-      autoMsg.textContent = 'Starting in a moment...';
-      content.appendChild(autoMsg);
-    }
+    const button = document.createElement('button');
+    button.className = 'calibration-start-btn';
+    button.textContent = this.params.button_text || 'Start Calibration';
+    content.appendChild(button);
 
     wrapper.appendChild(content);
     this.container.appendChild(wrapper);
 
-    if (this.params.calibration_mode === 'click') {
-      return new Promise((resolve) => {
-        const button = wrapper.querySelector('button');
-        button?.addEventListener('click', () => {
-          wrapper.remove();
-          resolve();
-        });
+    return new Promise((resolve) => {
+      button.addEventListener('click', () => {
+        wrapper.remove();
+        resolve();
       });
-    } else {
-      await this.delay(this.params.instruction_display_duration || 3000);
-      wrapper.remove();
-    }
+    });
   }
 
   /**

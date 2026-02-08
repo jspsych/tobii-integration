@@ -46,7 +46,7 @@ const info = <const>{
     /** Show progress indicator */
     show_progress: {
       type: ParameterType.BOOL,
-      default: true,
+      default: false,
     },
     /** Custom calibration points */
     custom_points: {
@@ -119,11 +119,6 @@ const info = <const>{
       type: ParameterType.INT,
       default: 2000,
     },
-    /** Duration to show instructions before auto-advancing in view mode in ms */
-    instruction_display_duration: {
-      type: ParameterType.INT,
-      default: 3000,
-    },
   },
   data: {
     /** Calibration success status */
@@ -177,6 +172,7 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
         background-color: ${trial.background_color};
         font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
         z-index: 9999;
+        cursor: none;
       }
 
       .tobii-calibration-instructions {
@@ -190,6 +186,7 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         text-align: center;
         max-width: 600px;
+        cursor: auto;
       }
 
       .tobii-calibration-instructions h2 {
@@ -338,6 +335,7 @@ class TobiiCalibrationPlugin implements JsPsychPlugin<Info> {
         border-radius: 10px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         text-align: center;
+        cursor: auto;
       }
 
       .tobii-calibration-result-content h2 {

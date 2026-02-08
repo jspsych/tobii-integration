@@ -48,7 +48,7 @@ describe('TobiiCalibrationPlugin', () => {
 
     it('should have show_progress parameter', () => {
       expect(params.show_progress).toBeDefined();
-      expect(params.show_progress.default).toBe(true);
+      expect(params.show_progress.default).toBe(false);
     });
 
     it('should have instructions parameter', () => {
@@ -116,10 +116,6 @@ describe('TobiiCalibrationPlugin', () => {
       expect(params.success_display_duration.default).toBe(2000);
     });
 
-    it('should have instruction_display_duration parameter with default 3000', () => {
-      expect(params.instruction_display_duration).toBeDefined();
-      expect(params.instruction_display_duration.default).toBe(3000);
-    });
   });
 
   describe('data specification', () => {
