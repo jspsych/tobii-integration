@@ -82,7 +82,7 @@ JSON messages with `requestId` for request/response pairing. Message types inclu
 
 - **Commits**: Conventional commits (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `style:`, `chore:`)
 - **TypeScript**: Strict mode, no unused variables/parameters. ESLint + Prettier enforced.
-- **Prettier**: Single quotes, semicolons, 100 char width, trailing commas (ES5), LF line endings
+- **Prettier**: Single quotes, semicolons, 100 char width, trailing commas (ES5), LF line endings. **Always run `npm run format:check` before committing** — CI will reject unformatted code.
 - **Python**: Black formatter, PEP 8, type hints, docstrings
 
 ## Requirements
