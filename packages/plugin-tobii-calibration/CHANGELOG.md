@@ -1,5 +1,12 @@
 # @jspsych/plugin-tobii-calibration
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [fdff021]
+  - @jspsych/extension-tobii@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes
