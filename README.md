@@ -2,6 +2,8 @@
 
 Tobii Pro eye tracker integration for jsPsych experiments.
 
+[![DOI](https://zenodo.org/badge/1083269022.svg)](https://doi.org/10.5281/zenodo.20348160)
+
 ## Table of Contents
 
 - [Getting Started](#getting-started)
